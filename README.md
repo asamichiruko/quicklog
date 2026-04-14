@@ -1,5 +1,69 @@
-# Vue 3 + TypeScript + Vite
+# quicklog
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+即座にメモを記録することに特化したシンプルなWebアプリ。
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+## 概要
+
+quicklog は「思いついたことを数秒で記録できるか」を検証するための個人用アプリです。
+高度なメモ管理機能は持たず、入力の速さと手軽さを最優先としています。
+
+## コンセプト
+
+* 開いてすぐ書ける
+* 操作を最小限にする
+* 記録のハードルを下げる
+
+初期段階では、機能よりも「継続して使えるか」を重視します。
+
+## 機能（初版）
+
+* メモの追加
+* メモ一覧の表示（新しい順）
+* メモの削除
+
+## 技術スタック
+
+* Vue 3
+* TypeScript
+* Vite
+* localStorage（データ保存）
+
+## データ構造
+
+```ts
+type QuickLogItem = {
+  id: string
+  text: string
+  createdAt: string
+}
+```
+
+## 開発方針
+
+* 最小限の機能でリリースする
+* 実際の利用をもとに必要な機能を判断する
+* 初期段階ではクラウド化や認証を導入しない
+
+## セットアップ
+
+```bash
+npm install
+npm run dev
+```
+
+## ビルド
+
+```bash
+npm run build
+```
+
+## 今後の検討事項
+
+* 入力体験の改善（フォーカス制御、ショートカットなど）
+* メモの編集機能
+* 検索機能
+* クラウド同期
+
+## ライセンス
+
+未定
