@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import QuickLogForm from "@/components/QuickLogForm.vue"
+import QuickLogList from "@/components/QuickLogList.vue"
 import { loadItems, saveItems } from "@/lib/storage"
 import type { QuickLogItem } from "@/types"
 import { onMounted, ref } from "vue"
@@ -20,6 +21,10 @@ function handleSubmit(text: string) {
   items.value.unshift(item)
   saveItems(items.value)
 }
+
+function handleRemove(id: string) {
+  console.log(id)
+}
 </script>
 
 <template>
@@ -30,6 +35,7 @@ function handleSubmit(text: string) {
     </header>
 
     <QuickLogForm @submit="handleSubmit" />
+    <QuickLogList :items="items" @remove="handleRemove" />
   </main>
 </template>
 
