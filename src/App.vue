@@ -1,8 +1,24 @@
 <script setup lang="ts">
 import QuickLogForm from "@/components/QuickLogForm.vue"
+import { loadItems, saveItems } from "@/lib/storage"
+import type { QuickLogItem } from "@/types"
+import { onMounted, ref } from "vue"
+
+const items = ref<QuickLogItem[]>([])
+
+onMounted(() => {
+  items.value = loadItems()
+})
 
 function handleSubmit(text: string) {
-  console.log(text)
+  const item: QuickLogItem = {
+    id: crypto.randomUUID(),
+    text,
+    createdAt: new Date().toISOString(),
+  }
+
+  items.value.unshift(item)
+  saveItems(items.value)
 }
 </script>
 
