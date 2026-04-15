@@ -23,7 +23,8 @@ function handleSubmit(text: string) {
 }
 
 function handleRemove(id: string) {
-  console.log(id)
+  items.value = items.value.filter((item) => item.id !== id)
+  saveItems(items.value)
 }
 </script>
 
