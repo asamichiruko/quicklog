@@ -3,7 +3,6 @@ import QuickLogForm from "@/components/QuickLogForm.vue"
 import QuickLogList from "@/components/QuickLogList.vue"
 import { loadItems, saveItems } from "@/lib/storage"
 import type { QuickLogItem } from "@/types"
-import { Analytics } from "@vercel/analytics/vue"
 import { onMounted, ref } from "vue"
 
 const items = ref<QuickLogItem[]>([])
@@ -30,7 +29,6 @@ function handleRemove(id: string) {
 </script>
 
 <template>
-  <Analytics />
   <main class="app">
     <header class="header">
       <h1>quicklog</h1>
