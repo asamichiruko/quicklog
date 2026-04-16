@@ -49,5 +49,6 @@ function onSubmit() {
 .button {
   width: fit-content;
   padding: 8px 16px;
+  justify-self: end;
 }
 </style>
