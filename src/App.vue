@@ -23,6 +23,9 @@ function handleSubmit(text: string) {
 }
 
 function handleRemove(id: string) {
+  const ok = confirm("メモを削除しますか？")
+  if (!ok) return
+
   items.value = items.value.filter((item) => item.id !== id)
   saveItems(items.value)
 }
