@@ -16,8 +16,6 @@ function formatDate(createdAt: string) {
 
 <template>
   <section class="list-section">
-    <h2 class="heading">メモ一覧</h2>
-
     <p v-if="items.length === 0" class="empty">まだメモがありません</p>
 
     <ul v-else class="list">
@@ -33,10 +31,6 @@ function formatDate(createdAt: string) {
 <style lang="css" scoped>
 .list-section {
   margin-top: 32px;
-}
-
-.heading {
-  margin: 0 0 16px;
 }
 
 .empty {
