@@ -34,8 +34,8 @@ function handleRemove(id: string) {
 <template>
   <main class="app">
     <header class="header">
-      <h1>quicklog</h1>
-      <p>即座にメモを取るためのアプリ</p>
+      <h1 class="title">quicklog</h1>
+      <p class="description">即座にメモを取るためのアプリ</p>
     </header>
 
     <QuickLogForm @submit="handleSubmit" />
@@ -52,5 +52,15 @@ function handleRemove(id: string) {
 
 .header {
   margin-bottom: 24px;
+}
+
+.title {
+  font-size: 2em;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.description {
+  margin: 0;
 }
 </style>
