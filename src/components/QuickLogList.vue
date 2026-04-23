@@ -7,6 +7,7 @@ defineProps<{
 
 const emit = defineEmits<{
   remove: [id: string]
+  export: []
 }>()
 
 function formatDate(createdAt: string) {
@@ -16,15 +17,23 @@ function formatDate(createdAt: string) {
 
 <template>
   <section class="list-section">
-    <p v-if="items.length === 0" class="empty">まだメモがありません</p>
-
-    <ul v-else class="list">
-      <li v-for="item in items" :key="item.id" class="item">
-        <p class="date">{{ formatDate(item.createdAt) }}</p>
-        <p class="text">{{ item.text }}</p>
-        <button class="button" type="button" @click="emit('remove', item.id)">削除</button>
-      </li>
-    </ul>
+    <template v-if="items.length === 0">
+      <p class="empty">まだメモがありません</p>
+    </template>
+    <template v-else>
+      <ul class="list">
+        <li v-for="item in items" :key="item.id" class="item">
+          <p class="date">{{ formatDate(item.createdAt) }}</p>
+          <p class="text">{{ item.text }}</p>
+          <button class="button" type="button" @click="emit('remove', item.id)">削除</button>
+        </li>
+      </ul>
+      <div class="footer">
+        <button class="export-button" type="button" @click="emit('export')">
+          データをエクスポート
+        </button>
+      </div>
+    </template>
   </section>
 </template>
 
@@ -68,5 +77,20 @@ function formatDate(createdAt: string) {
 
 .button {
   width: fit-content;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.export-button {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: #666;
+  text-decoration: underline;
 }
 </style>

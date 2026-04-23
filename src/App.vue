@@ -29,6 +29,20 @@ function handleRemove(id: string) {
   items.value = items.value.filter((item) => item.id !== id)
   saveItems(items.value)
 }
+
+function handleExport() {
+  const json = JSON.stringify(items.value, null, 2)
+  const blob = new Blob([json], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+
+  const a = document.createElement("a")
+  const date = new Date().toISOString().split("T")[0]
+  a.href = url
+  a.download = `quicklog-${date}.json`
+  a.click()
+
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
@@ -39,7 +53,7 @@ function handleRemove(id: string) {
     </header>
 
     <QuickLogForm @submit="handleSubmit" />
-    <QuickLogList :items="items" @remove="handleRemove" />
+    <QuickLogList :items="items" @remove="handleRemove" @export="handleExport" />
   </main>
 </template>
 
