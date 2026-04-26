@@ -24,6 +24,16 @@ const absoluteDateFormatter = new Intl.DateTimeFormat("ja-JP", {
   weekday: "short",
 })
 
+const absoluteDateTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  weekday: "short",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+})
+
 const groupedItems = computed<DateGroup[]>(() => {
   const groups = new Map<string, DateGroup>()
 
@@ -48,7 +58,7 @@ const groupedItems = computed<DateGroup[]>(() => {
 })
 
 function formatDate(createdAt: string) {
-  return new Date(createdAt).toLocaleString()
+  return absoluteDateTimeFormatter.format(new Date(createdAt))
 }
 
 function getLocalDateKey(date: Date) {
