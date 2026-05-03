@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import QuickLogForm from "@/components/QuickLogForm.vue"
 import QuickLogList from "@/components/QuickLogList.vue"
+import QuickLogSettingsDialog from "@/components/QuickLogSettingsDialog.vue"
 import { loadItems, saveItems } from "@/lib/storage"
 import type { QuickLogItem } from "@/types"
 import { onMounted, ref } from "vue"
 
 const items = ref<QuickLogItem[]>([])
-function openSettings() {}
+const settingsDialog = ref<InstanceType<typeof QuickLogSettingsDialog> | null>(null)
+
+function openSettings() {
+  settingsDialog.value?.open()
+}
 
 onMounted(() => {
   items.value = loadItems()
@@ -74,6 +79,7 @@ function handleExport() {
 
     <QuickLogForm @submit="handleSubmit" />
     <QuickLogList :items="items" @remove="handleRemove" @export="handleExport" />
+    <QuickLogSettingsDialog ref="settingsDialog" />
   </main>
 </template>
 
