@@ -1,11 +1,30 @@
 <script setup lang="ts">
+import { DEFAULT_SETTINGS } from "@/lib/settings"
+import type { QuickLogSettings } from "@/types"
 import { ref } from "vue"
 
 const dialog = ref<HTMLDialogElement | null>(null)
+const nextSettings = ref<QuickLogSettings>({ ...DEFAULT_SETTINGS })
+
+const props = defineProps<{
+  settings: QuickLogSettings
+}>()
+
+const emit = defineEmits<{
+  save: [nextSettings: QuickLogSettings]
+}>()
 
 function open() {
   if (!dialog.value || dialog.value.open) return
+
+  nextSettings.value = { ...props.settings }
+
   dialog.value?.showModal()
+}
+
+function saveAndClose() {
+  emit("save", { ...nextSettings.value })
+  close()
 }
 
 function close() {
@@ -22,14 +41,15 @@ defineExpose({ open })
       <ul>
         <li>
           <label>
-            <input type="checkbox" name="dailyCount" />
+            <input type="checkbox" name="dailyCount" v-model="nextSettings.showDailyCount" />
             日別の記録件数を表示
           </label>
         </li>
       </ul>
 
       <menu>
-        <button type="button" @click="close()">閉じる</button>
+        <button type="button" @click="saveAndClose">設定を保存</button>
+        <button type="button" @click="close">キャンセル</button>
       </menu>
     </form>
   </dialog>
@@ -57,6 +77,8 @@ ul {
 }
 
 menu {
+  display: flex;
+  gap: 16px;
   margin: 24px 0 0;
   padding: 0;
 }

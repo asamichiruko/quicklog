@@ -2,11 +2,13 @@
 import QuickLogForm from "@/components/QuickLogForm.vue"
 import QuickLogList from "@/components/QuickLogList.vue"
 import QuickLogSettingsDialog from "@/components/QuickLogSettingsDialog.vue"
-import { loadItems, saveItems } from "@/lib/storage"
-import type { QuickLogItem } from "@/types"
+import { DEFAULT_SETTINGS } from "@/lib/settings"
+import { loadItems, loadSettings, saveItems, saveSettings } from "@/lib/storage"
+import { type QuickLogItem, type QuickLogSettings } from "@/types"
 import { onMounted, ref } from "vue"
 
 const items = ref<QuickLogItem[]>([])
+const settings = ref<QuickLogSettings>({ ...DEFAULT_SETTINGS })
 const settingsDialog = ref<InstanceType<typeof QuickLogSettingsDialog> | null>(null)
 
 function openSettings() {
@@ -15,6 +17,7 @@ function openSettings() {
 
 onMounted(() => {
   items.value = loadItems()
+  settings.value = loadSettings()
 })
 
 function handleSubmit(text: string) {
@@ -49,6 +52,11 @@ function handleExport() {
 
   URL.revokeObjectURL(url)
 }
+
+function handleSaveSettings(nextSettings: QuickLogSettings) {
+  settings.value = nextSettings
+  saveSettings(nextSettings)
+}
 </script>
 
 <template>
@@ -79,7 +87,7 @@ function handleExport() {
 
     <QuickLogForm @submit="handleSubmit" />
     <QuickLogList :items="items" @remove="handleRemove" @export="handleExport" />
-    <QuickLogSettingsDialog ref="settingsDialog" />
+    <QuickLogSettingsDialog ref="settingsDialog" :settings="settings" @save="handleSaveSettings" />
   </main>
 </template>
 
