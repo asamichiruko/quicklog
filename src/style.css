@@ -16,8 +16,31 @@ body {
   box-sizing: border-box;
 }
 
-button,
 input,
 textarea {
   font: inherit;
+}
+
+button {
+  font: inherit;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 10px 18px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.button-primary {
+  background: #0d8df2;
+  color: #ffffff;
+}
+
+.button-secondary {
+  background: #dddddd;
+  color: #222222;
+}
+
+.button-danger {
+  background: #dddddd;
+  color: #222222;
 }

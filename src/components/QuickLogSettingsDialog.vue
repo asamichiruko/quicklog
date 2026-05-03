@@ -40,16 +40,21 @@ defineExpose({ open })
     <form method="dialog">
       <ul>
         <li>
-          <label>
-            <input type="checkbox" name="showDailyCount" v-model="nextSettings.showDailyCount" />
-            日別の記録件数を表示
+          <label class="setting-row">
+            <input
+              class="setting-checkbox"
+              type="checkbox"
+              name="showDailyCount"
+              v-model="nextSettings.showDailyCount"
+            />
+            <span class="setting-label">日別の記録件数を表示</span>
           </label>
         </li>
       </ul>
 
       <menu>
-        <button type="button" @click="saveAndClose">設定を保存</button>
-        <button type="button" @click="close">キャンセル</button>
+        <button class="button-primary" type="button" @click="saveAndClose">設定を保存</button>
+        <button class="button-secondary" type="button" @click="close">キャンセル</button>
       </menu>
     </form>
   </dialog>
@@ -64,7 +69,7 @@ dialog {
 }
 
 h2 {
-  margin: 0 0 24px;
+  margin: 0 0 32px;
   padding: 0;
 }
 
@@ -76,10 +81,29 @@ ul {
   list-style: none;
 }
 
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 48px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.setting-label {
+  font-size: 16px;
+}
+
+.setting-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: #0d8df0;
+}
+
 menu {
   display: flex;
   gap: 16px;
-  margin: 24px 0 0;
+  margin: 32px 0 0;
   padding: 0;
 }
 </style>

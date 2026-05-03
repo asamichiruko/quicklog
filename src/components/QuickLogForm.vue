@@ -18,37 +18,47 @@ function onSubmit() {
 
 <template>
   <form class="form" @submit.prevent="onSubmit">
-    <label class="label" for="quicklog-text"> メモ </label>
-    <textarea
-      id="quicklog-text"
-      v-model="text"
-      class="textarea"
-      rows="4"
-      placeholder="いま記録したいことは？"
-    ></textarea>
-    <button class="button" type="submit">保存</button>
+    <label>
+      <span class="label">メモ</span>
+      <textarea
+        v-model="text"
+        class="textarea"
+        rows="3"
+        placeholder="いま記録したいことは？"
+      ></textarea>
+    </label>
+    <button class="button-primary submit-button" type="submit">保存</button>
   </form>
 </template>
 
 <style lang="css" scoped>
 .form {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .label {
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .textarea {
   width: 100%;
   resize: vertical;
-  padding: 12px;
+  min-height: 120px;
+  line-height: 1.5;
+  padding: 16px;
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #222222;
 }
 
-.button {
+.textarea::placeholder {
+  color: #999999;
+}
+
+.submit-button {
   width: fit-content;
-  padding: 8px 16px;
   justify-self: end;
 }
 </style>

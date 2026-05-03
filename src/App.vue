@@ -122,16 +122,22 @@ function handleSaveSettings(nextSettings: QuickLogSettings) {
 }
 
 .settings-button {
-  width: 32px;
-  height: 32px;
-  background: none;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
   border: none;
+  border-radius: 999px;
+  color: #666666;
   padding: 4px;
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 .settings-button:hover,
 .settings-button:focus {
   opacity: 1;
+  background: #eeeeee;
+  color: #222222;
 }
 </style>

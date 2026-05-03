@@ -104,7 +104,13 @@ function startOfLocalDay(date: Date) {
             <li v-for="item in group.items" :key="item.id" class="item">
               <p class="date">{{ formatDate(item.createdAt) }}</p>
               <p class="text">{{ item.text }}</p>
-              <button class="button" type="button" @click="emit('remove', item.id)">削除</button>
+              <button
+                class="delete-button button-danger"
+                type="button"
+                @click="emit('remove', item.id)"
+              >
+                削除
+              </button>
             </li>
           </ul>
         </section>
@@ -125,12 +131,12 @@ function startOfLocalDay(date: Date) {
 
 .empty {
   margin: 0;
-  color: #666;
+  color: #666666;
 }
 
 .date-groups {
   display: grid;
-  gap: 24px;
+  gap: 16px;
 }
 
 .date-group {
@@ -140,9 +146,9 @@ function startOfLocalDay(date: Date) {
 
 .date-heading {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 14px;
   font-weight: 500;
-  color: #777;
+  color: #666666;
   justify-self: center;
 }
 
@@ -158,15 +164,15 @@ function startOfLocalDay(date: Date) {
   display: grid;
   gap: 8px;
   padding: 16px;
-  background: #fff;
-  border: 1px solid #ddd;
+  background: #ffffff;
+  border: 1px solid #dddddd;
   border-radius: 8px;
 }
 
 .date {
   margin: 0;
-  font-size: 0.875rem;
-  color: #666;
+  font-size: 14px;
+  color: #666666;
 }
 
 .text {
@@ -174,8 +180,19 @@ function startOfLocalDay(date: Date) {
   white-space: pre-wrap;
 }
 
-.button {
+.delete-button {
+  justify-self: end;
   width: fit-content;
+  font-size: 14px;
+  padding: 6px 14px;
+  min-height: 44px;
+  border: 1px solid #dddddd;
+  background: #eeeeee;
+  color: #555555;
+}
+.delete-button:hover,
+.delete-button:focus {
+  background: #e0e0e0;
 }
 
 .footer {
@@ -187,9 +204,10 @@ function startOfLocalDay(date: Date) {
 .export-button {
   padding: 0;
   border: none;
+  border-radius: 0px;
   background: none;
   font: inherit;
-  color: #666;
+  color: #666666;
   text-decoration: underline;
 }
 </style>
