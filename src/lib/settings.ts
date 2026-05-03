@@ -6,7 +6,7 @@ export const DEFAULT_SETTINGS = {
 
 export function normalizeSettings(value: unknown): QuickLogSettings {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {...DEFAULT_SETTINGS }
+    return { ...DEFAULT_SETTINGS }
   }
 
   const raw = value as Partial<Record<keyof QuickLogSettings, unknown>>

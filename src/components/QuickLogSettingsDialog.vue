@@ -41,7 +41,7 @@ defineExpose({ open })
       <ul>
         <li>
           <label>
-            <input type="checkbox" name="dailyCount" v-model="nextSettings.showDailyCount" />
+            <input type="checkbox" name="showDailyCount" v-model="nextSettings.showDailyCount" />
             日別の記録件数を表示
           </label>
         </li>

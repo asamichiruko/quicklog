@@ -1,5 +1,5 @@
-import type { QuickLogItem, QuickLogSettings } from "@/types";
-import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings";
+import type { QuickLogItem, QuickLogSettings } from "@/types"
+import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings"
 
 const ITEMS_KEY = "quicklog.items"
 const SETTINGS_KEY = "quicklog.settings"
