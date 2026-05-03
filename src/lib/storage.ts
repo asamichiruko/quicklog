@@ -1,9 +1,11 @@
-import type { QuickLogItem } from "@/types";
+import type { QuickLogItem, QuickLogSettings } from "@/types";
+import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings";
 
-const KEY = "quicklog.items"
+const ITEMS_KEY = "quicklog.items"
+const SETTINGS_KEY = "quicklog.settings"
 
 export function loadItems(): QuickLogItem[] {
-  const raw = localStorage.getItem(KEY)
+  const raw = localStorage.getItem(ITEMS_KEY)
   if (!raw) return []
 
   try {
@@ -14,5 +16,20 @@ export function loadItems(): QuickLogItem[] {
 }
 
 export function saveItems(items: QuickLogItem[]) {
-  localStorage.setItem(KEY, JSON.stringify(items))
+  localStorage.setItem(ITEMS_KEY, JSON.stringify(items))
+}
+
+export function loadSettings(): QuickLogSettings {
+  const raw = localStorage.getItem(SETTINGS_KEY)
+  if (!raw) return { ...DEFAULT_SETTINGS }
+
+  try {
+    return normalizeSettings(JSON.parse(raw))
+  } catch {
+    return { ...DEFAULT_SETTINGS }
+  }
+}
+
+export function saveSettings(settings: QuickLogSettings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
 }
