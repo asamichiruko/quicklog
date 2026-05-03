@@ -3,3 +3,18 @@ export type QuickLogItem = {
   text: string
   createdAt: string
 }
+
+export type QuickLogSettingValueMap = {
+  showDailyCount: boolean
+}
+
+export type QuickLogSettingId = keyof QuickLogSettingValueMap
+
+export type QuickLogSetting = {
+  [K in QuickLogSettingId]: {
+    id: K
+    value: QuickLogSettingValueMap[K]
+  }
+}[QuickLogSettingId]
+
+export type QuickLogSettings = QuickLogSettingValueMap
