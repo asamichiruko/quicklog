@@ -64,18 +64,18 @@ defineExpose({ open })
 dialog {
   width: min(90vw, 400px);
   border: none;
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: var(--radius-surface);
+  padding: var(--space-2);
 }
 
 h2 {
-  margin: 0 0 32px;
+  margin: 0 0 var(--space-4);
   padding: 0;
 }
 
 ul {
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
   padding: 0;
   margin: 0;
   list-style: none;
@@ -84,26 +84,27 @@ ul {
 .setting-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-2);
   min-height: 48px;
-  padding: 8px 0;
+  padding: var(--space-1) 0;
   cursor: pointer;
 }
 
 .setting-label {
-  font-size: 16px;
+  font-size: var(--font-size-md);
 }
 
 .setting-checkbox {
   width: 20px;
   height: 20px;
-  accent-color: #0d8df0;
+  accent-color: var(--color-primary);
 }
 
 menu {
   display: flex;
-  gap: 16px;
-  margin: 32px 0 0;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 0;
   padding: 0;
 }
 </style>

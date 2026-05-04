@@ -72,12 +72,12 @@ function handleSaveSettings(nextSettings: QuickLogSettings) {
                 <path
                   d="M -14.51 -52.33 L -10.66 -70.82 Q -10 -74 -6.75 -74 L 6.75 -74 Q 10 -74 10.66 -70.82 L 14.51 -52.33 Q 15 -50 17.26 -49.26 A 52.2 52.2 0 0 1 22.63 -47.04 Q 24.75 -45.96 26.74 -47.27 L 42.53 -57.61 Q 45.25 -59.4 47.55 -57.1 L 57.1 -47.55 Q 59.4 -45.25 57.61 -42.53 L 47.27 -26.74 Q 45.96 -24.75 47.04 -22.63 A 52.2 52.2 0 0 1 49.26 -17.26 Q 50 -15 52.33 -14.51 L 70.82 -10.66 Q 74 -10 74 -6.75 L 74 6.75 Q 74 10 70.82 10.66 L 52.33 14.51 Q 50 15 49.26 17.26 A 52.2 52.2 0 0 1 47.04 22.63 Q 45.96 24.75 47.27 26.74 L 57.61 42.53 Q 59.4 45.25 57.1 47.55 L 47.55 57.1 Q 45.25 59.4 42.53 57.61 L 26.74 47.27 Q 24.75 45.96 22.63 47.04 A 52.2 52.2 0 0 1 17.26 49.26 Q 15 50 14.51 52.33 L 10.66 70.82 Q 10 74 6.75 74 L -6.75 74 Q -10 74 -10.66 70.82 L -14.51 52.33 Q -15 50 -17.26 49.26 A 52.2 52.2 0 0 1 -22.63 47.04 Q -24.75 45.96 -26.74 47.27 L -42.53 57.61 Q -45.25 59.4 -47.55 57.1 L -57.1 47.55 Q -59.4 45.25 -57.61 42.53 L -47.27 26.74 Q -45.96 24.75 -47.04 22.63 A 52.2 52.2 0 0 1 -49.26 17.26 Q -50 15 -52.33 14.51 L -70.82 10.66 Q -74 10 -74 6.75 L -74 -6.75 Q -74 -10 -70.82 -10.66 L -52.33 -14.51 Q -50 -15 -49.26 -17.26 A 52.2 52.2 0 0 1 -47.04 -22.63 Q -45.96 -24.75 -47.27 -26.74 L -57.61 -42.53 Q -59.4 -45.25 -57.1 -47.55 L -47.55 -57.1 Q -45.25 -59.4 -42.53 -57.61 L -26.74 -47.27 Q -24.75 -45.96 -22.63 -47.04 A 52.2 52.2 0 0 1 -17.26 -49.26 Q -15 -50 -14.51 -52.33 Z"
                   fill="none"
-                  stroke="#222222"
+                  stroke="currentColor"
                   stroke-width="4"
                   stroke-linecap="round"
                   stroke-linejoin="round"
                 ></path>
-                <circle r="25" fill="none" stroke="#222222" stroke-width="4"></circle>
+                <circle r="25" fill="none" stroke="currentColor" stroke-width="4"></circle>
               </g>
             </g>
           </svg>
@@ -95,19 +95,19 @@ function handleSaveSettings(nextSettings: QuickLogSettings) {
 .app {
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: var(--space-3) var(--space-2);
 }
 
 .header {
   position: relative;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-3);
   padding-right: 40px;
 }
 
 .title {
   font-size: 2em;
-  font-weight: 700;
-  margin: 0 0 8px;
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--space-1);
 }
 
 .description {
@@ -124,20 +124,18 @@ function handleSaveSettings(nextSettings: QuickLogSettings) {
 .settings-button {
   display: inline-grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  inline-size: var(--control-min-size);
   background: transparent;
   border: none;
-  border-radius: 999px;
-  color: #666666;
-  padding: 4px;
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  padding: 8px;
   cursor: pointer;
   opacity: 0.8;
 }
 .settings-button:hover,
 .settings-button:focus {
   opacity: 1;
-  background: #eeeeee;
-  color: #222222;
+  background: var(--color-control-hover);
 }
 </style>

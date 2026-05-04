@@ -126,35 +126,35 @@ function startOfLocalDay(date: Date) {
 
 <style lang="css" scoped>
 .list-section {
-  margin-top: 32px;
+  margin-top: var(--space-4);
 }
 
 .empty {
   margin: 0;
-  color: #666666;
+  color: var(--color-text-muted);
 }
 
 .date-groups {
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
 }
 
 .date-group {
   display: grid;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .date-heading {
   margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: #666666;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
   justify-self: center;
 }
 
 .list {
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
   padding: 0;
   margin: 0;
   list-style: none;
@@ -162,33 +162,34 @@ function startOfLocalDay(date: Date) {
 
 .item {
   display: grid;
-  gap: 8px;
-  padding: 16px;
-  background: #ffffff;
-  border: 1px solid #dddddd;
-  border-radius: 8px;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
 }
 
 .date {
   margin: 0;
-  font-size: 14px;
-  color: #666666;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .text {
   margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .delete-button {
   justify-self: end;
   width: fit-content;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   padding: 6px 14px;
-  min-height: 44px;
-  border: 1px solid #dddddd;
+  min-height: var(--control-min-size);
+  border: 1px solid var(--color-border);
   background: #eeeeee;
-  color: #555555;
+  color: var(--color-danger-muted);
 }
 .delete-button:hover,
 .delete-button:focus {
@@ -198,7 +199,7 @@ function startOfLocalDay(date: Date) {
 .footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: var(--space-2);
 }
 
 .export-button {
@@ -207,7 +208,7 @@ function startOfLocalDay(date: Date) {
   border-radius: 0px;
   background: none;
   font: inherit;
-  color: #666666;
+  color: var(--color-text-muted);
   text-decoration: underline;
 }
 </style>

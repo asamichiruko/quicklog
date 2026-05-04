@@ -34,11 +34,11 @@ function onSubmit() {
 <style lang="css" scoped>
 .form {
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
 }
 
 .label {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .textarea {
@@ -46,15 +46,15 @@ function onSubmit() {
   resize: vertical;
   min-height: 120px;
   line-height: 1.5;
-  padding: 16px;
-  border: 1px solid #dddddd;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #222222;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .textarea::placeholder {
-  color: #999999;
+  color: var(--color-text-subtle);
 }
 
 .submit-button {
