@@ -1,7 +1,7 @@
 import type { QuickLogSettings } from "@/types"
 
 export const DEFAULT_SETTINGS = {
-  showDailyCount: false,
+  showTimeStrip: false,
 } satisfies QuickLogSettings
 
 export function normalizeSettings(value: unknown): QuickLogSettings {
@@ -12,9 +12,9 @@ export function normalizeSettings(value: unknown): QuickLogSettings {
   const raw = value as Partial<Record<keyof QuickLogSettings, unknown>>
 
   return {
-    showDailyCount:
-      typeof raw.showDailyCount === "boolean"
-        ? raw.showDailyCount
-        : DEFAULT_SETTINGS.showDailyCount,
+    showTimeStrip:
+      typeof raw.showTimeStrip === "boolean"
+        ? raw.showTimeStrip
+        : DEFAULT_SETTINGS.showTimeStrip,
   }
 }

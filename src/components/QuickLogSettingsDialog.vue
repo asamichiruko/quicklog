@@ -44,10 +44,10 @@ defineExpose({ open })
             <input
               class="setting-checkbox"
               type="checkbox"
-              name="showDailyCount"
-              v-model="nextSettings.showDailyCount"
+              name="showTimeStrip"
+              v-model="nextSettings.showTimeStrip"
             />
-            <span class="setting-label">日別の記録件数を表示</span>
+            <span class="setting-label">記録時刻の分布グラフを表示</span>
           </label>
         </li>
       </ul>

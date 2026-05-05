@@ -86,7 +86,12 @@ function handleSaveSettings(nextSettings: QuickLogSettings) {
     </header>
 
     <QuickLogForm @submit="handleSubmit" />
-    <QuickLogList :items="items" @remove="handleRemove" @export="handleExport" />
+    <QuickLogList
+      :items="items"
+      :show-time-strip="settings.showTimeStrip"
+      @remove="handleRemove"
+      @export="handleExport"
+    />
     <QuickLogSettingsDialog ref="settingsDialog" :settings="settings" @save="handleSaveSettings" />
   </main>
 </template>

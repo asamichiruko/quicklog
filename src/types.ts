@@ -5,7 +5,7 @@ export type QuickLogItem = {
 }
 
 export type QuickLogSettingValueMap = {
-  showDailyCount: boolean
+  showTimeStrip: boolean
 }
 
 export type QuickLogSettingId = keyof QuickLogSettingValueMap
