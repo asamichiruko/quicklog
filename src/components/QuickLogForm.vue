@@ -25,7 +25,7 @@ function onSubmit() {
         v-model="text"
         class="textarea"
         rows="3"
-        placeholder="いま記録したいことは？"
+        placeholder="メモを書く"
       ></textarea>
     </label>
     <button class="button-primary submit-button" type="submit">記録</button>
@@ -39,7 +39,9 @@ function onSubmit() {
 }
 
 .label {
+  display: block;
   font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-1);
 }
 
 .textarea {
