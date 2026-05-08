@@ -76,12 +76,12 @@ function getPositionPercent(createdAt: string): number {
 
 .time-mark {
   position: absolute;
-  top: 3px;
-  bottom: 3px;
+  top: 2px;
+  bottom: 2px;
   width: var(--mark-width);
   transform: translateX(-50%);
   border-radius: var(--radius-pill);
-  background: var(--color-text-muted);
+  background: var(--color-primary);
   opacity: 0.45;
 }
 
