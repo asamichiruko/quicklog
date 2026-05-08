@@ -21,6 +21,7 @@ function onSubmit() {
     <label>
       <span class="label">メモ</span>
       <textarea
+        name="content"
         v-model="text"
         class="textarea"
         rows="3"
