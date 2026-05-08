@@ -27,7 +27,7 @@ function onSubmit() {
         placeholder="いま記録したいことは？"
       ></textarea>
     </label>
-    <button class="button-primary submit-button" type="submit">保存</button>
+    <button class="button-primary submit-button" type="submit">記録</button>
   </form>
 </template>
 
