@@ -63,7 +63,6 @@ function handleSaveSettings(nextSettings: QuickLogSettings) {
   <main class="app">
     <header class="header">
       <h1 class="title">quicklog</h1>
-      <p class="description">即座にメモを取るためのアプリ</p>
       <p class="header-actions">
         <button class="settings-button" type="button" aria-label="設定" @click="openSettings()">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="73.5 73.5 152.5 152.5">
@@ -112,10 +111,6 @@ function handleSaveSettings(nextSettings: QuickLogSettings) {
 .title {
   font-size: 2em;
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--space-1);
-}
-
-.description {
   margin: 0;
 }
 
