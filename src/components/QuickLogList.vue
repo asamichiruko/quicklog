@@ -102,9 +102,9 @@ function startOfLocalDay(date: Date) {
       <div class="date-groups">
         <section v-for="group in groupedItems" :key="group.key" class="date-group">
           <h2 class="date-heading">{{ group.label }} / {{ group.items.length }} 件</h2>
-          <template v-if="props.showTimeStrip">
+          <div class="time-strip" v-if="props.showTimeStrip">
             <QuickLogTimeStrip :items="group.items" />
-          </template>
+          </div>
           <ul class="list">
             <li v-for="item in group.items" :key="item.id" class="item">
               <p class="date">{{ formatDate(item.createdAt) }}</p>
@@ -146,7 +146,7 @@ function startOfLocalDay(date: Date) {
 
 .date-group {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .date-heading {
