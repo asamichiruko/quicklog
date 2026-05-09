@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
-import QuickLogSettingsDialog from "@/components/QuickLogSettingsDialog.vue"
+import SettingsDialog from "@/components/SettingsDialog.vue"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadItems, loadSettings, saveItems, saveSettings } from "@/lib/storage"
 import { type AppSettings, type LogEntry } from "@/types"
@@ -9,7 +9,7 @@ import { onMounted, ref } from "vue"
 
 const items = ref<LogEntry[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
-const settingsDialog = ref<InstanceType<typeof QuickLogSettingsDialog> | null>(null)
+const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
 
 function openSettings() {
   settingsDialog.value?.open()
@@ -91,7 +91,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
       @remove="handleRemove"
       @export="handleExport"
     />
-    <QuickLogSettingsDialog ref="settingsDialog" :settings="settings" @save="handleSaveSettings" />
+    <SettingsDialog ref="settingsDialog" :settings="settings" @save="handleSaveSettings" />
   </main>
 </template>
 
