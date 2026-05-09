@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { QuickLogItem } from "@/types"
+import type { LogEntry } from "@/types"
 import { computed } from "vue"
 
 const props = defineProps<{
-  items: QuickLogItem[]
+  items: LogEntry[]
 }>()
 
 const marks = computed(() =>

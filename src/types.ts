@@ -1,4 +1,4 @@
-export type QuickLogItem = {
+export type LogEntry = {
   id: string
   text: string
   createdAt: string

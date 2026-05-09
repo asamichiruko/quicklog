@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import QuickLogTimeStrip from "@/components/QuickLogTimeStrip.vue"
-import type { QuickLogItem } from "@/types"
+import type { LogEntry } from "@/types"
 import { computed } from "vue"
 
 const props = defineProps<{
-  items: QuickLogItem[]
+  items: LogEntry[]
   showTimeStrip: boolean
 }>()
 
@@ -16,7 +16,7 @@ const emit = defineEmits<{
 type DateGroup = {
   key: string
   label: string
-  items: QuickLogItem[]
+  items: LogEntry[]
 }
 
 const absoluteDateFormatter = new Intl.DateTimeFormat("ja-JP", {

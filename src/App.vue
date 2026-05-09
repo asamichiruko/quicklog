@@ -4,10 +4,10 @@ import QuickLogList from "@/components/QuickLogList.vue"
 import QuickLogSettingsDialog from "@/components/QuickLogSettingsDialog.vue"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadItems, loadSettings, saveItems, saveSettings } from "@/lib/storage"
-import { type QuickLogItem, type QuickLogSettings } from "@/types"
+import { type LogEntry, type QuickLogSettings } from "@/types"
 import { onMounted, ref } from "vue"
 
-const items = ref<QuickLogItem[]>([])
+const items = ref<LogEntry[]>([])
 const settings = ref<QuickLogSettings>({ ...DEFAULT_SETTINGS })
 const settingsDialog = ref<InstanceType<typeof QuickLogSettingsDialog> | null>(null)
 
@@ -21,7 +21,7 @@ onMounted(() => {
 })
 
 function handleSubmit(text: string) {
-  const item: QuickLogItem = {
+  const item: LogEntry = {
     id: crypto.randomUUID(),
     text,
     createdAt: new Date().toISOString(),
