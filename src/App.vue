@@ -70,13 +70,13 @@ function handleSaveSettings(nextSettings: AppSettings) {
     </header>
 
     <LogEntryForm @submit="handleSubmit" />
-    <LogEntryList
-      :items="items"
-      :show-time-strip="settings.showTimeStrip"
-      @remove="handleRemove"
+    <LogEntryList :items="items" :show-time-strip="settings.showTimeStrip" @remove="handleRemove" />
+    <SettingsDialog
+      ref="settingsDialog"
+      :settings="settings"
+      @save="handleSaveSettings"
       @export="handleExport"
     />
-    <SettingsDialog ref="settingsDialog" :settings="settings" @save="handleSaveSettings" />
   </main>
 </template>
 

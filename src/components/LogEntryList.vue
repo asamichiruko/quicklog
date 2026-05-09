@@ -10,7 +10,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   remove: [id: string]
-  export: []
 }>()
 
 type DateGroup = {
@@ -120,11 +119,6 @@ function startOfLocalDay(date: Date) {
           </ul>
         </section>
       </div>
-      <div class="footer">
-        <button class="export-button" type="button" @click="emit('export')">
-          データをエクスポート
-        </button>
-      </div>
     </template>
   </section>
 </template>
@@ -199,21 +193,5 @@ function startOfLocalDay(date: Date) {
 .delete-button:hover,
 .delete-button:focus {
   background: #e0e0e0;
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: var(--space-2);
-}
-
-.export-button {
-  padding: 0;
-  border: none;
-  border-radius: 0px;
-  background: none;
-  font: inherit;
-  color: var(--color-text-muted);
-  text-decoration: underline;
 }
 </style>
