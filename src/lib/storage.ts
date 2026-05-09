@@ -1,4 +1,4 @@
-import type { LogEntry, QuickLogSettings } from "@/types"
+import type { LogEntry, AppSettings } from "@/types"
 import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings"
 
 const ITEMS_KEY = "quicklog.items"
@@ -19,7 +19,7 @@ export function saveItems(items: LogEntry[]) {
   localStorage.setItem(ITEMS_KEY, JSON.stringify(items))
 }
 
-export function loadSettings(): QuickLogSettings {
+export function loadSettings(): AppSettings {
   const raw = localStorage.getItem(SETTINGS_KEY)
   if (!raw) return { ...DEFAULT_SETTINGS }
 
@@ -30,6 +30,6 @@ export function loadSettings(): QuickLogSettings {
   }
 }
 
-export function saveSettings(settings: QuickLogSettings) {
+export function saveSettings(settings: AppSettings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
 }

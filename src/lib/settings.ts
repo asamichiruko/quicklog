@@ -1,15 +1,15 @@
-import type { QuickLogSettings } from "@/types"
+import type { AppSettings } from "@/types"
 
 export const DEFAULT_SETTINGS = {
   showTimeStrip: false,
-} satisfies QuickLogSettings
+} satisfies AppSettings
 
-export function normalizeSettings(value: unknown): QuickLogSettings {
+export function normalizeSettings(value: unknown): AppSettings {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { ...DEFAULT_SETTINGS }
   }
 
-  const raw = value as Partial<Record<keyof QuickLogSettings, unknown>>
+  const raw = value as Partial<Record<keyof AppSettings, unknown>>
 
   return {
     showTimeStrip:

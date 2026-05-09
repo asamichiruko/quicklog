@@ -4,11 +4,11 @@ import QuickLogList from "@/components/QuickLogList.vue"
 import QuickLogSettingsDialog from "@/components/QuickLogSettingsDialog.vue"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadItems, loadSettings, saveItems, saveSettings } from "@/lib/storage"
-import { type LogEntry, type QuickLogSettings } from "@/types"
+import { type AppSettings, type LogEntry } from "@/types"
 import { onMounted, ref } from "vue"
 
 const items = ref<LogEntry[]>([])
-const settings = ref<QuickLogSettings>({ ...DEFAULT_SETTINGS })
+const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 const settingsDialog = ref<InstanceType<typeof QuickLogSettingsDialog> | null>(null)
 
 function openSettings() {
@@ -53,7 +53,7 @@ function handleExport() {
   URL.revokeObjectURL(url)
 }
 
-function handleSaveSettings(nextSettings: QuickLogSettings) {
+function handleSaveSettings(nextSettings: AppSettings) {
   settings.value = nextSettings
   saveSettings(nextSettings)
 }

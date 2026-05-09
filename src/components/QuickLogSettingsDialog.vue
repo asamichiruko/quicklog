@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import type { QuickLogSettings } from "@/types"
+import type { AppSettings } from "@/types"
 import { ref } from "vue"
 
 const dialog = ref<HTMLDialogElement | null>(null)
-const nextSettings = ref<QuickLogSettings>({ ...DEFAULT_SETTINGS })
+const nextSettings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 
 const props = defineProps<{
-  settings: QuickLogSettings
+  settings: AppSettings
 }>()
 
 const emit = defineEmits<{
-  save: [nextSettings: QuickLogSettings]
+  save: [nextSettings: AppSettings]
 }>()
 
 function open() {

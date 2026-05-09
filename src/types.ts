@@ -4,10 +4,6 @@ export type LogEntry = {
   createdAt: string
 }
 
-export type QuickLogSettingValueMap = {
+export type AppSettings = {
   showTimeStrip: boolean
 }
-
-export type QuickLogSettingId = keyof QuickLogSettingValueMap
-
-export type QuickLogSettings = QuickLogSettingValueMap
