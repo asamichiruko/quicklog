@@ -3,7 +3,7 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import { loadItems, loadSettings, saveItems, saveSettings } from "@/lib/storage"
+import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type LogEntry } from "@/types"
 import { onMounted, ref } from "vue"
 
@@ -16,7 +16,7 @@ function openSettings() {
 }
 
 onMounted(() => {
-  items.value = loadItems()
+  items.value = loadLogEntries()
   settings.value = loadSettings()
 })
 
@@ -28,7 +28,7 @@ function handleSubmit(text: string) {
   }
 
   items.value.unshift(item)
-  saveItems(items.value)
+  saveLogEntries(items.value)
 }
 
 function handleRemove(id: string) {
@@ -36,7 +36,7 @@ function handleRemove(id: string) {
   if (!ok) return
 
   items.value = items.value.filter((item) => item.id !== id)
-  saveItems(items.value)
+  saveLogEntries(items.value)
 }
 
 function handleExport() {
