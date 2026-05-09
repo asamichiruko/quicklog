@@ -5,7 +5,7 @@ import { computed } from "vue"
 
 const props = defineProps<{
   items: LogEntry[]
-  showTimeStrip: boolean
+  showTimeDistributionStrip: boolean
 }>()
 
 const emit = defineEmits<{
@@ -101,7 +101,7 @@ function startOfLocalDay(date: Date) {
       <div class="date-groups">
         <section v-for="group in groupedItems" :key="group.key" class="date-group">
           <h2 class="date-heading">{{ group.label }} / {{ group.items.length }} 件</h2>
-          <div class="time-strip" v-if="props.showTimeStrip">
+          <div class="time-strip" v-if="props.showTimeDistributionStrip">
             <TimeDistributionStrip :items="group.items" />
           </div>
           <ul class="list">

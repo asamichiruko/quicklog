@@ -5,5 +5,5 @@ export type LogEntry = {
 }
 
 export type AppSettings = {
-  showTimeStrip: boolean
+  showTimeDistributionStrip: boolean
 }
