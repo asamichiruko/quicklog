@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import QuickLogTimeStrip from "@/components/QuickLogTimeStrip.vue"
+import TimeDistributionStrip from "@/components/TimeDistributionStrip.vue"
 import type { LogEntry } from "@/types"
 import { computed } from "vue"
 
@@ -103,7 +103,7 @@ function startOfLocalDay(date: Date) {
         <section v-for="group in groupedItems" :key="group.key" class="date-group">
           <h2 class="date-heading">{{ group.label }} / {{ group.items.length }} 件</h2>
           <div class="time-strip" v-if="props.showTimeStrip">
-            <QuickLogTimeStrip :items="group.items" />
+            <TimeDistributionStrip :items="group.items" />
           </div>
           <ul class="list">
             <li v-for="item in group.items" :key="item.id" class="item">
