@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import QuickLogForm from "@/components/QuickLogForm.vue"
+import LogEntryForm from "@/components/LogEntryForm.vue"
 import QuickLogList from "@/components/QuickLogList.vue"
 import QuickLogSettingsDialog from "@/components/QuickLogSettingsDialog.vue"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
@@ -84,7 +84,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
       </p>
     </header>
 
-    <QuickLogForm @submit="handleSubmit" />
+    <LogEntryForm @submit="handleSubmit" />
     <QuickLogList
       :items="items"
       :show-time-strip="settings.showTimeStrip"
