@@ -18,16 +18,14 @@ function onSubmit() {
 
 <template>
   <form class="form" @submit.prevent="onSubmit">
-    <label>
-      <span class="label">メモ</span>
-      <textarea
-        name="content"
-        v-model="text"
-        class="textarea"
-        rows="3"
-        placeholder="メモを書く"
-      ></textarea>
-    </label>
+    <label class="label" for="log-content">メモ</label>
+    <textarea
+      name="log-content"
+      v-model="text"
+      class="textarea"
+      rows="3"
+      placeholder="メモを書く"
+    ></textarea>
     <button class="button-primary submit-button" type="submit">記録</button>
   </form>
 </template>
@@ -35,11 +33,9 @@ function onSubmit() {
 <style lang="css" scoped>
 .form {
   display: grid;
-  gap: var(--space-2);
 }
 
 .label {
-  display: block;
   font-weight: var(--font-weight-medium);
   margin-bottom: var(--space-1);
 }
@@ -61,6 +57,7 @@ function onSubmit() {
 }
 
 .submit-button {
+  margin-top: var(--space-2);
   width: fit-content;
   justify-self: end;
 }
