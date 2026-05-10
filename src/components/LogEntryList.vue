@@ -93,41 +93,35 @@ function startOfLocalDay(date: Date) {
 </script>
 
 <template>
-  <section class="list-section">
-    <template v-if="items.length === 0">
-      <p class="empty">まだメモがありません</p>
-    </template>
-    <template v-else>
-      <div class="date-groups">
-        <section v-for="group in groupedItems" :key="group.key" class="date-group">
-          <h2 class="date-heading">{{ group.label }} / {{ group.items.length }} 件</h2>
-          <div class="time-strip" v-if="props.showTimeDistributionStrip">
-            <TimeDistributionStrip :items="group.items" />
-          </div>
-          <ul class="list">
-            <li v-for="item in group.items" :key="item.id" class="item">
-              <p class="date">{{ formatDate(item.createdAt) }}</p>
-              <p class="text">{{ item.text }}</p>
-              <button
-                class="delete-button button-danger"
-                type="button"
-                @click="emit('remove', item.id)"
-              >
-                削除
-              </button>
-            </li>
-          </ul>
-        </section>
-      </div>
-    </template>
-  </section>
+  <template v-if="items.length === 0">
+    <p class="empty">まだメモがありません</p>
+  </template>
+  <template v-else>
+    <div class="date-groups">
+      <section v-for="group in groupedItems" :key="group.key" class="date-group">
+        <h2 class="date-heading">{{ group.label }} / {{ group.items.length }} 件</h2>
+        <div class="time-distribution-strip" v-if="props.showTimeDistributionStrip">
+          <TimeDistributionStrip :items="group.items" />
+        </div>
+        <ul class="entries">
+          <li v-for="item in group.items" :key="item.id" class="entry">
+            <p class="date">{{ formatDate(item.createdAt) }}</p>
+            <p class="text">{{ item.text }}</p>
+            <button
+              class="delete-button button-danger"
+              type="button"
+              @click="emit('remove', item.id)"
+            >
+              削除
+            </button>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </template>
 </template>
 
 <style lang="css" scoped>
-.list-section {
-  margin-top: var(--space-4);
-}
-
 .empty {
   margin: 0;
   color: var(--color-text-muted);
@@ -151,7 +145,7 @@ function startOfLocalDay(date: Date) {
   justify-self: center;
 }
 
-.list {
+.entries {
   display: grid;
   gap: var(--space-2);
   padding: 0;
@@ -159,7 +153,7 @@ function startOfLocalDay(date: Date) {
   list-style: none;
 }
 
-.item {
+.entry {
   display: grid;
   gap: var(--space-1);
   padding: var(--space-2);
