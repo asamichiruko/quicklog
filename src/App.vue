@@ -64,28 +64,32 @@ function handleSaveSettings(nextSettings: AppSettings) {
   <main class="app">
     <header class="header">
       <h1 class="title">quicklog</h1>
-      <p class="header-actions">
-        <SettingsButton @click="openSettings" />
-      </p>
     </header>
 
-    <LogEntryForm @submit="handleSubmit" />
-    <LogEntryList
-      :items="items"
-      :showTimeDistributionStrip="settings.showTimeDistributionStrip"
-      @remove="handleRemove"
-    />
-    <SettingsDialog
-      ref="settingsDialog"
-      :settings="settings"
-      @save="handleSaveSettings"
-      @export="handleExport"
-    />
+    <div class="content">
+      <LogEntryForm @submit="handleSubmit" />
+      <div class="app-actions">
+        <SettingsButton @click="openSettings" />
+      </div>
+      <LogEntryList
+        :items="items"
+        :showTimeDistributionStrip="settings.showTimeDistributionStrip"
+        @remove="handleRemove"
+      />
+    </div>
   </main>
+
+  <SettingsDialog
+    ref="settingsDialog"
+    :settings="settings"
+    @save="handleSaveSettings"
+    @export="handleExport"
+  />
 </template>
 
 <style lang="css" scoped>
 .app {
+  position: relative;
   max-width: 720px;
   margin: 0 auto;
   padding: var(--space-3) var(--space-2);
@@ -103,10 +107,15 @@ function handleSaveSettings(nextSettings: AppSettings) {
   margin: 0;
 }
 
-.header-actions {
+.app-actions {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: var(--space-3);
+  right: var(--space-2);
   margin: 0;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-4);
 }
 </style>
