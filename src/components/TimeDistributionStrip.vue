@@ -31,7 +31,7 @@ function getPositionPercent(createdAt: string): number {
 
 <template>
   <div
-    class="time-strip"
+    class="time-distribution-strip"
     role="img"
     :aria-label="`記録時刻分布。${items.length}件の記録があります。`"
   >
@@ -58,7 +58,7 @@ function getPositionPercent(createdAt: string): number {
 </template>
 
 <style lang="css" scoped>
-.time-strip {
+.time-distribution-strip {
   --mark-width: 2px;
   --edge-inset: calc(var(--mark-width) / 2);
 
