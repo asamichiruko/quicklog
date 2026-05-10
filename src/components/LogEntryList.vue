@@ -107,11 +107,7 @@ function startOfLocalDay(date: Date) {
           <li v-for="item in group.items" :key="item.id" class="entry">
             <p class="date">{{ formatDate(item.createdAt) }}</p>
             <p class="text">{{ item.text }}</p>
-            <button
-              class="delete-button button-danger"
-              type="button"
-              @click="emit('remove', item.id)"
-            >
+            <button class="delete-button" type="button" @click="emit('remove', item.id)">
               削除
             </button>
           </li>
@@ -182,7 +178,7 @@ function startOfLocalDay(date: Date) {
   min-height: var(--control-min-size);
   border: 1px solid var(--color-border);
   background: #eeeeee;
-  color: var(--color-danger-muted);
+  color: #555555;
 }
 .delete-button:hover,
 .delete-button:focus {

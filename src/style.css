@@ -8,9 +8,12 @@
   --color-border: #dddddd;
 
   --color-primary: #0d8df2;
+  --color-primary-hover: #0a72c4;
+  --color-primary-text: #ffffff;
+
   --color-control: #dddddd;
-  --color-control-hover: #eeeeee;
-  --color-danger-muted: #555555;
+  --color-control-hover: #d0d0d0;
+  --color-control-text: #222222;
 
   --space-1: 8px;
   --space-2: 16px;
@@ -59,12 +62,20 @@ button {
 
 .button-primary {
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-primary-text);
+}
+.button-primary:hover,
+.button-primary:focus {
+  background: var(--color-primary-hover);
 }
 
 .button-secondary {
   background: var(--color-control);
   color: var(--color-text);
+}
+.button-secondary:hover,
+.button-secondary:focus {
+  background: var(--color-control-hover);
 }
 
 .button-danger {

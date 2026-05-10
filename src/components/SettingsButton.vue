@@ -40,6 +40,6 @@ const emit = defineEmits<{
 .settings-button:hover,
 .settings-button:focus {
   opacity: 1;
-  background: var(--color-control-hover);
+  background: #eeeeee;
 }
 </style>
