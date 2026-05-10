@@ -14,6 +14,13 @@ function onSubmit() {
   emit("submit", value)
   text.value = ""
 }
+
+function onKeydownEnter(e: KeyboardEvent) {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    onSubmit()
+  }
+}
 </script>
 
 <template>
@@ -25,6 +32,7 @@ function onSubmit() {
       class="textarea"
       rows="3"
       placeholder="メモを書く"
+      @keydown.enter="onKeydownEnter"
     ></textarea>
     <button class="button-primary submit-button" type="submit">記録</button>
   </form>
