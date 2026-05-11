@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TimeDistributionStrip from "@/components/TimeDistributionStrip.vue"
+import { formatRelativeDate, groupLogEntriesByDate, type DateGroup } from "@/lib/logEntries"
 import type { LogEntry } from "@/types"
 import { computed } from "vue"
 
@@ -11,12 +12,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   remove: [id: string]
 }>()
-
-type DateGroup = {
-  key: string
-  label: string
-  items: LogEntry[]
-}
 
 const absoluteDateFormatter = new Intl.DateTimeFormat("ja-JP", {
   year: "numeric",
@@ -36,59 +31,15 @@ const absoluteDateTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
 })
 
 const groupedItems = computed<DateGroup[]>(() => {
-  const groups = new Map<string, DateGroup>()
-
-  for (const item of props.items) {
-    const date = new Date(item.createdAt)
-    const key = getLocalDateKey(date)
-    const group = groups.get(key)
-
-    if (group) {
-      group.items.push(item)
-      continue
-    }
-
-    groups.set(key, {
-      key,
-      label: formatDateHeading(date),
-      items: [item],
-    })
-  }
-
-  return [...groups.values()]
+  return groupLogEntriesByDate(props.items)
 })
 
 function formatDate(createdAt: string) {
   return absoluteDateTimeFormatter.format(new Date(createdAt))
 }
 
-function getLocalDateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-
-  return `${year}-${month}-${day}`
-}
-
 function formatDateHeading(date: Date) {
   return `${formatRelativeDate(date)} - ${absoluteDateFormatter.format(date)}`
-}
-
-function formatRelativeDate(date: Date) {
-  const today = startOfLocalDay(new Date())
-  const target = startOfLocalDay(date)
-  const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000)
-
-  if (diffDays === 0) return "今日"
-  if (diffDays === -1) return "昨日"
-  if (diffDays === 1) return "明日"
-  if (diffDays < 0) return `${Math.abs(diffDays)}日前`
-
-  return `${diffDays}日後`
-}
-
-function startOfLocalDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 </script>
 
@@ -99,7 +50,9 @@ function startOfLocalDay(date: Date) {
   <template v-else>
     <div class="date-groups">
       <section v-for="group in groupedItems" :key="group.key" class="date-group">
-        <h2 class="date-heading">{{ group.label }} / {{ group.items.length }} 件</h2>
+        <h2 class="date-heading">
+          {{ formatDateHeading(group.date) }} / {{ group.items.length }} 件
+        </h2>
         <div class="time-distribution-strip" v-if="props.showTimeDistributionStrip">
           <TimeDistributionStrip :items="group.items" />
         </div>

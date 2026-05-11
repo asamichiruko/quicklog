@@ -4,6 +4,7 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { createLogEntriesExportFile } from "@/lib/export"
+import { getLocalDateKey } from "@/lib/logEntries"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
@@ -39,14 +40,6 @@ function handleRemove(id: string) {
 
   items.value = items.value.filter((item) => item.id !== id)
   saveLogEntries(items.value)
-}
-
-function getLocalDateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-
-  return `${year}-${month}-${day}`
 }
 
 function handleExport(exportType: ExportType) {
