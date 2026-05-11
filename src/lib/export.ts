@@ -1,4 +1,5 @@
 import type { ExportType, LogEntry } from "@/types"
+import { groupLogEntriesByDate, type DateGroup } from "@/lib/logEntries"
 
 type ExportFile = {
   content: string
@@ -6,25 +7,36 @@ type ExportFile = {
   extension: string
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
+const dateFormatter = new Intl.DateTimeFormat("ja-JP", {
   year: "numeric",
   month: "long",
   day: "numeric",
   weekday: "short",
+})
+
+const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
   hour: "numeric",
   minute: "numeric",
   second: "numeric",
 })
 
-const heading = "##"
+const groupsHeading = "##"
+const logEntriesHeading = "###"
 
 function formatLogEntryAsMarkdown(item: LogEntry): string {
-  return `${heading} ${dateTimeFormatter.format(new Date(item.createdAt))}\n\n${item.text}`
+  return `${logEntriesHeading} ${timeFormatter.format(new Date(item.createdAt))}\n\n${item.text}`
+}
+
+function formatDateGroupAsMarkdown(group: DateGroup): string {
+  return [
+    `${groupsHeading} ${dateFormatter.format(group.date)}`,
+    ...group.items.map(formatLogEntryAsMarkdown),
+  ].join("\n\n")
 }
 
 export function formatLogEntriesAsMarkdown(items: LogEntry[]): string {
-  return items
-    .map((item) => formatLogEntryAsMarkdown(item))
+  return groupLogEntriesByDate(items)
+    .map(formatDateGroupAsMarkdown)
     .join("\n\n")
 }
 
