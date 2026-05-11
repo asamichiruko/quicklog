@@ -61,10 +61,10 @@ defineExpose({ open })
         </ul>
       </section>
       <section class="section">
-        <h3 class="section-heading">エクスポート</h3>
+        <h3 class="section-heading">記録のエクスポート</h3>
         <div class="export-panel">
           <fieldset class="export-type-selector">
-            <legend class="export-type-selector-label">データ形式</legend>
+            <legend class="export-type-selector-label">ファイル形式</legend>
             <label class="export-type-option">
               <input
                 type="radio"
@@ -87,7 +87,7 @@ defineExpose({ open })
             </label>
           </fieldset>
           <button class="button-secondary export-button" type="button" @click="exportData">
-            データをエクスポート
+            ファイルをダウンロード
           </button>
         </div>
       </section>
