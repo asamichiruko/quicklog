@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import type { AppSettings } from "@/types"
+import type { AppSettings, ExportType } from "@/types"
 import { ref } from "vue"
 
 const dialog = ref<HTMLDialogElement | null>(null)
 const nextSettings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
-type ExportType = "json" | "markdown"
 const exportType = ref<ExportType>("json")
 
 const props = defineProps<{

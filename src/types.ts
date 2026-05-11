@@ -7,3 +7,5 @@ export type LogEntry = {
 export type AppSettings = {
   showTimeDistributionStrip: boolean
 }
+
+export type ExportType = "json" | "markdown"

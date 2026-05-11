@@ -3,9 +3,10 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
+import { createLogEntriesExportFile } from "@/lib/export"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
-import { type AppSettings, type LogEntry } from "@/types"
+import { type AppSettings, type ExportType, type LogEntry } from "@/types"
 import { onMounted, ref } from "vue"
 
 const items = ref<LogEntry[]>([])
@@ -40,15 +41,22 @@ function handleRemove(id: string) {
   saveLogEntries(items.value)
 }
 
-function handleExport(exportType: string) {
-  const json = JSON.stringify(items.value, null, 2)
-  const blob = new Blob([json], { type: "application/json" })
-  const url = URL.createObjectURL(blob)
+function getLocalDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
 
+  return `${year}-${month}-${day}`
+}
+
+function handleExport(exportType: ExportType) {
+  const exportFile = createLogEntriesExportFile(items.value, exportType)
+  const blob = new Blob([exportFile.content], { type: exportFile.mimeType })
+  const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
-  const date = new Date().toISOString().split("T")[0]
+  const dateKey = getLocalDateKey(new Date())
   a.href = url
-  a.download = `quicklog-${date}.json`
+  a.download = `quicklog-${dateKey}${exportFile.extension}`
   a.click()
 
   URL.revokeObjectURL(url)
