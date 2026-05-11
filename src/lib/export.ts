@@ -1,5 +1,5 @@
 import type { ExportType, LogEntry } from "@/types"
-import { groupLogEntriesByDate, type DateGroup } from "@/lib/logEntries"
+import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } from "@/lib/logEntries"
 
 type ExportFile = {
   content: string
@@ -35,13 +35,13 @@ function formatDateGroupAsMarkdown(group: DateGroup): string {
 }
 
 export function formatLogEntriesAsMarkdown(items: LogEntry[]): string {
-  return groupLogEntriesByDate(items)
+  return groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(items))
     .map(formatDateGroupAsMarkdown)
     .join("\n\n")
 }
 
 export function formatLogEntriesAsJson(items: LogEntry[]): string {
-  return JSON.stringify(items, null, 2)
+  return JSON.stringify(sortLogEntriesByCreatedAtAsc(items), null, 2)
 }
 
 const exportFormats: Record<

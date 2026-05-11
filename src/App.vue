@@ -29,8 +29,7 @@ function handleSubmit(text: string) {
     text,
     createdAt: new Date().toISOString(),
   }
-
-  items.value.unshift(item)
+  items.value.push(item)
   saveLogEntries(items.value)
 }
 

@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import TimeDistributionStrip from "@/components/TimeDistributionStrip.vue"
-import { formatRelativeDate, groupLogEntriesByDate, type DateGroup } from "@/lib/logEntries"
+import {
+  formatRelativeDate,
+  groupLogEntriesByDate,
+  sortLogEntriesByCreatedAtDesc,
+  type DateGroup,
+} from "@/lib/logEntries"
 import type { LogEntry } from "@/types"
 import { computed } from "vue"
 
@@ -31,7 +36,7 @@ const absoluteDateTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
 })
 
 const groupedItems = computed<DateGroup[]>(() => {
-  return groupLogEntriesByDate(props.items)
+  return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.items))
 })
 
 function formatDate(createdAt: string) {

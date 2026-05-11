@@ -53,3 +53,15 @@ export function formatRelativeDate(date: Date) {
 export function startOfLocalDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
+
+export function sortLogEntriesByCreatedAtDesc(items: LogEntry[]): LogEntry[] {
+  return items.toSorted(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+}
+
+export function sortLogEntriesByCreatedAtAsc(items: LogEntry[]): LogEntry[] {
+  return items.toSorted(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
+}
