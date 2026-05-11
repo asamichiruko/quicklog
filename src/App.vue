@@ -40,7 +40,7 @@ function handleRemove(id: string) {
   saveLogEntries(items.value)
 }
 
-function handleExport() {
+function handleExport(exportType: string) {
   const json = JSON.stringify(items.value, null, 2)
   const blob = new Blob([json], { type: "application/json" })
   const url = URL.createObjectURL(blob)
