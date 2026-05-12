@@ -65,4 +65,6 @@ npm run build
 
 ## ライセンス
 
-未定
+このプロジェクトは Bootstrap Icons (MIT License) のアイコンを使用しています。
+
+* [Bootstrap Icons](https://icons.getbootstrap.com/)
