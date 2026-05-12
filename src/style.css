@@ -77,8 +77,3 @@ button {
 .button-secondary:focus-visible {
   background: var(--color-control-hover);
 }
-
-.button-danger {
-  background: var(--color-control);
-  color: var(--color-text);
-}
