@@ -98,7 +98,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
 .header {
   position: relative;
   margin-bottom: var(--space-3);
-  padding-right: 40px;
+  padding-right: 44px;
 }
 
 .title {
