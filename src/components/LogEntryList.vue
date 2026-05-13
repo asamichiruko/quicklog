@@ -172,8 +172,7 @@ function formatDateHeading(date: Date) {
   background: transparent;
   color: var(--color-text-muted);
 }
-.delete-button:hover,
-.delete-button:focus-visible {
+.delete-button:hover {
   background: #eeeeee;
 }
 

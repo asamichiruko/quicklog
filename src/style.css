@@ -64,8 +64,7 @@ button {
   background: var(--color-primary);
   color: var(--color-primary-text);
 }
-.button-primary:hover,
-.button-primary:focus-visible {
+.button-primary:hover {
   background: var(--color-primary-hover);
 }
 
@@ -73,7 +72,6 @@ button {
   background: var(--color-control);
   color: var(--color-text);
 }
-.button-secondary:hover,
-.button-secondary:focus-visible {
+.button-secondary:hover {
   background: var(--color-control-hover);
 }

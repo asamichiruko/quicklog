@@ -37,8 +37,7 @@ const emit = defineEmits<{
   cursor: pointer;
   opacity: 0.8;
 }
-.settings-button:hover,
-.settings-button:focus-visible {
+.settings-button:hover {
   opacity: 1;
   background: #eeeeee;
 }
