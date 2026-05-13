@@ -37,9 +37,18 @@ const emit = defineEmits<{
   cursor: pointer;
   opacity: 0.8;
 }
-.settings-button:hover {
-  opacity: 1;
-  background: #eeeeee;
+
+@media (hover: hover) {
+  .settings-button:hover {
+    opacity: 1;
+    background: #eeeeee;
+  }
+}
+@media (hover: none) {
+  .settings-button:active {
+    opacity: 1;
+    background: #eeeeee;
+  }
 }
 
 .settings-button svg {

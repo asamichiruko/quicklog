@@ -172,8 +172,15 @@ function formatDateHeading(date: Date) {
   background: transparent;
   color: var(--color-text-muted);
 }
-.delete-button:hover {
-  background: #eeeeee;
+@media (hover: hover) {
+  .delete-button:hover {
+    background: #eeeeee;
+  }
+}
+@media (hover: none) {
+  .delete-button:active {
+    background: #eeeeee;
+  }
 }
 
 .delete-button svg {
