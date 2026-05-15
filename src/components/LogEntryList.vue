@@ -105,7 +105,7 @@ function formatDateHeading(date: Date) {
 
 .date-groups {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-4);
 }
 
 .date-group {
