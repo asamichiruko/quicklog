@@ -25,22 +25,16 @@ const absoluteDateFormatter = new Intl.DateTimeFormat("ja-JP", {
   weekday: "short",
 })
 
-const absoluteDateTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  weekday: "short",
-  hour: "numeric",
-  minute: "numeric",
-  second: "numeric",
-})
-
 const groupedItems = computed<DateGroup[]>(() => {
   return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.items))
 })
 
-function formatDate(createdAt: string) {
-  return absoluteDateTimeFormatter.format(new Date(createdAt))
+function formatDateTime(createdAt: string) {
+  const date = new Date(createdAt)
+  const hour = String(date.getHours()).padStart(2, "0")
+  const minute = String(date.getMinutes()).padStart(2, "0")
+  const second = String(date.getSeconds()).padStart(2, "0")
+  return `${hour}:${minute}:${second}`
 }
 
 function formatDateHeading(date: Date) {
@@ -67,7 +61,7 @@ function formatDateHeading(date: Date) {
         <ul class="entries">
           <li v-for="item in group.items" :key="item.id" class="entry">
             <div class="entry-header">
-              <span class="date">{{ formatDate(item.createdAt) }}</span>
+              <span class="date">{{ formatDateTime(item.createdAt) }}</span>
               <button
                 class="delete-button"
                 type="button"
