@@ -52,10 +52,10 @@ defineExpose({ open })
               <input
                 class="setting-checkbox"
                 type="checkbox"
-                name="showTimeDistributionStrip"
-                v-model="nextSettings.showTimeDistributionStrip"
+                name="showDailySummary"
+                v-model="nextSettings.showDailySummary"
               />
-              <span class="setting-label">記録時刻の分布グラフを表示</span>
+              <span class="setting-label">日別サマリーを表示</span>
             </label>
           </li>
         </ul>

@@ -1,7 +1,7 @@
 import type { AppSettings } from "@/types"
 
 export const DEFAULT_SETTINGS = {
-  showTimeDistributionStrip: false,
+  showDailySummary: false,
 } satisfies AppSettings
 
 export function normalizeSettings(value: unknown): AppSettings {
@@ -12,9 +12,9 @@ export function normalizeSettings(value: unknown): AppSettings {
   const raw = value as Partial<Record<keyof AppSettings, unknown>>
 
   return {
-    showTimeDistributionStrip:
-      typeof raw.showTimeDistributionStrip === "boolean"
-        ? raw.showTimeDistributionStrip
-        : DEFAULT_SETTINGS.showTimeDistributionStrip,
+    showDailySummary:
+      typeof raw.showDailySummary === "boolean"
+        ? raw.showDailySummary
+        : DEFAULT_SETTINGS.showDailySummary,
   }
 }

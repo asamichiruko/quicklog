@@ -11,7 +11,7 @@ import { computed } from "vue"
 
 const props = defineProps<{
   items: LogEntry[]
-  showTimeDistributionStrip: boolean
+  showDailySummary: boolean
 }>()
 
 const emit = defineEmits<{
@@ -57,11 +57,11 @@ function formatDateHeading(date: Date) {
       <section v-for="group in groupedItems" :key="group.key" class="date-group">
         <h2 class="date-heading">
           <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
-          <span class="date-heading-count" v-if="props.showTimeDistributionStrip">
+          <span class="date-heading-count" v-if="props.showDailySummary">
             {{ group.items.length }} 件
           </span>
         </h2>
-        <div class="time-distribution-strip" v-if="props.showTimeDistributionStrip">
+        <div class="time-distribution-strip" v-if="props.showDailySummary">
           <TimeDistributionStrip :items="group.items" />
         </div>
         <ul class="entries">

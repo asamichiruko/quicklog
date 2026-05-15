@@ -73,7 +73,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
       </div>
       <LogEntryList
         :items="items"
-        :showTimeDistributionStrip="settings.showTimeDistributionStrip"
+        :showDailySummary="settings.showDailySummary"
         @remove="handleRemove"
       />
     </div>
