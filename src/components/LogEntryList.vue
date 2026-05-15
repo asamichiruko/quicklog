@@ -56,7 +56,10 @@ function formatDateHeading(date: Date) {
     <div class="date-groups">
       <section v-for="group in groupedItems" :key="group.key" class="date-group">
         <h2 class="date-heading">
-          {{ formatDateHeading(group.date) }} / {{ group.items.length }} 件
+          <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
+          <span class="date-heading-count" v-if="props.showTimeDistributionStrip">
+            {{ group.items.length }} 件
+          </span>
         </h2>
         <div class="time-distribution-strip" v-if="props.showTimeDistributionStrip">
           <TimeDistributionStrip :items="group.items" />
@@ -116,6 +119,10 @@ function formatDateHeading(date: Date) {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   justify-self: center;
+}
+
+.date-heading-count::before {
+  content: " / ";
 }
 
 .entries {
