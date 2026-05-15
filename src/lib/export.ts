@@ -14,17 +14,18 @@ const dateFormatter = new Intl.DateTimeFormat("ja-JP", {
   weekday: "short",
 })
 
-const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
-  hour: "numeric",
-  minute: "numeric",
-  second: "numeric",
-})
-
 const groupsHeading = "##"
 const logEntriesHeading = "###"
 
+function formatTime(date: Date) {
+  const hour = String(date.getHours()).padStart(2, "0")
+  const minute = String(date.getMinutes()).padStart(2, "0")
+  const second = String(date.getSeconds()).padStart(2, "0")
+  return `${hour}:${minute}:${second}`
+}
+
 function formatLogEntryAsMarkdown(item: LogEntry): string {
-  return `${logEntriesHeading} ${timeFormatter.format(new Date(item.createdAt))}\n\n${item.text}`
+  return `${logEntriesHeading} ${formatTime(new Date(item.createdAt))}\n\n${item.text}`
 }
 
 function formatDateGroupAsMarkdown(group: DateGroup): string {
