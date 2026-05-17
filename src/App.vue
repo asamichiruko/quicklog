@@ -103,7 +103,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
 
 .title {
   font-size: 2em;
-  font-weight: var(--font-weight-bold);
+  font-weight: 650;
   margin: 0;
 }
 
