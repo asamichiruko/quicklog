@@ -67,7 +67,7 @@ function getPositionPercent(createdAt: string): number {
   --time-scale-font-size: 11px;
   --edge-inset: calc(var(--time-mark-width) / 2);
 
-  padding: var(--time-distribution-strip-padding) calc(var(--space-2) + var(--edge-inset));
+  padding: var(--time-distribution-strip-padding) calc(var(--space-3) + var(--edge-inset));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
