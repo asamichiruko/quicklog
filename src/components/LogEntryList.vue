@@ -109,8 +109,8 @@ function formatDateHeading(date: Date) {
 
 .date-heading {
   margin: 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-muted);
   justify-self: center;
 }
@@ -146,7 +146,7 @@ function formatDateHeading(date: Date) {
 
 .date {
   margin: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-small);
   line-height: 1.5;
   color: var(--color-text-muted);
   min-width: 0;
@@ -159,8 +159,8 @@ function formatDateHeading(date: Date) {
 }
 
 .delete-button {
-  --icon-size: 18px;
-  --hit-area-extra: calc((var(--control-min-size) - var(--icon-size)) / 2);
+  --delete-icon-size: 18px;
+  --hit-area-extra: calc((var(--control-min-size) - var(--delete-icon-size)) / 2);
 
   display: inline-grid;
   place-items: center;
@@ -175,17 +175,17 @@ function formatDateHeading(date: Date) {
 }
 @media (hover: hover) {
   .delete-button:hover {
-    background: #eeeeee;
+    background: var(--color-ghost-hover);
   }
 }
 @media (hover: none) {
   .delete-button:active {
-    background: #eeeeee;
+    background: var(--color-ghost-hover);
   }
 }
 
 .delete-button svg {
-  inline-size: var(--icon-size);
-  block-size: var(--icon-size);
+  inline-size: var(--delete-icon-size);
+  block-size: var(--delete-icon-size);
 }
 </style>

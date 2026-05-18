@@ -41,13 +41,13 @@ const emit = defineEmits<{
 @media (hover: hover) {
   .settings-button:hover {
     opacity: 1;
-    background: #eeeeee;
+    background: var(--color-ghost-hover);
   }
 }
 @media (hover: none) {
   .settings-button:active {
     opacity: 1;
-    background: #eeeeee;
+    background: var(--color-ghost-hover);
   }
 }
 

@@ -44,7 +44,7 @@ function onKeydownEnter(e: KeyboardEvent) {
 }
 
 .label {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
   margin-bottom: var(--space-1);
 }
 

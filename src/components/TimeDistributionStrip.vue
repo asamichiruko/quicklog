@@ -59,10 +59,15 @@ function getPositionPercent(createdAt: string): number {
 
 <style lang="css" scoped>
 .time-distribution-strip {
-  --mark-width: 2px;
-  --edge-inset: calc(var(--mark-width) / 2);
+  --time-distribution-strip-padding: 4px;
+  --time-mark-width: 2px;
+  --time-mark-height: 14px;
+  --time-mark-padding: 2px;
+  --time-scale-height: 16px;
+  --time-scale-font-size: 11px;
+  --edge-inset: calc(var(--time-mark-width) / 2);
 
-  padding: 4px calc(16px + var(--edge-inset));
+  padding: var(--time-distribution-strip-padding) calc(var(--space-2) + var(--edge-inset));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
@@ -70,15 +75,15 @@ function getPositionPercent(createdAt: string): number {
 
 .time-track-scale {
   position: relative;
-  height: 18px;
+  height: calc(var(--time-mark-height) + var(--time-mark-padding) * 2);
   overflow: visible;
 }
 
 .time-mark {
   position: absolute;
-  top: 2px;
-  bottom: 2px;
-  width: var(--mark-width);
+  top: var(--time-mark-padding);
+  bottom: var(--time-mark-padding);
+  width: var(--time-mark-width);
   transform: translateX(-50%);
   border-radius: var(--radius-pill);
   background: var(--color-primary);
@@ -87,9 +92,8 @@ function getPositionPercent(createdAt: string): number {
 
 .time-label-scale {
   position: relative;
-  height: 14px;
-  padding: 2px 0 0;
-  font-size: 11px;
+  height: var(--time-scale-height);
+  font-size: var(--time-scale-font-size);
   color: var(--color-text-muted);
 }
 

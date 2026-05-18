@@ -9,11 +9,13 @@
 
   --color-primary: #0d8df2;
   --color-primary-hover: #0a72c4;
-  --color-primary-text: #ffffff;
+  --color-on-primary: #ffffff;
 
   --color-control: #dddddd;
   --color-control-hover: #d0d0d0;
-  --color-control-text: #222222;
+  --color-on-control: #222222;
+
+  --color-ghost-hover: #e8e8e8;
 
   --space-1: 8px;
   --space-2: 16px;
@@ -24,9 +26,10 @@
   --radius-pill: 999px;
 
   --control-min-size: 44px;
-  --font-size-sm: 14px;
-  --font-size-md: 16px;
-  --font-weight-medium: 400;
+  --font-size-small: 14px;
+  --font-size-medium: 16px;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
   font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -62,7 +65,7 @@ button {
 
 .button-primary {
   background: var(--color-primary);
-  color: var(--color-primary-text);
+  color: var(--color-on-primary);
 }
 @media (hover: hover) {
   .button-primary:hover {
@@ -77,7 +80,7 @@ button {
 
 .button-secondary {
   background: var(--color-control);
-  color: var(--color-text);
+  color: var(--color-on-control);
 }
 
 @media (hover: hover) {

@@ -146,12 +146,12 @@ defineExpose({ open })
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 48px;
+  min-height: var(--control-min-size);
   cursor: pointer;
 }
 
 .setting-label {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-medium);
 }
 
 .setting-checkbox {
@@ -213,7 +213,7 @@ defineExpose({ open })
 }
 
 .export-type-label {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-medium);
 }
 
 .export-button {
