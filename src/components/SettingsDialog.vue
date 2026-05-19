@@ -62,7 +62,7 @@ defineExpose({ open })
       </section>
       <section class="section">
         <h3 class="section-heading">記録のエクスポート</h3>
-        <div class="export-panel">
+        <div class="settings-panel">
           <fieldset class="export-type-selector">
             <legend class="export-type-selector-label">ファイル形式</legend>
             <label class="export-type-option">
@@ -89,6 +89,20 @@ defineExpose({ open })
           <button class="button-secondary export-button" type="button" @click="exportData">
             ファイルをダウンロード
           </button>
+        </div>
+      </section>
+      <section class="section">
+        <h3 class="section-heading">記録のインポート</h3>
+        <div class="settings-panel">
+          <p class="import-description">
+            事前にエクスポートした JSON
+            ファイルを読み込みます。既存のメモは残り、重複するものは取り込まれません。
+          </p>
+          <label class="import-file-label">
+            <span class="import-file-label-text">インポートする JSON ファイルを選択</span>
+            <input type="file" accept="application/json" name="import-file" class="import-file" />
+          </label>
+          <button class="button-secondary import-button" type="button">ファイルをインポート</button>
         </div>
       </section>
       <menu class="confirm-actions">
@@ -160,8 +174,9 @@ defineExpose({ open })
   accent-color: var(--color-primary);
 }
 
-.export-panel {
+.settings-panel {
   display: grid;
+  min-width: 0;
   gap: var(--space-2);
   padding: var(--space-2);
   border: 1px solid var(--color-border);
@@ -217,6 +232,62 @@ defineExpose({ open })
 }
 
 .export-button {
+  width: fit-content;
+}
+
+.import-description {
+  margin: 0;
+  font-size: var(--font-size-small);
+}
+
+.import-file-label {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.import-file-label-text {
+  font-weight: var(--font-weight-bold);
+}
+
+.import-file {
+  align-content: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--control-min-size);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-surface);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.import-file::file-selector-button {
+  font: inherit;
+  font-size: var(--font-size-small);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  padding: 4px 12px;
+  margin-right: var(--space-2);
+  background: var(--color-control);
+  color: var(--color-on-control);
+}
+
+@media (hover: hover) {
+  .import-file::file-selector-button:hover {
+    background: var(--color-control-hover);
+  }
+}
+@media (hover: none) {
+  .import-file::file-selector-button:active {
+    background: var(--color-control-hover);
+  }
+}
+
+.import-button {
   width: fit-content;
 }
 
