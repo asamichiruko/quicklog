@@ -6,6 +6,7 @@ import { ref } from "vue"
 const dialog = ref<HTMLDialogElement | null>(null)
 const nextSettings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 const exportType = ref<ExportType>("json")
+const importFile = ref<File | null>(null)
 
 const props = defineProps<{
   settings: AppSettings
@@ -14,12 +15,14 @@ const props = defineProps<{
 const emit = defineEmits<{
   save: [nextSettings: AppSettings]
   export: [exportType: ExportType]
+  import: [file: File]
 }>()
 
 function open() {
   if (!dialog.value || dialog.value.open) return
 
   nextSettings.value = { ...props.settings }
+  importFile.value = null
 
   dialog.value?.showModal()
 }
@@ -35,6 +38,23 @@ function close() {
 
 function exportData() {
   emit("export", exportType.value)
+}
+
+function handleImportFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = input.files
+
+  if (files && files.length > 0) {
+    importFile.value = files[0]
+  } else {
+    importFile.value = null
+  }
+}
+
+function importData() {
+  if (importFile.value) {
+    emit("import", importFile.value)
+  }
 }
 
 defineExpose({ open })
@@ -100,9 +120,22 @@ defineExpose({ open })
           </p>
           <label class="import-file-label">
             <span class="import-file-label-text">インポートする JSON ファイルを選択</span>
-            <input type="file" accept="application/json" name="import-file" class="import-file" />
+            <input
+              type="file"
+              accept="application/json"
+              name="import-file"
+              class="import-file"
+              @change="handleImportFileChange"
+            />
           </label>
-          <button class="button-secondary import-button" type="button">ファイルをインポート</button>
+          <button
+            class="button-secondary import-button"
+            :disabled="!importFile"
+            type="button"
+            @click="importData"
+          >
+            ファイルをインポート
+          </button>
         </div>
       </section>
       <menu class="confirm-actions">
