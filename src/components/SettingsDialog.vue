@@ -171,6 +171,12 @@ defineExpose({ open })
   border-radius: var(--radius-surface);
   background: var(--color-surface);
   padding: var(--space-2);
+  overscroll-behavior: contain;
+}
+
+.dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .dialog-form {
