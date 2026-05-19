@@ -46,6 +46,22 @@ body {
   min-height: 100vh;
 }
 
+:root:has(dialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+dialog {
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
 * {
   box-sizing: border-box;
 }
