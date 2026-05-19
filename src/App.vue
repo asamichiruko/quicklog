@@ -4,7 +4,8 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { createLogEntriesExportFile } from "@/lib/export"
-import { getLocalDateKey, sortLogEntriesByCreatedAtDesc } from "@/lib/logEntries"
+import { mergeLogEntries, parseAsLogEntries } from "@/lib/import"
+import { getLocalDateKey } from "@/lib/logEntries"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
@@ -85,60 +86,6 @@ async function handleImport(file: File) {
       "インポートに失敗しました。quicklog からエクスポートしたファイルであることを確認してください。",
     )
   }
-}
-
-function parseAsLogEntries(data: unknown): LogEntry[] {
-  if (!Array.isArray(data)) {
-    throw new Error("データの最上位は配列である必要があります。")
-  }
-
-  return data.map((item, index) => {
-    if (!isLogEntry(item)) {
-      throw new Error(`${index + 1} 件目のデータをメモとして読み込めませんでした。`)
-    }
-    return item
-  })
-}
-
-function isValidDateString(value: string): boolean {
-  return !Number.isNaN(Date.parse(value))
-}
-
-function isLogEntry(item: object): item is LogEntry {
-  if (typeof item !== "object" || item === null) {
-    return false
-  }
-
-  if (!("id" in item) || typeof item.id !== "string") {
-    return false
-  }
-
-  if (!("text" in item) || typeof item.text !== "string") {
-    return false
-  }
-
-  if (
-    !("createdAt" in item) ||
-    typeof item.createdAt !== "string" ||
-    !isValidDateString(item.createdAt)
-  ) {
-    return false
-  }
-
-  return true
-}
-
-function mergeLogEntries(existing: LogEntry[], incoming: LogEntry[]) {
-  const seen = new Set(existing.map((item) => item.id))
-  const merged = [...existing]
-
-  for (const entry of incoming) {
-    if (seen.has(entry.id)) continue
-    merged.push(entry)
-    seen.add(entry.id)
-  }
-
-  return sortLogEntriesByCreatedAtDesc(merged)
 }
 
 function handleSaveSettings(nextSettings: AppSettings) {
