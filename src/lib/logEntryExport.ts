@@ -1,5 +1,6 @@
 import type { ExportType, LogEntry } from "@/types"
 import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } from "@/lib/logEntryCollection"
+import { formatLongJapaneseDate, formatTimeWithSeconds } from "@/lib/dateFormat"
 
 type ExportFile = {
   content: string
@@ -7,30 +8,16 @@ type ExportFile = {
   extension: string
 }
 
-const dateFormatter = new Intl.DateTimeFormat("ja-JP", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  weekday: "short",
-})
-
 const groupsHeading = "##"
 const logEntriesHeading = "###"
 
-function formatTime(date: Date) {
-  const hour = String(date.getHours()).padStart(2, "0")
-  const minute = String(date.getMinutes()).padStart(2, "0")
-  const second = String(date.getSeconds()).padStart(2, "0")
-  return `${hour}:${minute}:${second}`
-}
-
 function formatLogEntryAsMarkdown(item: LogEntry): string {
-  return `${logEntriesHeading} ${formatTime(new Date(item.createdAt))}\n\n${item.text}`
+  return `${logEntriesHeading} ${formatTimeWithSeconds(new Date(item.createdAt))}\n\n${item.text}`
 }
 
 function formatDateGroupAsMarkdown(group: DateGroup): string {
   return [
-    `${groupsHeading} ${dateFormatter.format(group.date)}`,
+    `${groupsHeading} ${formatLongJapaneseDate(group.date)}`,
     ...group.items.map(formatLogEntryAsMarkdown),
   ].join("\n\n")
 }

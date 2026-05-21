@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import TimeDistributionStrip from "@/components/TimeDistributionStrip.vue"
-import { formatRelativeDate } from "@/lib/date"
+import { formatLongJapaneseDate, formatRelativeDate } from "@/lib/dateFormat"
 import {
   groupLogEntriesByDate,
   sortLogEntriesByCreatedAtDesc,
@@ -18,13 +18,6 @@ const emit = defineEmits<{
   remove: [id: string]
 }>()
 
-const absoluteDateFormatter = new Intl.DateTimeFormat("ja-JP", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  weekday: "short",
-})
-
 const groupedItems = computed<DateGroup[]>(() => {
   return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.items))
 })
@@ -38,7 +31,7 @@ function formatDateTime(createdAt: string) {
 }
 
 function formatDateHeading(date: Date) {
-  return `${formatRelativeDate(date)} - ${absoluteDateFormatter.format(date)}`
+  return `${formatRelativeDate(date)} - ${formatLongJapaneseDate(date)}`
 }
 </script>
 

@@ -6,19 +6,6 @@ export function getLocalDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-export function formatRelativeDate(date: Date) {
-  const today = startOfLocalDay(new Date())
-  const target = startOfLocalDay(date)
-  const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000)
-
-  if (diffDays === 0) return "今日"
-  if (diffDays === -1) return "昨日"
-  if (diffDays === 1) return "明日"
-  if (diffDays < 0) return `${Math.abs(diffDays)}日前`
-
-  return `${diffDays}日後`
-}
-
 export function startOfLocalDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
