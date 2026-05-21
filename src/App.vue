@@ -4,6 +4,8 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { createLogEntriesExportFile } from "@/lib/export"
+import { downloadTextFile } from "@/lib/fileDownload"
+import { readJsonFile } from "@/lib/fileImport"
 import { mergeLogEntries, parseAsLogEntries } from "@/lib/import"
 import { getLocalDateKey } from "@/lib/logEntries"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
@@ -44,15 +46,13 @@ function handleRemove(id: string) {
 
 function handleExport(exportType: ExportType) {
   const exportFile = createLogEntriesExportFile(items.value, exportType)
-  const blob = new Blob([exportFile.content], { type: exportFile.mimeType })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
   const dateKey = getLocalDateKey(new Date())
-  a.href = url
-  a.download = `quicklog-${dateKey}${exportFile.extension}`
-  a.click()
 
-  URL.revokeObjectURL(url)
+  downloadTextFile({
+    content: exportFile.content,
+    mimeType: exportFile.mimeType,
+    filename: `quicklog-${dateKey}${exportFile.extension}`,
+  })
 }
 
 async function handleImport(file: File) {
@@ -61,17 +61,8 @@ async function handleImport(file: File) {
     return
   }
 
-  var data: unknown
-
   try {
-    const text = await file.text()
-    data = JSON.parse(text)
-  } catch {
-    alert("ファイルの読み込みに失敗しました。ファイル内容が JSON であることを確認してください。")
-    return
-  }
-
-  try {
+    const data = await readJsonFile(file)
     const previousCount = items.value.length
     const incoming = parseAsLogEntries(data)
     const merged = mergeLogEntries(items.value, incoming)
