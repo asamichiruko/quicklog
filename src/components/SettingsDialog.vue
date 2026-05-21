@@ -81,7 +81,7 @@ defineExpose({ open })
               <input
                 class="setting-checkbox"
                 type="checkbox"
-                name="showDailySummary"
+                name="show-daily-summary"
                 v-model="nextSettings.showDailySummary"
               />
               <span class="setting-label">日別サマリーを表示</span>
