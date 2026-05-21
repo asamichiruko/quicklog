@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import TimeDistributionStrip from "@/components/TimeDistributionStrip.vue"
+import { formatRelativeDate } from "@/lib/date"
 import {
-  formatRelativeDate,
   groupLogEntriesByDate,
   sortLogEntriesByCreatedAtDesc,
   type DateGroup,
-} from "@/lib/logEntries"
+} from "@/lib/logEntryCollection"
 import type { LogEntry } from "@/types"
 import { computed } from "vue"
 

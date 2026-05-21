@@ -1,6 +1,4 @@
 import type { LogEntry } from "@/types"
-import { sortLogEntriesByCreatedAtDesc } from "@/lib/logEntries"
-
 
 export function parseAsLogEntries(data: unknown): LogEntry[] {
   if (!Array.isArray(data)) {
@@ -41,17 +39,4 @@ export function isLogEntry(item: object): item is LogEntry {
   }
 
   return true
-}
-
-export function mergeLogEntries(existing: LogEntry[], incoming: LogEntry[]) {
-  const seen = new Set(existing.map((item) => item.id))
-  const merged = [...existing]
-
-  for (const entry of incoming) {
-    if (seen.has(entry.id)) continue
-    merged.push(entry)
-    seen.add(entry.id)
-  }
-
-  return sortLogEntriesByCreatedAtDesc(merged)
 }

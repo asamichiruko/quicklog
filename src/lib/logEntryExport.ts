@@ -1,5 +1,5 @@
 import type { ExportType, LogEntry } from "@/types"
-import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } from "@/lib/logEntries"
+import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } from "@/lib/logEntryCollection"
 
 type ExportFile = {
   content: string

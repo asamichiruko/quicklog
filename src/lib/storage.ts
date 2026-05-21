@@ -1,5 +1,6 @@
 import type { LogEntry, AppSettings } from "@/types"
 import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings"
+import { parseAsLogEntries } from "@/lib/logEntrySchema"
 
 const LOG_ENTRIES_KEY = "quicklog.items"
 const SETTINGS_KEY = "quicklog.settings"
@@ -9,7 +10,7 @@ export function loadLogEntries(): LogEntry[] {
   if (!raw) return []
 
   try {
-    return JSON.parse(raw)
+    return parseAsLogEntries(JSON.parse(raw))
   } catch {
     return []
   }
