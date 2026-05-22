@@ -7,9 +7,9 @@ describe("downloadTextFile", () => {
     vi.unstubAllGlobals()
   })
 
-  it("作成したリンクに URL と filename を設定してクリックする", () => {
+  it("作成したリンクに URL と filename を設定してクリックする", async () => {
     const objectUrl = "blob:quicklog-download"
-    const createObjectURL = vi.fn(() => objectUrl)
+    const createObjectURL = vi.fn((_blob: Blob) => objectUrl)
     const revokeObjectURL = vi.fn()
 
     vi.stubGlobal("URL", {
@@ -28,12 +28,17 @@ describe("downloadTextFile", () => {
       filename: "quicklog.md",
     })
 
+    expect(createObjectURL).toHaveBeenCalledOnce()
+
+    const blob = createObjectURL.mock.calls[0][0]
+
+    expect(blob).toBeInstanceOf(Blob)
+    expect(await blob.text()).toBe("content")
+    expect(blob.type).toBe("text/markdown")
+
     expect(anchor.href).toBe(objectUrl)
     expect(anchor.download).toBe("quicklog.md")
     expect(click).toHaveBeenCalledOnce()
-    expect(createObjectURL).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "text/markdown" }),
-    )
     expect(revokeObjectURL).toHaveBeenCalledWith(objectUrl)
   })
 })

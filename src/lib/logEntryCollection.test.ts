@@ -33,8 +33,10 @@ describe("sortLogEntriesByCreatedAtDesc", () => {
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
+    const originalItems = [...items]
 
     expect(sortLogEntriesByCreatedAtDesc(items)).toEqual([items[1], items[0], items[2]])
+    expect(items).toEqual(originalItems)
   })
 })
 
@@ -44,8 +46,10 @@ describe("sortLogEntriesByCreatedAtAsc", () => {
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
+    const originalItems = [...items]
 
     expect(sortLogEntriesByCreatedAtAsc(items)).toEqual([items[2], items[0], items[1]])
+    expect(items).toEqual(originalItems)
   })
 })
 

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { formatTimeWithSeconds, formatLongJapaneseDate, formatRelativeDate } from "./dateFormat"
 
 describe("formatTimeWithSeconds", () => {
-  it("正規の Date オブジェクトから HH:MM:DD 形式の文字列を取得できる", () => {
+  it("正規の Date オブジェクトから HH:MM:SS 形式の文字列を取得できる", () => {
     const date = new Date(2026, 4, 22, 12, 34, 56, 789)
 
     expect(formatTimeWithSeconds(date)).toEqual("12:34:56")

@@ -125,7 +125,7 @@ describe("parseAsLogEntries", () => {
   it("配列でない object に対して例外を出す", () => {
     const data = { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z", }
 
-    expect(() => { parseAsLogEntries(data) }).toThrow()
+    expect(() => { parseAsLogEntries(data) }).toThrow("データの最上位は配列である必要があります。")
   })
 
   it("invalid な LogEntry を含む data に対して例外を出す", () => {
@@ -134,7 +134,7 @@ describe("parseAsLogEntries", () => {
       { name: "invalid data" },
     ]
 
-    expect(() => { parseAsLogEntries(data) }).toThrow()
+    expect(() => { parseAsLogEntries(data) }).toThrow("2 件目のデータをメモとして読み込めませんでした。")
   })
 
   it("空の配列をそのまま返す", () => {
