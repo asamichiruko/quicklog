@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { loadLogEntries, saveLogEntries } from "./storage"
+import { loadLogEntries, saveLogEntries, loadSettings, saveSettings } from "./storage"
 
-describe("storage", () => {
+describe("logEntries", () => {
   beforeEach(() => {
     localStorage.clear()
   })
@@ -14,5 +14,20 @@ describe("storage", () => {
 
     saveLogEntries(logs)
     expect(loadLogEntries()).toEqual(logs)
+  })
+})
+
+describe("settings", () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it("localStorage に AppSettings を保存できる", () => {
+    const settings = {
+      showDailySummary: true,
+    }
+
+    saveSettings(settings)
+    expect(loadSettings()).toEqual(settings)
   })
 })
