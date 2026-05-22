@@ -1,6 +1,10 @@
 import { startOfLocalDay } from "@/lib/date"
 
 export function formatTimeWithSeconds(date: Date) {
+  if (isNaN(date.getTime())) {
+    throw new Error()
+  }
+
   const hour = String(date.getHours()).padStart(2, "0")
   const minute = String(date.getMinutes()).padStart(2, "0")
   const second = String(date.getSeconds()).padStart(2, "0")
@@ -15,10 +19,18 @@ const longDateFormatter = new Intl.DateTimeFormat("ja-JP", {
 })
 
 export function formatLongJapaneseDate(date: Date) {
+  if (isNaN(date.getTime())) {
+    throw new Error()
+  }
+
   return longDateFormatter.format(date)
 }
 
 export function formatRelativeDate(date: Date) {
+    if (isNaN(date.getTime())) {
+    throw new Error()
+  }
+
   const today = startOfLocalDay(new Date())
   const target = startOfLocalDay(date)
   const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000)
