@@ -1,4 +1,1 @@
-import { afterEach } from "vitest"
-import { enableAutoUnmount } from "@vue/test-utils"
-
-enableAutoUnmount(afterEach)
+import "@testing-library/jest-dom/vitest"
