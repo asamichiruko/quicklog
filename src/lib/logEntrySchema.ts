@@ -17,7 +17,7 @@ function isValidDateString(value: string): boolean {
   return !Number.isNaN(Date.parse(value))
 }
 
-export function isLogEntry(item: object): item is LogEntry {
+export function isLogEntry(item: unknown): item is LogEntry {
   if (typeof item !== "object" || item === null) {
     return false
   }
