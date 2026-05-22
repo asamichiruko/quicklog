@@ -1,9 +1,13 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import LogEntryList from "./LogEntryList.vue"
 
 describe("LogEntryList", () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it("items が空なら空の表示が出る", () => {
     render(LogEntryList, {
       props: {
@@ -35,7 +39,7 @@ describe("LogEntryList", () => {
     const now = new Date(2026, 4, 22, 12, 0, 0, 0)
     vi.setSystemTime(now)
 
-    const { container } = render(LogEntryList, {
+    render(LogEntryList, {
       props: {
         items: [
           { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
@@ -46,15 +50,13 @@ describe("LogEntryList", () => {
       }
     })
 
-    const headings = container.querySelectorAll(".date-heading")
+    const headings = screen.getAllByRole("heading", { level: 2 })
 
     expect(headings).toHaveLength(2)
     expect(headings[0]).toHaveTextContent("今日 - 2026年5月22日(金)");
     expect(headings[0]).toHaveTextContent("2 件");
     expect(headings[1]).toHaveTextContent("昨日 - 2026年5月21日(木)");
     expect(headings[1]).toHaveTextContent("1 件");
-
-    vi.useRealTimers()
   })
 
   it("削除ボタンを押すと remove が emit される", async () => {
@@ -93,18 +95,16 @@ describe("LogEntryList", () => {
     expect(heading).toHaveTextContent("今日 - 2026年5月22日(金)");
     expect(heading).not.toHaveTextContent("1 件");
 
-    expect(container.querySelector(".time-distribution-strip")).not.toBeInTheDocument()
-
-    vi.useRealTimers()
+    expect(screen.queryByRole("img", { name: "記録時刻分布。1件の記録があります。" })).not.toBeInTheDocument()
   })
 
-  it("showDailySummary が false のとき TimeDistributionStrip と件数が表示される", () => {
+  it("showDailySummary が true のとき TimeDistributionStrip と件数が表示される", () => {
     vi.useFakeTimers()
 
     const now = new Date(2026, 4, 22, 12, 0, 0, 0)
     vi.setSystemTime(now)
 
-    const { container } = render(LogEntryList, {
+    render(LogEntryList, {
       props: {
         items: [
           { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
@@ -113,13 +113,11 @@ describe("LogEntryList", () => {
       }
     })
 
-    const heading = container.querySelector(".date-heading")
+    const heading = screen.getByRole("heading", { level: 2 })
 
     expect(heading).toHaveTextContent("今日 - 2026年5月22日(金)");
     expect(heading).toHaveTextContent("1 件");
 
-    expect(container.querySelector(".time-distribution-strip")).toBeInTheDocument()
-
-    vi.useRealTimers()
+    expect(screen.queryByRole("img", { name: "記録時刻分布。1件の記録があります。" })).toBeInTheDocument()
   })
 })
