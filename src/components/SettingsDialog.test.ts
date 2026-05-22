@@ -1,0 +1,127 @@
+import { describe, expect, it } from "vitest"
+import { render, screen } from "@testing-library/vue"
+import userEvent from "@testing-library/user-event"
+import SettingsDialog from "./SettingsDialog.vue"
+import { defineComponent, ref } from "vue"
+import type { ExportType } from "@/types"
+
+const TestHost = defineComponent({
+  components: { SettingsDialog },
+  setup() {
+    const dialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
+    const settings = ref({ showDailySummary: false })
+    const savedSettings = ref<unknown>(null)
+    const exportType = ref<ExportType | null>(null)
+    const importedFile = ref<File | null>(null)
+
+    function enableSummary() {
+      settings.value = { showDailySummary: true }
+    }
+
+    return {
+      dialog,
+      settings,
+      enableSummary,
+      savedSettings,
+      exportType,
+      importedFile,
+    }
+  },
+  template: `
+  <button type="button" @click="dialog?.open()">設定を開く</button>
+  <button type="button" @click="enableSummary">settings を変更</button>
+  <SettingsDialog
+    ref="dialog"
+    :settings="settings"
+    @save="savedSettings = $event"
+    @export="exportType = $event"
+    @import="importedFile = $event"
+  />
+
+  <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>
+  <output data-testid="export-type">{{ exportType ?? "" }}</output>
+  <output data-testid="import-file-name">{{ importedFile?.name ?? "" }}</output>
+  `
+})
+
+describe("SettingsDialog", () => {
+  it("open で dialog が表示される", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    expect(container.querySelector("dialog")).toHaveAttribute("open")
+  })
+
+  it("保存ボタンを押すと設定が保存されて dialog が閉じる", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
+    await user.click(screen.getByRole("button", { name: "設定を保存" }))
+
+    expect(screen.getByTestId("saved-settings")).toHaveTextContent(
+      JSON.stringify({ showDailySummary: true }),
+    )
+    expect(container.querySelector("dialog")).not.toHaveAttribute("open")
+  })
+
+  it("キャンセルを押すと設定が保存されずに dialog が閉じる", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+
+    expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
+    expect(container.querySelector("dialog")).not.toHaveAttribute("open")
+  })
+
+  it("ファイルをダウンロード ボタンを押すと export される", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("radio", { name: "Markdown" }))
+    await user.click(screen.getByRole("button", { name: "ファイルをダウンロード" }))
+
+    expect(screen.getByTestId("export-type")).toHaveTextContent("markdown")
+  })
+
+  it("ファイルを選択して ファイルをインポート ボタンを押すと import される", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const importButton = screen.getByRole("button", { name: "ファイルをインポート" })
+    expect(importButton).toBeDisabled()
+
+    const file = new File(
+      [JSON.stringify([{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }])],
+      "quicklog.json",
+      { type: "application/json" },
+    )
+    await user.upload(screen.getByLabelText("インポートする JSON ファイル"), file)
+
+    expect(importButton).toBeEnabled()
+    expect(screen.getByText("quicklog.json")).toBeInTheDocument()
+
+    await user.click(importButton)
+
+    expect(screen.getByTestId("import-file-name")).toHaveTextContent("quicklog.json")
+  })
+
+  it("props で与えた初期値が UI に反映される", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "settings を変更" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    expect(screen.getByRole("checkbox", { name: "日別サマリーを表示" })).toBeChecked()
+  })
+})
