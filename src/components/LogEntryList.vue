@@ -173,7 +173,6 @@ function formatDateHeading(date: Date) {
 }
 @media (hover: none) {
   .calendar-button:active {
-    opacity: 1;
     background: var(--color-ghost-hover);
   }
 }
