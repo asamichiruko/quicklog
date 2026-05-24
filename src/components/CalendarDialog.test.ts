@@ -52,7 +52,7 @@ describe("CalendarDialog", () => {
     const { container } = render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "カレンダーを開く" }))
-    await user.click(screen.getByRole("button", { name: /5月22日金曜日、2件の記録へ移動/ }))
+    await user.click(screen.getByRole("button", { name: /5月22日金曜日、記録あり、移動/ }))
 
     expect(screen.getByTestId("selected-date")).toHaveTextContent("2026-05-21T15:00:00.000Z")
     expect(container.querySelector("dialog")).not.toHaveAttribute("open")

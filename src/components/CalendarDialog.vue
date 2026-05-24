@@ -44,6 +44,8 @@ const calendarDays = computed(() => {
       isCurrentMonth: date.getMonth() === displayedMonth.value.getMonth(),
       isToday: dateKey === getLocalDateKey(new Date()),
       countLevel: getCountLevel(count),
+      hasRecords: count > 0,
+      isSelectable: count > 0 && date.getMonth() === displayedMonth.value.getMonth(),
     }
   })
 })
@@ -108,7 +110,7 @@ function getCountLevel(count: number) {
   return "max"
 }
 
-function formatDayLabel(date: Date, count: number) {
+function formatDayLabel(date: Date, hasRecords: boolean, isCurrentMonth: boolean) {
   const dateLabel = new Intl.DateTimeFormat("ja-JP", {
     month: "long",
     day: "numeric",
@@ -116,7 +118,11 @@ function formatDayLabel(date: Date, count: number) {
     timeZone: "Asia/Tokyo",
   }).format(date)
 
-  return count > 0 ? `${dateLabel}、${count}件の記録へ移動` : `${dateLabel}、記録なし`
+  if (!isCurrentMonth) {
+    return `${dateLabel}、表示月外`
+  }
+
+  return hasRecords ? `${dateLabel}、記録あり、移動` : `${dateLabel}、記録なし`
 }
 
 defineExpose({ open })
@@ -196,17 +202,21 @@ defineExpose({ open })
             `count-${day.countLevel}`,
             {
               'is-outside-month': !day.isCurrentMonth,
-              'is-today': day.isToday,
+              'is-today': day.isToday && day.isCurrentMonth,
+              'has-records': day.hasRecords,
             },
           ]"
-          :disabled="day.count === 0"
-          :aria-label="formatDayLabel(day.date, day.count)"
+          :disabled="!day.isSelectable"
+          :aria-label="formatDayLabel(day.date, day.hasRecords, day.isCurrentMonth)"
+          :data-count="day.count"
           @click="selectAndClose(day.date)"
         >
           <span class="day-number">{{ day.date.getDate() }}</span>
-          <span class="day-count" aria-hidden="true">
-            {{ day.count > 0 ? day.count : "" }}
-          </span>
+          <span
+            v-if="day.hasRecords && day.isCurrentMonth"
+            class="day-count"
+            aria-hidden="true"
+          ></span>
         </button>
       </div>
     </div>
@@ -302,20 +312,21 @@ defineExpose({ open })
 
 .day-button {
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: 1fr 8px;
   justify-items: center;
   align-items: center;
   min-width: 0;
-  min-height: 48px;
+  min-height: var(--control-min-size);
   padding: 4px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
-  background: var(--color-page);
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
-.day-button:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+.day-button.has-records:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
 }
 
 @media (hover: hover) {
@@ -335,16 +346,22 @@ defineExpose({ open })
 .day-button:disabled {
   cursor: not-allowed;
   color: var(--color-text-subtle);
-  opacity: 0.7;
+  background: var(--color-page);
 }
 
-.is-outside-month {
-  opacity: 0.45;
+.is-outside-month:disabled {
+  border-color: transparent;
+  background: transparent;
+}
+
+.is-outside-month.has-records:disabled {
+  border-color: transparent;
+  background: transparent;
 }
 
 .is-today {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
+  outline: 1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-border) 75%);
+  outline-offset: -3px;
 }
 
 .day-number {
@@ -352,23 +369,17 @@ defineExpose({ open })
 }
 
 .day-count {
-  display: grid;
-  place-items: center;
-  min-inline-size: 18px;
-  min-block-size: 18px;
-  padding: 0 4px;
+  inline-size: 6px;
+  block-size: 6px;
   border-radius: var(--radius-pill);
-  color: var(--color-on-primary);
-  font-size: 12px;
-  line-height: 1;
 }
 
 .count-low .day-count {
-  background: color-mix(in srgb, var(--color-primary) 60%, var(--color-surface));
+  background: var(--color-primary);
 }
 
 .count-medium .day-count {
-  background: color-mix(in srgb, var(--color-primary) 75%, var(--color-surface));
+  background: var(--color-primary);
 }
 
 .count-high .day-count,
