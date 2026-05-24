@@ -49,6 +49,27 @@ function formatDateHeading(date: Date) {
               {{ group.items.length }} 件
             </span>
           </h2>
+          <div class="date-header-actions">
+            <button
+              type="button"
+              class="calendar-button"
+              aria-label="日付を選択"
+              title="日付を選択"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-calendar"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"
+                />
+              </svg>
+            </button>
+          </div>
           <div class="time-distribution-strip" v-if="props.showDailySummary">
             <TimeDistributionStrip :items="group.items" />
           </div>
@@ -99,27 +120,66 @@ function formatDateHeading(date: Date) {
 
 .date-group {
   display: grid;
-  gap: var(--space-2);
 }
 
 .date-header {
+  display: grid;
+  grid-template-columns: var(--control-min-size) minmax(0, 1fr) var(--control-min-size);
+  gap: var(--space-1);
+  align-items: center;
   position: sticky;
   top: 0;
   z-index: 1;
   background: var(--color-page);
-  padding: var(--space-2);
+  padding: var(--space-2) 0;
 }
 
 .date-heading {
-  margin: 0 0 var(--space-1);
+  grid-column: 2;
+  min-width: 0;
+  margin: 0;
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-muted);
-  justify-self: center;
+  place-self: center;
 }
 
 .date-heading-count::before {
   content: " / ";
+}
+
+.date-header-actions {
+  grid-column: 3;
+  justify-self: end;
+}
+
+.calendar-button {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--control-min-size);
+  block-size: var(--control-min-size);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  padding: 0;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .calendar-button:hover {
+    background: var(--color-ghost-hover);
+  }
+}
+@media (hover: none) {
+  .calendar-button:active {
+    opacity: 1;
+    background: var(--color-ghost-hover);
+  }
+}
+
+.time-distribution-strip {
+  grid-column: 1 / -1;
 }
 
 .entries {
