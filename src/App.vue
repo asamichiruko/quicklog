@@ -5,7 +5,7 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { downloadTextFile, readJsonFile } from "@/lib/browserFile"
-import { getLocalDateKey } from "@/lib/date"
+import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { mergeLogEntries } from "@/lib/logEntryCollection"
 import { createLogEntriesExportFile } from "@/lib/logEntryExport"
 import { parseAsLogEntries } from "@/lib/logEntrySchema"
@@ -98,8 +98,8 @@ async function handleImport(file: File) {
 }
 
 function handleSelectDate(selectedDate: Date) {
-  alert(selectedDate)
-  // 次に作る：選択された日付に対応する DateGroup が存在すればそこへスクロール、なければ何もしない
+  const target = document.getElementById(getDateGroupId(selectedDate))
+  target?.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
 function handleSaveSettings(nextSettings: AppSettings) {
@@ -136,7 +136,12 @@ function handleSaveSettings(nextSettings: AppSettings) {
     @import="handleImport"
   />
 
-  <CalendarDialog ref="calendarDialog" :initialDate="currentDate" @select="handleSelectDate" />
+  <CalendarDialog
+    ref="calendarDialog"
+    :initialDate="currentDate"
+    :items="items"
+    @select="handleSelectDate"
+  />
 </template>
 
 <style lang="css" scoped>
