@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import TimeDistributionStrip from "@/components/TimeDistributionStrip.vue"
+import { getDateGroupId } from "@/lib/date"
 import { formatLongJapaneseDate, formatRelativeDate } from "@/lib/dateFormat"
 import {
   groupLogEntriesByDate,
@@ -16,16 +17,12 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   remove: [id: string]
-  openCalendar: [id: string]
+  openCalendar: [initialDate: Date]
 }>()
 
 const groupedItems = computed<DateGroup[]>(() => {
   return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.items))
 })
-
-function getDateGroupId(key: string) {
-  return `date-group-${key}`
-}
 
 function formatDateTime(createdAt: string) {
   const date = new Date(createdAt)
@@ -50,7 +47,7 @@ function formatDateHeading(date: Date) {
         v-for="group in groupedItems"
         :key="group.key"
         class="date-group"
-        :id="getDateGroupId(group.key)"
+        :id="getDateGroupId(group.date)"
       >
         <header class="date-header">
           <h2 class="date-heading">
@@ -65,7 +62,7 @@ function formatDateHeading(date: Date) {
               class="calendar-button"
               aria-label="日付を選択"
               title="日付を選択"
-              @click="emit('openCalendar', getDateGroupId(group.key))"
+              @click="emit('openCalendar', group.date)"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

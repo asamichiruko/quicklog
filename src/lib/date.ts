@@ -17,3 +17,7 @@ export function startOfLocalDay(date: Date) {
 
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
+
+export function getDateGroupId(date: Date) {
+  return `date-group-${getLocalDateKey(date)}`
+}

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CalendarDialog from "@/components/CalendarDialog.vue"
 import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
@@ -11,20 +12,31 @@ import { parseAsLogEntries } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
-import { onMounted, ref } from "vue"
+import { computed, nextTick, onMounted, ref } from "vue"
 
 const items = ref<LogEntry[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
-const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
 
-function openSettings() {
-  settingsDialog.value?.open()
-}
+const _currentDate = ref<Date | null>(null)
+const currentDate = computed<Date>(() => {
+  return _currentDate.value ?? new Date()
+})
+
+const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
+const calendarDialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
 
 onMounted(() => {
   items.value = loadLogEntries()
   settings.value = loadSettings()
 })
+
+function openSettings() {
+  settingsDialog.value?.open()
+}
+
+function openCalendar() {
+  calendarDialog.value?.open()
+}
 
 function handleSubmit(text: string) {
   const item: LogEntry = {
@@ -36,8 +48,10 @@ function handleSubmit(text: string) {
   saveLogEntries(items.value)
 }
 
-function handleOpenCalendar(id: string) {
-  alert(id)
+async function handleOpenCalendar(initialDate: Date) {
+  _currentDate.value = initialDate
+  await nextTick()
+  openCalendar()
 }
 
 function handleRemove(id: string) {
@@ -83,6 +97,11 @@ async function handleImport(file: File) {
   }
 }
 
+function handleSelectDate(selectedDate: Date) {
+  alert(selectedDate)
+  // 次に作る：選択された日付に対応する DateGroup が存在すればそこへスクロール、なければ何もしない
+}
+
 function handleSaveSettings(nextSettings: AppSettings) {
   settings.value = nextSettings
   saveSettings(nextSettings)
@@ -104,7 +123,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
         :items="items"
         :showDailySummary="settings.showDailySummary"
         @remove="handleRemove"
-        @openCalendar="handleOpenCalendar"
+        @open-calendar="handleOpenCalendar"
       />
     </div>
   </main>
@@ -116,6 +135,8 @@ function handleSaveSettings(nextSettings: AppSettings) {
     @export="handleExport"
     @import="handleImport"
   />
+
+  <CalendarDialog ref="calendarDialog" :initialDate="currentDate" @select="handleSelectDate" />
 </template>
 
 <style lang="css" scoped>
