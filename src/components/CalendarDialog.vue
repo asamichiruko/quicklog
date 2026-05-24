@@ -219,17 +219,18 @@ defineExpose({ open })
 
 <style lang="css" scoped>
 .dialog {
+  padding: 0;
   width: min(94vw, 480px);
   max-height: calc(100dvh - 32px);
   border: none;
   border-radius: var(--radius-surface);
   background: var(--color-surface);
-  padding: var(--space-2);
 }
 
 .container {
   display: grid;
   gap: var(--space-2);
+  padding: var(--space-2);
 }
 
 .dialog-header {
