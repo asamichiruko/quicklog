@@ -209,10 +209,6 @@ defineExpose({ open })
           </span>
         </button>
       </div>
-
-      <menu class="dialog-actions">
-        <button class="button-secondary" type="button" @click="close">キャンセル</button>
-      </menu>
     </div>
   </dialog>
 </template>
@@ -378,12 +374,5 @@ defineExpose({ open })
 .count-high .day-count,
 .count-max .day-count {
   background: var(--color-primary);
-}
-
-.dialog-actions {
-  display: flex;
-  justify-content: end;
-  margin: 0;
-  padding: 0;
 }
 </style>
