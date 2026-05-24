@@ -36,6 +36,10 @@ function handleSubmit(text: string) {
   saveLogEntries(items.value)
 }
 
+function handleOpenCalendar(id: string) {
+  alert(id)
+}
+
 function handleRemove(id: string) {
   const ok = confirm("メモを削除しますか？")
   if (!ok) return
@@ -100,6 +104,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
         :items="items"
         :showDailySummary="settings.showDailySummary"
         @remove="handleRemove"
+        @openCalendar="handleOpenCalendar"
       />
     </div>
   </main>

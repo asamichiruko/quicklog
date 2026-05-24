@@ -16,11 +16,16 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   remove: [id: string]
+  openCalendar: [id: string]
 }>()
 
 const groupedItems = computed<DateGroup[]>(() => {
   return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.items))
 })
+
+function getDateGroupId(key: string) {
+  return `date-group-${key}`
+}
 
 function formatDateTime(createdAt: string) {
   const date = new Date(createdAt)
@@ -41,7 +46,12 @@ function formatDateHeading(date: Date) {
   </template>
   <template v-else>
     <div class="date-groups">
-      <section v-for="group in groupedItems" :key="group.key" class="date-group">
+      <section
+        v-for="group in groupedItems"
+        :key="group.key"
+        class="date-group"
+        :id="getDateGroupId(group.key)"
+      >
         <header class="date-header">
           <h2 class="date-heading">
             <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
@@ -55,6 +65,7 @@ function formatDateHeading(date: Date) {
               class="calendar-button"
               aria-label="日付を選択"
               title="日付を選択"
+              @click="emit('openCalendar', getDateGroupId(group.key))"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
