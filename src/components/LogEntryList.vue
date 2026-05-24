@@ -42,15 +42,17 @@ function formatDateHeading(date: Date) {
   <template v-else>
     <div class="date-groups">
       <section v-for="group in groupedItems" :key="group.key" class="date-group">
-        <h2 class="date-heading">
-          <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
-          <span class="date-heading-count" v-if="props.showDailySummary">
-            {{ group.items.length }} 件
-          </span>
-        </h2>
-        <div class="time-distribution-strip" v-if="props.showDailySummary">
-          <TimeDistributionStrip :items="group.items" />
-        </div>
+        <header class="date-header">
+          <h2 class="date-heading">
+            <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
+            <span class="date-heading-count" v-if="props.showDailySummary">
+              {{ group.items.length }} 件
+            </span>
+          </h2>
+          <div class="time-distribution-strip" v-if="props.showDailySummary">
+            <TimeDistributionStrip :items="group.items" />
+          </div>
+        </header>
         <ul class="entries">
           <li v-for="item in group.items" :key="item.id" class="entry">
             <div class="entry-header">
@@ -100,10 +102,18 @@ function formatDateHeading(date: Date) {
   gap: var(--space-2);
 }
 
+.date-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-page);
+  padding: var(--space-2);
+}
+
 .date-heading {
-  margin: 0;
+  margin: 0 0 var(--space-1);
   font-size: var(--font-size-small);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-muted);
   justify-self: center;
 }
