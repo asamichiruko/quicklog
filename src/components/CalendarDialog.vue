@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { getLocalDateKey, startOfLocalDay } from "@/lib/date"
-import type { LogEntry } from "@/types"
+import { createCalendarDays } from "@/lib/calendar"
+import { addMonths, startOfLocalDay, startOfMonth } from "@/lib/date"
 import { computed, ref } from "vue"
 
 const dialog = ref<HTMLDialogElement | null>(null)
@@ -8,7 +8,7 @@ const displayedMonth = ref(startOfMonth(new Date()))
 
 const props = defineProps<{
   initialDate: Date
-  items: LogEntry[]
+  recordCounts: Map<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -17,38 +17,8 @@ const emit = defineEmits<{
 
 const weekdayLabels = ["日", "月", "火", "水", "木", "金", "土"]
 
-const recordCounts = computed(() => {
-  const counts = new Map<string, number>()
-
-  for (const item of props.items) {
-    const key = getLocalDateKey(new Date(item.createdAt))
-    counts.set(key, (counts.get(key) ?? 0) + 1)
-  }
-
-  return counts
-})
-
 const calendarDays = computed(() => {
-  const firstDay = startOfMonth(displayedMonth.value)
-  const startDate = addDays(firstDay, -firstDay.getDay())
-
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = addDays(startDate, index)
-    const dateKey = getLocalDateKey(date)
-    const count = recordCounts.value.get(dateKey) ?? 0
-
-    return {
-      date,
-      dateKey,
-      count,
-      isCurrentMonth: date.getMonth() === displayedMonth.value.getMonth(),
-      isToday: dateKey === getLocalDateKey(new Date()),
-      countLevel: getCountLevel(count),
-      hasRecords: count > 0,
-      isSelectable: count > 0,
-      isInitialDay: dateKey === getLocalDateKey(props.initialDate),
-    }
-  })
+  return createCalendarDays(displayedMonth.value, props.initialDate, props.recordCounts)
 })
 
 const displayedMonthLabel = computed(() => {
@@ -87,28 +57,6 @@ function showPreviousMonth() {
 
 function showNextMonth() {
   displayedMonth.value = addMonths(displayedMonth.value, 1)
-}
-
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1)
-}
-
-function addMonths(date: Date, amount: number) {
-  return new Date(date.getFullYear(), date.getMonth() + amount, 1)
-}
-
-function addDays(date: Date, amount: number) {
-  const nextDate = new Date(date)
-  nextDate.setDate(nextDate.getDate() + amount)
-  return startOfLocalDay(nextDate)
-}
-
-function getCountLevel(count: number) {
-  if (count === 0) return "none"
-  if (count <= 5) return "low"
-  if (count <= 10) return "medium"
-  if (count <= 20) return "high"
-  return "max"
 }
 
 function formatDayLabel(date: Date, hasRecords: boolean) {

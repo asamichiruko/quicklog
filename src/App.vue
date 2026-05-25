@@ -22,6 +22,17 @@ const currentDate = computed<Date>(() => {
   return _currentDate.value ?? new Date()
 })
 
+const recordCounts = computed(() => {
+  const counts = new Map<string, number>()
+
+  for (const item of items.value) {
+    const key = getLocalDateKey(new Date(item.createdAt))
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+
+  return counts
+})
+
 const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
 const calendarDialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
 
@@ -139,7 +150,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
   <CalendarDialog
     ref="calendarDialog"
     :initialDate="currentDate"
-    :items="items"
+    :recordCounts="recordCounts"
     @select="handleSelectDate"
   />
 </template>

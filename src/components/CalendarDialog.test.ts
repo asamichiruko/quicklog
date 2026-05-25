@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
-import { defineComponent, ref } from "vue"
+import { computed, defineComponent, ref } from "vue"
 import CalendarDialog from "./CalendarDialog.vue"
+import { getLocalDateKey } from "@/lib/date"
 import type { LogEntry } from "@/types"
 
 const TestHost = defineComponent({
@@ -16,12 +17,22 @@ const TestHost = defineComponent({
       { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000+09:00" },
       { id: "id3", text: "text3", createdAt: "2026-04-30T12:00:00.000+09:00" },
     ])
+    const recordCounts = computed(() => {
+      const counts = new Map<string, number>()
+
+      for (const item of items.value) {
+        const key = getLocalDateKey(new Date(item.createdAt))
+        counts.set(key, (counts.get(key) ?? 0) + 1)
+      }
+
+      return counts
+    })
 
     return {
       dialog,
       selectedDate,
       initialDate,
-      items,
+      recordCounts,
     }
   },
   template: `
@@ -29,7 +40,7 @@ const TestHost = defineComponent({
   <CalendarDialog
     ref="dialog"
     :initialDate="initialDate"
-    :items="items"
+    :recordCounts="recordCounts"
     @select="selectedDate = $event"
   />
   <output data-testid="selected-date">{{ selectedDate?.toISOString() ?? "" }}</output>
