@@ -37,6 +37,12 @@ function close() {
   dialog.value?.close()
 }
 
+function handleDialogClick(event: MouseEvent) {
+  if (event.target === dialog.value) {
+    close()
+  }
+}
+
 function exportData() {
   emit("export", exportType.value)
 }
@@ -70,9 +76,14 @@ defineExpose({ open })
 </script>
 
 <template>
-  <dialog ref="dialog" class="dialog">
+  <dialog
+    ref="dialog"
+    class="dialog"
+    @click="handleDialogClick"
+    aria-labelledby="settings-dialog-heading"
+  >
     <form method="dialog" class="dialog-form">
-      <h2 class="dialog-heading">設定</h2>
+      <h2 id="settings-dialog-heading" class="dialog-heading">設定</h2>
       <section class="section">
         <h3 class="section-heading">表示</h3>
         <ul class="setting-items">
@@ -170,12 +181,13 @@ defineExpose({ open })
   border: none;
   border-radius: var(--radius-surface);
   background: var(--color-surface);
-  padding: var(--space-2);
+  padding: 0;
 }
 
 .dialog-form {
   display: grid;
   gap: var(--space-4);
+  padding: var(--space-2);
 }
 
 .dialog-heading {
