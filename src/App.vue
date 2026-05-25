@@ -86,6 +86,13 @@ function moveToComposer() {
   logEntryForm.value?.focus({ preventScroll: true })
 }
 
+function handleComposeShortcutPointerDown(event: PointerEvent) {
+  if (event.pointerType !== "touch") return
+
+  event.preventDefault()
+  moveToComposer()
+}
+
 async function handleOpenCalendar(initialDate: Date) {
   _currentDate.value = initialDate
   await nextTick()
@@ -172,6 +179,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
     v-if="showComposeShortcut"
     class="button-primary compose-shortcut"
     type="button"
+    @pointerdown="handleComposeShortcutPointerDown"
     @click="moveToComposer"
   >
     <svg
