@@ -12,10 +12,13 @@ import { parseAsLogEntries } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
-import { computed, nextTick, onMounted, ref } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
 const items = ref<LogEntry[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
+const showComposeShortcut = ref(false)
+const composeShortcutShowScrollY = 320
+const composeShortcutHideScrollY = 120
 
 const _currentDate = ref<Date | null>(null)
 const currentDate = computed<Date>(() => {
@@ -35,10 +38,18 @@ const recordCounts = computed(() => {
 
 const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
 const calendarDialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
+const logEntryForm = ref<InstanceType<typeof LogEntryForm> | null>(null)
+const logEntryFormArea = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   items.value = loadLogEntries()
   settings.value = loadSettings()
+  updateComposeShortcutVisibility()
+  window.addEventListener("scroll", updateComposeShortcutVisibility, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener("scroll", updateComposeShortcutVisibility)
 })
 
 function openSettings() {
@@ -57,6 +68,22 @@ function handleSubmit(text: string) {
   }
   items.value.push(item)
   saveLogEntries(items.value)
+}
+
+function updateComposeShortcutVisibility() {
+  const scrollY = window.scrollY
+
+  if (showComposeShortcut.value) {
+    showComposeShortcut.value = scrollY > composeShortcutHideScrollY
+    return
+  }
+
+  showComposeShortcut.value = scrollY > composeShortcutShowScrollY
+}
+
+function moveToComposer() {
+  logEntryFormArea.value?.scrollIntoView({ behavior: "smooth", block: "start" })
+  logEntryForm.value?.focus({ preventScroll: true })
 }
 
 async function handleOpenCalendar(initialDate: Date) {
@@ -126,7 +153,9 @@ function handleSaveSettings(nextSettings: AppSettings) {
     </header>
 
     <div class="content">
-      <LogEntryForm @submit="handleSubmit" />
+      <div ref="logEntryFormArea" class="compose-area">
+        <LogEntryForm ref="logEntryForm" @submit="handleSubmit" />
+      </div>
       <div class="app-actions">
         <SettingsButton @click="openSettings" />
       </div>
@@ -138,6 +167,28 @@ function handleSaveSettings(nextSettings: AppSettings) {
       />
     </div>
   </main>
+
+  <button
+    v-if="showComposeShortcut"
+    class="button-primary compose-shortcut"
+    type="button"
+    @click="moveToComposer"
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      fill="currentColor"
+      class="bi bi-pencil"
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+    >
+      <path
+        d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"
+      />
+    </svg>
+    <span>メモを書く</span>
+  </button>
 
   <SettingsDialog
     ref="settingsDialog"
@@ -185,5 +236,20 @@ function handleSaveSettings(nextSettings: AppSettings) {
 .content {
   display: grid;
   gap: var(--space-4);
+}
+
+.compose-area {
+  scroll-margin-top: var(--space-2);
+}
+
+.compose-shortcut {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  transform: translateX(-50%);
 }
 </style>

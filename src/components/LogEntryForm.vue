@@ -2,6 +2,7 @@
 import { ref } from "vue"
 
 const text = ref("")
+const textarea = ref<HTMLTextAreaElement | null>(null)
 
 const emit = defineEmits<{
   submit: [text: string]
@@ -21,12 +22,19 @@ function onKeydownEnter(e: KeyboardEvent) {
     onSubmit()
   }
 }
+
+function focus(options?: FocusOptions) {
+  textarea.value?.focus(options)
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
   <form class="form" @submit.prevent="onSubmit">
     <label class="label" for="log-entry-form-content">メモ</label>
     <textarea
+      ref="textarea"
       id="log-entry-form-content"
       v-model="text"
       class="textarea"
