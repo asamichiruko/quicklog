@@ -45,7 +45,8 @@ const calendarDays = computed(() => {
       isToday: dateKey === getLocalDateKey(new Date()),
       countLevel: getCountLevel(count),
       hasRecords: count > 0,
-      isSelectable: count > 0 && date.getMonth() === displayedMonth.value.getMonth(),
+      isSelectable: count > 0,
+      isInitialDay: dateKey === getLocalDateKey(props.initialDate),
     }
   })
 })
@@ -110,17 +111,13 @@ function getCountLevel(count: number) {
   return "max"
 }
 
-function formatDayLabel(date: Date, hasRecords: boolean, isCurrentMonth: boolean) {
+function formatDayLabel(date: Date, hasRecords: boolean) {
   const dateLabel = new Intl.DateTimeFormat("ja-JP", {
     month: "long",
     day: "numeric",
     weekday: "long",
     timeZone: "Asia/Tokyo",
   }).format(date)
-
-  if (!isCurrentMonth) {
-    return `${dateLabel}、表示月外`
-  }
 
   return hasRecords ? `${dateLabel}、記録あり、移動` : `${dateLabel}、記録なし`
 }
@@ -204,19 +201,16 @@ defineExpose({ open })
               'is-outside-month': !day.isCurrentMonth,
               'is-today': day.isToday && day.isCurrentMonth,
               'has-records': day.hasRecords,
+              'is-initial-day': day.isInitialDay,
             },
           ]"
           :disabled="!day.isSelectable"
-          :aria-label="formatDayLabel(day.date, day.hasRecords, day.isCurrentMonth)"
+          :aria-label="formatDayLabel(day.date, day.hasRecords)"
           :data-count="day.count"
           @click="selectAndClose(day.date)"
         >
           <span class="day-number">{{ day.date.getDate() }}</span>
-          <span
-            v-if="day.hasRecords && day.isCurrentMonth"
-            class="day-count"
-            aria-hidden="true"
-          ></span>
+          <span v-if="day.hasRecords" class="day-count" aria-hidden="true"></span>
         </button>
       </div>
     </div>
@@ -235,7 +229,7 @@ defineExpose({ open })
 
 .container {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
   padding: var(--space-2);
 }
 
@@ -281,9 +275,9 @@ defineExpose({ open })
 }
 
 .month-navigation {
-  display: grid;
-  grid-template-columns: var(--control-min-size) minmax(0, 1fr) var(--control-min-size);
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
 }
 
@@ -302,12 +296,10 @@ defineExpose({ open })
 }
 
 .weekday {
-  display: grid;
-  place-items: center;
-  min-block-size: 28px;
+  place-self: center;
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-regular);
 }
 
 .day-button {
@@ -326,20 +318,20 @@ defineExpose({ open })
 
 .day-button.has-records:not(:disabled) {
   border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
 }
 
 @media (hover: hover) {
   .day-button:not(:disabled):hover {
     border-color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-primary) 17%, var(--color-surface));
   }
 }
 
 @media (hover: none) {
   .day-button:not(:disabled):active {
     border-color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+    background: color-mix(in srgb, var(--color-primary) 17%, var(--color-surface));
   }
 }
 
@@ -354,14 +346,16 @@ defineExpose({ open })
   background: transparent;
 }
 
-.is-outside-month.has-records:disabled {
-  border-color: transparent;
-  background: transparent;
+.is-outside-month.has-records {
+  opacity: 0.45;
 }
 
 .is-today {
-  outline: 1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-border) 75%);
-  outline-offset: -3px;
+  text-decoration: underline;
+}
+
+.is-initial-day {
+  border: 4px double var(--color-primary);
 }
 
 .day-number {
@@ -380,10 +374,12 @@ defineExpose({ open })
 
 .count-medium .day-count {
   background: var(--color-primary);
+  inline-size: 9px;
 }
 
 .count-high .day-count,
 .count-max .day-count {
+  inline-size: 12px;
   background: var(--color-primary);
 }
 </style>
