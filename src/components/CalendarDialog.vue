@@ -355,7 +355,7 @@ defineExpose({ open })
 }
 
 .is-initial-day {
-  border: 4px double var(--color-primary);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 .day-number {
@@ -377,9 +377,13 @@ defineExpose({ open })
   inline-size: 9px;
 }
 
-.count-high .day-count,
-.count-max .day-count {
+.count-high .day-count {
+  background: var(--color-primary);
   inline-size: 12px;
+}
+
+.count-max .day-count {
+  inline-size: 15px;
   background: var(--color-primary);
 }
 </style>
