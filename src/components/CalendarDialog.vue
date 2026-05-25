@@ -74,10 +74,15 @@ defineExpose({ open })
 </script>
 
 <template>
-  <dialog ref="dialog" class="dialog" @click="handleDialogClick">
+  <dialog
+    ref="dialog"
+    class="dialog"
+    @click="handleDialogClick"
+    aria-labelledby="calendar-dialog-heading"
+  >
     <div class="container">
       <header class="dialog-header">
-        <h2 class="dialog-heading">表示する日付を選択</h2>
+        <h2 id="calendar-dialog-heading" class="dialog-heading">表示する日付を選択</h2>
         <button
           class="close-button"
           type="button"

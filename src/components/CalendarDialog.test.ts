@@ -78,6 +78,15 @@ describe("CalendarDialog", () => {
     expect(screen.getByRole("button", { name: /5月1日金曜日、記録なし/ })).toBeDisabled()
   })
 
+  it("表示月外で記録がある日付は選択できる", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "カレンダーを開く" }))
+
+    expect(screen.getByRole("button", { name: /4月30日木曜日、記録あり、移動/ })).toBeEnabled()
+  })
+
   it("前月と翌月へ移動できる", async () => {
     const user = userEvent.setup()
     render(TestHost)
@@ -90,5 +99,28 @@ describe("CalendarDialog", () => {
     await user.click(screen.getByRole("button", { name: "翌月を表示" }))
 
     expect(screen.getByText("2026年5月")).toBeInTheDocument()
+  })
+
+  it("閉じるボタン操作では select が emit されない", async () => {
+    const user = userEvent.setup()
+    const { emitted, container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "カレンダーを開く" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
+
+    expect(emitted("select")).toBeUndefined()
+    expect(container.querySelector("dialog")).not.toHaveAttribute("open")
+  })
+
+  it("Esc キーによるキャンセル操作では select が emit されない", async () => {
+    const user = userEvent.setup()
+    const { emitted, container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "カレンダーを開く" }))
+    await user.click(screen.getByLabelText("表示する日付を選択"))
+    await user.keyboard("{Escape}")
+
+    expect(emitted("select")).toBeUndefined()
+    expect(container.querySelector("dialog")).not.toHaveAttribute("open")
   })
 })
