@@ -1,7 +1,9 @@
+function isValidDate(date: Date) {
+  return !isNaN(date.getTime())
+}
+
 export function getLocalDateKey(date: Date) {
-  if (isNaN(date.getTime())) {
-    throw new Error()
-  }
+  if (!isValidDate(date)) throw new Error()
 
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -11,26 +13,32 @@ export function getLocalDateKey(date: Date) {
 }
 
 export function startOfLocalDay(date: Date) {
-  if (isNaN(date.getTime())) {
-    throw new Error()
-  }
+  if (!isValidDate(date)) throw new Error()
 
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
 }
 
 export function getDateGroupId(date: Date) {
+  if (!isValidDate(date)) throw new Error()
+
   return `date-group-${getLocalDateKey(date)}`
 }
 
 export function startOfMonth(date: Date) {
+  if (!isValidDate(date)) throw new Error()
+
   return new Date(date.getFullYear(), date.getMonth(), 1)
 }
 
 export function addMonths(date: Date, amount: number) {
+  if (!isValidDate(date)) throw new Error()
+
   return new Date(date.getFullYear(), date.getMonth() + amount, 1)
 }
 
 export function addDays(date: Date, amount: number) {
+  if (!isValidDate(date)) throw new Error()
+
   const nextDate = new Date(date)
   nextDate.setDate(nextDate.getDate() + amount)
   return startOfLocalDay(nextDate)
