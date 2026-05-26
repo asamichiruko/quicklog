@@ -32,10 +32,10 @@ defineExpose({ focus })
 
 <template>
   <form class="form" @submit.prevent="onSubmit">
-    <label class="label" for="log-entry-form-content">メモ</label>
+    <label class="label" for="log-entry-form-text">メモ</label>
     <textarea
       ref="textarea"
-      id="log-entry-form-content"
+      id="log-entry-form-text"
       v-model="text"
       class="textarea"
       rows="3"
