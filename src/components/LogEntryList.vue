@@ -11,7 +11,7 @@ import type { LogEntry } from "@/types"
 import { computed } from "vue"
 
 const props = defineProps<{
-  items: LogEntry[]
+  logEntries: LogEntry[]
   showDailySummary: boolean
 }>()
 
@@ -21,7 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const groupedItems = computed<DateGroup[]>(() => {
-  return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.items))
+  return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.logEntries))
 })
 
 function formatDateTime(createdAt: string) {
@@ -38,7 +38,7 @@ function formatDateHeading(date: Date) {
 </script>
 
 <template>
-  <template v-if="items.length === 0">
+  <template v-if="logEntries.length === 0">
     <p class="empty">まだメモがありません</p>
   </template>
   <template v-else>
@@ -59,7 +59,7 @@ function formatDateHeading(date: Date) {
           <div class="date-header-actions">
             <button
               type="button"
-              class="calendar-button"
+              class="button-icon calendar-button"
               aria-label="日付を選択"
               title="日付を選択"
               @click="emit('openCalendar', group.date)"
@@ -71,6 +71,7 @@ function formatDateHeading(date: Date) {
                 fill="currentColor"
                 class="bi bi-calendar"
                 viewBox="0 0 16 16"
+                aria-hidden="true"
               >
                 <path
                   d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"
@@ -85,9 +86,11 @@ function formatDateHeading(date: Date) {
         <ul class="entries">
           <li v-for="item in group.items" :key="item.id" class="entry">
             <div class="entry-header">
-              <span class="date">{{ formatDateTime(item.createdAt) }}</span>
+              <time :datetime="item.createdAt" class="entry-time">{{
+                formatDateTime(item.createdAt)
+              }}</time>
               <button
-                class="delete-button"
+                class="button-icon delete-button"
                 type="button"
                 aria-label="削除"
                 title="削除"
@@ -100,6 +103,7 @@ function formatDateHeading(date: Date) {
                   fill="currentColor"
                   class="bi bi-trash3"
                   viewBox="0 0 16 16"
+                  aria-hidden="true"
                 >
                   <path
                     d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5"
@@ -107,7 +111,7 @@ function formatDateHeading(date: Date) {
                 </svg>
               </button>
             </div>
-            <p class="text">{{ item.text }}</p>
+            <p class="entry-text">{{ item.text }}</p>
           </li>
         </ul>
       </section>
@@ -161,30 +165,6 @@ function formatDateHeading(date: Date) {
   justify-self: end;
 }
 
-.calendar-button {
-  display: inline-grid;
-  place-items: center;
-  inline-size: var(--control-min-size);
-  block-size: var(--control-min-size);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-pill);
-  color: var(--color-text-muted);
-  padding: 0;
-  cursor: pointer;
-}
-
-@media (hover: hover) {
-  .calendar-button:hover {
-    background: var(--color-ghost-hover);
-  }
-}
-@media (hover: none) {
-  .calendar-button:active {
-    background: var(--color-ghost-hover);
-  }
-}
-
 .time-distribution-strip {
   grid-column: 1 / -1;
 }
@@ -214,7 +194,7 @@ function formatDateHeading(date: Date) {
   gap: var(--space-2);
 }
 
-.date {
+.entry-time {
   margin: 0;
   font-size: var(--font-size-small);
   line-height: 1.5;
@@ -222,7 +202,7 @@ function formatDateHeading(date: Date) {
   min-width: 0;
 }
 
-.text {
+.entry-text {
   margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -232,26 +212,8 @@ function formatDateHeading(date: Date) {
   --delete-icon-size: 18px;
   --hit-area-extra: calc((var(--control-min-size) - var(--delete-icon-size)) / 2);
 
-  display: inline-grid;
-  place-items: center;
-  inline-size: var(--control-min-size);
-  block-size: var(--control-min-size);
-  min-block-size: var(--control-min-size);
   margin-block: calc(var(--hit-area-extra) * -1);
   margin-inline: calc(var(--hit-area-extra) * -1);
-  padding: 0;
-  background: transparent;
-  color: var(--color-text-muted);
-}
-@media (hover: hover) {
-  .delete-button:hover {
-    background: var(--color-ghost-hover);
-  }
-}
-@media (hover: none) {
-  .delete-button:active {
-    background: var(--color-ghost-hover);
-  }
 }
 
 .delete-button svg {

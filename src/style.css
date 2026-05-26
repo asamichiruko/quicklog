@@ -113,9 +113,38 @@ button:disabled {
   }
 }
 
+.button-icon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--control-min-size);
+  block-size: var(--control-min-size);
+  min-block-size: var(--control-min-size);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  padding: 0;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .button-icon:not(:disabled):hover {
+    background: var(--color-ghost-hover);
+  }
+}
+@media (hover: none) {
+  .button-icon:not(:disabled):active {
+    background: var(--color-ghost-hover);
+  }
+}
+
 .button-primary:disabled,
 .button-secondary:disabled {
   border-color: var(--color-border);
   background: var(--color-control-disabled);
   color: var(--color-text-subtle);
+}
+
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

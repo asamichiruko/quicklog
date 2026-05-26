@@ -11,7 +11,7 @@ describe("LogEntryList", () => {
   it("items が空なら空の表示が出る", () => {
     render(LogEntryList, {
       props: {
-        items: [],
+        logEntries: [],
         showDailySummary: false,
       }
     })
@@ -22,7 +22,7 @@ describe("LogEntryList", () => {
   it("items の text と記録時刻が表示される", () => {
     render(LogEntryList, {
       props: {
-        items: [
+        logEntries: [
           { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
         ],
         showDailySummary: false,
@@ -41,7 +41,7 @@ describe("LogEntryList", () => {
 
     render(LogEntryList, {
       props: {
-        items: [
+        logEntries: [
           { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
           { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
           { id: "id3", text: "text3", createdAt: "2026-05-21T12:00:00.000Z" },
@@ -63,7 +63,7 @@ describe("LogEntryList", () => {
     const user = userEvent.setup()
     const { emitted } = render(LogEntryList, {
       props: {
-        items: [
+        logEntries: [
           { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
         ],
         showDailySummary: false,
@@ -83,7 +83,7 @@ describe("LogEntryList", () => {
 
     const { container } = render(LogEntryList, {
       props: {
-        items: [
+        logEntries: [
           { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
         ],
         showDailySummary: false,
@@ -106,7 +106,7 @@ describe("LogEntryList", () => {
 
     render(LogEntryList, {
       props: {
-        items: [
+        logEntries: [
           { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
         ],
         showDailySummary: true,

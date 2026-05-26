@@ -38,11 +38,13 @@ defineExpose({ focus })
     <textarea
       ref="textarea"
       id="log-entry-form-text"
+      name="text"
       v-model="text"
       class="textarea"
       rows="3"
       placeholder="メモを書く"
       @keydown.enter="onKeydownEnter"
+      required
     ></textarea>
     <button class="button-primary submit-button" type="submit">記録</button>
   </form>

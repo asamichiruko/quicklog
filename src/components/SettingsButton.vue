@@ -5,7 +5,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <button class="settings-button" type="button" aria-label="設定" @click="emit('click')">
+  <button
+    class="button-icon settings-button"
+    type="button"
+    aria-label="設定"
+    @click="emit('click')"
+  >
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="16"
@@ -25,32 +30,6 @@ const emit = defineEmits<{
 </template>
 
 <style lang="css" scoped>
-.settings-button {
-  display: inline-grid;
-  place-items: center;
-  inline-size: var(--control-min-size);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-pill);
-  color: var(--color-text);
-  padding: 0;
-  cursor: pointer;
-  opacity: 0.8;
-}
-
-@media (hover: hover) {
-  .settings-button:hover {
-    opacity: 1;
-    background: var(--color-ghost-hover);
-  }
-}
-@media (hover: none) {
-  .settings-button:active {
-    opacity: 1;
-    background: var(--color-ghost-hover);
-  }
-}
-
 .settings-button svg {
   inline-size: 24px;
   block-size: 24px;
