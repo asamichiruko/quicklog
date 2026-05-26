@@ -21,7 +21,6 @@ export function createCalendarDays(
       isToday: dateKey === getLocalDateKey(new Date()),
       countLevel: getCountLevel(count),
       hasRecords: count > 0,
-      isSelectable: count > 0,
       isInitialDay: dateKey === getLocalDateKey(initialDate),
     }
   })

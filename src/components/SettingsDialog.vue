@@ -82,7 +82,7 @@ defineExpose({ open })
     @click="handleDialogClick"
     aria-labelledby="settings-dialog-heading"
   >
-    <form method="dialog" class="dialog-form">
+    <form class="dialog-form" @submit.prevent="saveAndClose">
       <h2 id="settings-dialog-heading" class="dialog-heading">設定</h2>
       <section class="section">
         <h3 class="section-heading">表示</h3>
@@ -167,10 +167,10 @@ defineExpose({ open })
           </button>
         </div>
       </section>
-      <menu class="confirm-actions">
-        <button class="button-primary" type="button" @click="saveAndClose">設定を保存</button>
+      <div class="confirm-actions">
+        <button class="button-primary" type="submit" @click="saveAndClose">設定を保存</button>
         <button class="button-secondary" type="button" @click="close">キャンセル</button>
-      </menu>
+      </div>
     </form>
   </dialog>
 </template>
@@ -379,7 +379,5 @@ defineExpose({ open })
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin: 0;
-  padding: 0;
 }
 </style>

@@ -16,8 +16,8 @@ export function loadLogEntries(): LogEntry[] {
   }
 }
 
-export function saveLogEntries(items: LogEntry[]) {
-  localStorage.setItem(LOG_ENTRIES_KEY, JSON.stringify(items))
+export function saveLogEntries(logEntries: LogEntry[]) {
+  localStorage.setItem(LOG_ENTRIES_KEY, JSON.stringify(logEntries))
 }
 
 export function loadSettings(): AppSettings {

@@ -96,6 +96,7 @@ defineExpose({ open })
             height="16"
             fill="currentColor"
             viewBox="0 0 16 16"
+            aria-hidden="true"
           >
             <path
               d="M2.146 2.146a.5.5 0 0 1 .708 0L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854a.5.5 0 0 1 0-.708"
@@ -117,6 +118,7 @@ defineExpose({ open })
             height="16"
             fill="currentColor"
             viewBox="0 0 16 16"
+            aria-hidden="true"
           >
             <path
               d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"
@@ -131,6 +133,7 @@ defineExpose({ open })
             height="16"
             fill="currentColor"
             viewBox="0 0 16 16"
+            aria-hidden="true"
           >
             <path
               d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"
@@ -157,7 +160,7 @@ defineExpose({ open })
               'is-initial-day': day.isInitialDay,
             },
           ]"
-          :disabled="!day.isSelectable"
+          :disabled="!day.hasRecords"
           :aria-label="formatDayLabel(day.date, day.hasRecords)"
           :data-count="day.count"
           @click="selectAndClose(day.date)"

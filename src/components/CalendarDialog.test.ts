@@ -12,7 +12,7 @@ const TestHost = defineComponent({
     const dialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
     const selectedDate = ref<Date | null>(null)
     const initialDate = ref(new Date(2026, 4, 22))
-    const items = ref<LogEntry[]>([
+    const logEntries = ref<LogEntry[]>([
       { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000+09:00" },
       { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000+09:00" },
       { id: "id3", text: "text3", createdAt: "2026-04-30T12:00:00.000+09:00" },
@@ -20,8 +20,8 @@ const TestHost = defineComponent({
     const recordCounts = computed(() => {
       const counts = new Map<string, number>()
 
-      for (const item of items.value) {
-        const key = getLocalDateKey(new Date(item.createdAt))
+      for (const logEntry of logEntries.value) {
+        const key = getLocalDateKey(new Date(logEntry.createdAt))
         counts.set(key, (counts.get(key) ?? 0) + 1)
       }
 

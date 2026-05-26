@@ -3,13 +3,13 @@ import type { LogEntry } from "@/types"
 import { computed } from "vue"
 
 const props = defineProps<{
-  items: LogEntry[]
+  logEntries: LogEntry[]
 }>()
 
 const marks = computed(() =>
-  props.items.map((item) => ({
-    id: item.id,
-    positionPercent: getPositionPercent(item.createdAt),
+  props.logEntries.map((logEntry) => ({
+    id: logEntry.id,
+    positionPercent: getPositionPercent(logEntry.createdAt),
   })),
 )
 
@@ -33,7 +33,7 @@ function getPositionPercent(createdAt: string): number {
   <div
     class="time-distribution-strip"
     role="img"
-    :aria-label="`記録時刻分布。${items.length}件の記録があります。`"
+    :aria-label="`記録時刻分布。${logEntries.length}件の記録があります。`"
   >
     <div class="time-track-scale" aria-hidden="true">
       <span

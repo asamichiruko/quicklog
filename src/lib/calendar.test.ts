@@ -55,7 +55,6 @@ describe("createCalendarDays", () => {
       count: 1,
       countLevel: "low",
       hasRecords: true,
-      isSelectable: true,
     })
     expect(findDay(days, "2026-05-02")).toMatchObject({ countLevel: "low" })
     expect(findDay(days, "2026-05-03")).toMatchObject({ countLevel: "medium" })
@@ -67,7 +66,6 @@ describe("createCalendarDays", () => {
       count: 0,
       countLevel: "none",
       hasRecords: false,
-      isSelectable: false,
     })
   })
 

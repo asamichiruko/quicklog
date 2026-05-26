@@ -3,13 +3,13 @@ import { formatLogEntriesAsMarkdown, formatLogEntriesAsJson, createLogEntriesExp
 
 describe("formatLogEntriesAsMarkdown", () => {
   it("LogEntry[] を Markdown 形式に format できる", () => {
-    const items = [
+    const logEntries = [
       { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-23T00:00:00.000Z" },
     ]
 
-    const actual = formatLogEntriesAsMarkdown(items)
+    const actual = formatLogEntriesAsMarkdown(logEntries)
     expect(actual).toBe(`## 2026年5月22日(金)
 
 ### 09:00:00
@@ -29,13 +29,13 @@ text3b`)
   })
 
   it("logEntry[] は日付昇順にソートされる", () => {
-    const items = [
+    const logEntries = [
       { id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
 
-    const actual = formatLogEntriesAsMarkdown(items)
+    const actual = formatLogEntriesAsMarkdown(logEntries)
     expect(actual).toBe(`## 2026年5月22日(金)
 
 ### 09:00:00
@@ -61,13 +61,13 @@ text2`)
 
 describe("formatLogEntriesAsJson", () => {
   it("LogEntry[] を JSON 形式に format できる", () => {
-    const items = [
+    const logEntries = [
       { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-23T00:00:00.000Z" },
     ]
 
-    const actual = formatLogEntriesAsJson(items)
+    const actual = formatLogEntriesAsJson(logEntries)
     expect(actual).toBe(`[
   {
     "id": "id1",
@@ -88,13 +88,13 @@ describe("formatLogEntriesAsJson", () => {
   })
 
   it("logEntry[] は日付昇順にソートされる", () => {
-    const items = [
+    const logEntries = [
       { id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
 
-    const actual = formatLogEntriesAsJson(items)
+    const actual = formatLogEntriesAsJson(logEntries)
     expect(actual).toBe(`[
   {
     "id": "id3",

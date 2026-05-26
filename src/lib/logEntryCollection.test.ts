@@ -3,23 +3,23 @@ import { groupLogEntriesByDate, sortLogEntriesByCreatedAtDesc, sortLogEntriesByC
 
 describe("groupLogEntriesByDate", () => {
   it("LogEntry[] を DateGroup[] へグループ化できる", () => {
-    const items = [
+    const logEntries = [
       { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-23T00:00:00.000Z" },
     ]
 
-    const groups = groupLogEntriesByDate(items)
+    const groups = groupLogEntriesByDate(logEntries)
 
     expect(groups).toHaveLength(2)
 
     expect(groups[0].key).toBe("2026-05-22")
     expect(groups[0].date).toEqual(new Date(2026, 4, 22))
-    expect(groups[0].items).toEqual([items[0], items[1]])
+    expect(groups[0].logEntries).toEqual([logEntries[0], logEntries[1]])
 
     expect(groups[1].key).toBe("2026-05-23")
     expect(groups[1].date).toEqual(new Date(2026, 4, 23))
-    expect(groups[1].items).toEqual([items[2]])
+    expect(groups[1].logEntries).toEqual([logEntries[2]])
   })
 
   it("空の配列は空の配列へグループ化される", () => {
@@ -29,27 +29,27 @@ describe("groupLogEntriesByDate", () => {
 
 describe("sortLogEntriesByCreatedAtDesc", () => {
   it("日時の降順にソートできる", () => {
-    const items = [{ id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
+    const logEntries = [{ id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
-    const originalItems = [...items]
+    const originalEntries = [...logEntries]
 
-    expect(sortLogEntriesByCreatedAtDesc(items)).toEqual([items[1], items[0], items[2]])
-    expect(items).toEqual(originalItems)
+    expect(sortLogEntriesByCreatedAtDesc(logEntries)).toEqual([logEntries[1], logEntries[0], logEntries[2]])
+    expect(logEntries).toEqual(originalEntries)
   })
 })
 
 describe("sortLogEntriesByCreatedAtAsc", () => {
   it("日時の昇順にソートできる", () => {
-    const items = [{ id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
+    const logEntries = [{ id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
-    const originalItems = [...items]
+    const originalEntries = [...logEntries]
 
-    expect(sortLogEntriesByCreatedAtAsc(items)).toEqual([items[2], items[0], items[1]])
-    expect(items).toEqual(originalItems)
+    expect(sortLogEntriesByCreatedAtAsc(logEntries)).toEqual([logEntries[2], logEntries[0], logEntries[1]])
+    expect(logEntries).toEqual(originalEntries)
   })
 })
 

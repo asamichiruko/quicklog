@@ -20,7 +20,7 @@ const emit = defineEmits<{
   openCalendar: [initialDate: Date]
 }>()
 
-const groupedItems = computed<DateGroup[]>(() => {
+const groupedLogEntries = computed<DateGroup[]>(() => {
   return groupLogEntriesByDate(sortLogEntriesByCreatedAtDesc(props.logEntries))
 })
 
@@ -44,7 +44,7 @@ function formatDateHeading(date: Date) {
   <template v-else>
     <div class="date-groups">
       <section
-        v-for="group in groupedItems"
+        v-for="group in groupedLogEntries"
         :key="group.key"
         class="date-group"
         :id="getDateGroupId(group.date)"
@@ -53,7 +53,7 @@ function formatDateHeading(date: Date) {
           <h2 class="date-heading">
             <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
             <span class="date-heading-count" v-if="props.showDailySummary">
-              {{ group.items.length }} 件
+              {{ group.logEntries.length }} 件
             </span>
           </h2>
           <div class="date-header-actions">
@@ -80,21 +80,21 @@ function formatDateHeading(date: Date) {
             </button>
           </div>
           <div class="time-distribution-strip" v-if="props.showDailySummary">
-            <TimeDistributionStrip :items="group.items" />
+            <TimeDistributionStrip :logEntries="group.logEntries" />
           </div>
         </header>
         <ul class="entries">
-          <li v-for="item in group.items" :key="item.id" class="entry">
+          <li v-for="logEntry in group.logEntries" :key="logEntry.id" class="entry">
             <div class="entry-header">
-              <time :datetime="item.createdAt" class="entry-time">{{
-                formatDateTime(item.createdAt)
+              <time :datetime="logEntry.createdAt" class="entry-time">{{
+                formatDateTime(logEntry.createdAt)
               }}</time>
               <button
                 class="button-icon delete-button"
                 type="button"
                 aria-label="削除"
                 title="削除"
-                @click="emit('remove', item.id)"
+                @click="emit('remove', logEntry.id)"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -111,7 +111,7 @@ function formatDateHeading(date: Date) {
                 </svg>
               </button>
             </div>
-            <p class="entry-text">{{ item.text }}</p>
+            <p class="entry-text">{{ logEntry.text }}</p>
           </li>
         </ul>
       </section>

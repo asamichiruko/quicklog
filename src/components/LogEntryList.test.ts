@@ -8,7 +8,7 @@ describe("LogEntryList", () => {
     vi.useRealTimers()
   })
 
-  it("items が空なら空の表示が出る", () => {
+  it("logEntries が空なら空の表示が出る", () => {
     render(LogEntryList, {
       props: {
         logEntries: [],
@@ -19,7 +19,7 @@ describe("LogEntryList", () => {
     expect(screen.getByText("まだメモがありません")).toBeInTheDocument();
   })
 
-  it("items の text と記録時刻が表示される", () => {
+  it("logEntries の text と記録時刻が表示される", () => {
     render(LogEntryList, {
       props: {
         logEntries: [
@@ -33,7 +33,7 @@ describe("LogEntryList", () => {
     expect(screen.getByText("09:00:00")).toBeInTheDocument();
   })
 
-  it("items が日付ごとにグループ化される", () => {
+  it("logEntries が日付ごとにグループ化される", () => {
     vi.useFakeTimers()
 
     const now = new Date(2026, 4, 22, 12, 0, 0, 0)

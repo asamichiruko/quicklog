@@ -18,24 +18,24 @@ function formatLogEntryAsMarkdown(item: LogEntry): string {
 function formatDateGroupAsMarkdown(group: DateGroup): string {
   return [
     `${groupsHeading} ${formatLongJapaneseDate(group.date)}`,
-    ...group.items.map(formatLogEntryAsMarkdown),
+    ...group.logEntries.map(formatLogEntryAsMarkdown),
   ].join("\n\n")
 }
 
-export function formatLogEntriesAsMarkdown(items: LogEntry[]): string {
-  return groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(items))
+export function formatLogEntriesAsMarkdown(logEntries: LogEntry[]): string {
+  return groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(logEntries))
     .map(formatDateGroupAsMarkdown)
     .join("\n\n")
 }
 
-export function formatLogEntriesAsJson(items: LogEntry[]): string {
-  return JSON.stringify(sortLogEntriesByCreatedAtAsc(items), null, 2)
+export function formatLogEntriesAsJson(logEntries: LogEntry[]): string {
+  return JSON.stringify(sortLogEntriesByCreatedAtAsc(logEntries), null, 2)
 }
 
 const exportFormats: Record<
   ExportType,
   {
-    format: (items: LogEntry[]) => string
+    format: (logEntries: LogEntry[]) => string
     mimeType: string
     extension: string
   }
@@ -52,11 +52,11 @@ const exportFormats: Record<
   },
 }
 
-export function createLogEntriesExportFile(items: LogEntry[], exportType: ExportType): ExportFile {
+export function createLogEntriesExportFile(logEntries: LogEntry[], exportType: ExportType): ExportFile {
   const exportFormat = exportFormats[exportType]
 
   return {
-    content: exportFormat.format(items),
+    content: exportFormat.format(logEntries),
     mimeType: exportFormat.mimeType,
     extension: exportFormat.extension,
   }

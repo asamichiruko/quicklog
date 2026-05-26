@@ -4,40 +4,40 @@ import { getLocalDateKey, startOfLocalDay } from "@/lib/date"
 export type DateGroup = {
   key: string
   date: Date
-  items: LogEntry[]
+  logEntries: LogEntry[]
 }
 
-export function groupLogEntriesByDate(items: LogEntry[]): DateGroup[] {
+export function groupLogEntriesByDate(logEntries: LogEntry[]): DateGroup[] {
   const groups = new Map<string, DateGroup>()
 
-  for (const item of items) {
-    const date = new Date(item.createdAt)
+  for (const logEntry of logEntries) {
+    const date = new Date(logEntry.createdAt)
     const key = getLocalDateKey(date)
     const group = groups.get(key)
 
     if (group) {
-      group.items.push(item)
+      group.logEntries.push(logEntry)
       continue
     }
 
     groups.set(key, {
       key,
       date: startOfLocalDay(date),
-      items: [item],
+      logEntries: [logEntry],
     })
   }
 
   return [...groups.values()]
 }
 
-export function sortLogEntriesByCreatedAtDesc(items: LogEntry[]): LogEntry[] {
-  return items.toSorted(
+export function sortLogEntriesByCreatedAtDesc(logEntries: LogEntry[]): LogEntry[] {
+  return logEntries.toSorted(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
 }
 
-export function sortLogEntriesByCreatedAtAsc(items: LogEntry[]): LogEntry[] {
-  return items.toSorted(
+export function sortLogEntriesByCreatedAtAsc(logEntries: LogEntry[]): LogEntry[] {
+  return logEntries.toSorted(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     )
 }

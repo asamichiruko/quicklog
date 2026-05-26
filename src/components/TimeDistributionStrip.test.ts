@@ -6,7 +6,7 @@ describe("TimeDistributionStrip", () => {
   it("記録時刻に従って分布が表示される", () => {
     const { container } = render(TimeDistributionStrip, {
       props: {
-        items: [
+        logEntries: [
           { id: "id1", text: "text1", createdAt: "2026-05-21T15:00:00.000Z" },
           { id: "id2", text: "text2", createdAt: "2026-05-22T03:00:00.000Z" },
           { id: "id3", text: "text3", createdAt: "2026-05-22T09:00:00.000Z" },
