@@ -17,6 +17,8 @@ function onSubmit() {
 }
 
 function onKeydownEnter(e: KeyboardEvent) {
+  if (e.isComposing) return
+
   if (e.ctrlKey || e.metaKey) {
     e.preventDefault()
     onSubmit()
