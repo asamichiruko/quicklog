@@ -21,12 +21,12 @@ const calendarDays = computed(() => {
   return createCalendarDays(displayedMonth.value, props.initialDate, props.recordCounts)
 })
 
-const displayedMonthLabel = computed(() => {
-  return new Intl.DateTimeFormat("ja-JP", {
-    year: "numeric",
-    month: "long",
-    timeZone: "Asia/Tokyo",
-  }).format(displayedMonth.value)
+const displayedMonthLabelMonth = computed(() => {
+  return `${displayedMonth.value.getMonth() + 1}月`
+})
+
+const displayedMonthLabelYear = computed(() => {
+  return `${displayedMonth.value.getFullYear()}年`
 })
 
 function open() {
@@ -59,6 +59,10 @@ function showNextMonth() {
   displayedMonth.value = addMonths(displayedMonth.value, 1)
 }
 
+const calendarLabel = computed(() => {
+  return `${displayedMonthLabelYear}${displayedMonthLabelMonth}の記録日カレンダー`
+})
+
 function formatDayLabel(date: Date, hasRecords: boolean) {
   const dateLabel = new Intl.DateTimeFormat("ja-JP", {
     month: "long",
@@ -82,9 +86,9 @@ defineExpose({ open })
   >
     <div class="container">
       <header class="dialog-header">
-        <h2 id="calendar-dialog-heading" class="dialog-heading">表示する日付を選択</h2>
+        <h2 id="calendar-dialog-heading" class="dialog-heading">日付を選択して移動</h2>
         <button
-          class="close-button"
+          class="button-icon close-button"
           type="button"
           aria-label="閉じる"
           title="閉じる"
@@ -107,7 +111,7 @@ defineExpose({ open })
 
       <div class="month-navigation">
         <button
-          class="month-button"
+          class="button-icon month-button"
           type="button"
           aria-label="前月を表示"
           @click="showPreviousMonth"
@@ -125,8 +129,16 @@ defineExpose({ open })
             />
           </svg>
         </button>
-        <p class="month-label" aria-live="polite">{{ displayedMonthLabel }}</p>
-        <button class="month-button" type="button" aria-label="翌月を表示" @click="showNextMonth">
+        <p class="month-label" aria-live="polite">
+          <span class="month-label-year">{{ displayedMonthLabelYear }}</span>
+          <span class="month-label-month">{{ displayedMonthLabelMonth }}</span>
+        </p>
+        <button
+          class="button-icon month-button"
+          type="button"
+          aria-label="翌月を表示"
+          @click="showNextMonth"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="16"
@@ -142,7 +154,7 @@ defineExpose({ open })
         </button>
       </div>
 
-      <div class="calendar" role="group" :aria-label="`${displayedMonthLabel}の記録日カレンダー`">
+      <div class="calendar" role="group" :aria-label="calendarLabel">
         <div v-for="weekday in weekdayLabels" :key="weekday" class="weekday">
           {{ weekday }}
         </div>
@@ -200,34 +212,8 @@ defineExpose({ open })
   margin: 0;
   padding: 0;
   color: var(--color-text);
-  font-size: 1.5em;
+  font-size: 1.3em;
   font-weight: var(--font-weight-bold);
-}
-
-.close-button,
-.month-button {
-  display: inline-grid;
-  place-items: center;
-  inline-size: var(--control-min-size);
-  block-size: var(--control-min-size);
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-}
-
-@media (hover: hover) {
-  .close-button:hover,
-  .month-button:hover {
-    background: var(--color-ghost-hover);
-  }
-}
-
-@media (hover: none) {
-  .close-button:active,
-  .month-button:active {
-    background: var(--color-ghost-hover);
-  }
 }
 
 .month-navigation {
@@ -238,11 +224,19 @@ defineExpose({ open })
 }
 
 .month-label {
+  display: grid;
+  justify-items: center;
   margin: 0;
   color: var(--color-text);
-  font-size: 1.1em;
   font-weight: var(--font-weight-bold);
-  text-align: center;
+}
+
+.month-label .month-label-year {
+  font-size: 1em;
+}
+
+.month-label .month-label-month {
+  font-size: 1.1em;
 }
 
 .calendar {
@@ -259,87 +253,104 @@ defineExpose({ open })
 }
 
 .day-button {
+  --color-inside-month-enabled: color-mix(in srgb, var(--color-primary) 17%, var(--color-surface));
+  --color-inside-month-active: color-mix(in srgb, var(--color-primary) 25%, var(--color-surface));
+  --color-inside-month-disabled: transparent;
+
+  --color-outside-month-enabled: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+  --color-outside-month-active: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  --color-outside-month-disabled: transparent;
+
   display: grid;
   grid-template-rows: 1fr 8px;
   justify-items: center;
-  align-items: center;
   min-width: 0;
   min-height: var(--control-min-size);
   padding: 4px;
-  border: 1px solid var(--color-border);
+  border: none;
   border-radius: var(--radius-surface);
   background: var(--color-surface);
   color: var(--color-text);
 }
 
-.day-button.has-records:not(:disabled) {
-  border-color: color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
-  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+.day-button.has-records {
+  background: var(--color-inside-month-enabled);
 }
 
 @media (hover: hover) {
-  .day-button:not(:disabled):hover {
-    border-color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 17%, var(--color-surface));
+  .day-button.has-records:hover {
+    background: var(--color-inside-month-active);
   }
 }
 
 @media (hover: none) {
-  .day-button:not(:disabled):active {
-    border-color: var(--color-primary);
-    background: color-mix(in srgb, var(--color-primary) 17%, var(--color-surface));
+  .day-button.has-records:active {
+    background: var(--color-inside-month-active);
   }
 }
 
 .day-button:disabled {
   cursor: not-allowed;
+  color: var(--color-text);
+  background: var(--color-inside-month-disabled);
+}
+
+.day-button.is-outside-month.has-records {
   color: var(--color-text-subtle);
-  background: var(--color-page);
+  background: var(--color-outside-month-enabled);
 }
 
-.is-outside-month:disabled {
-  border-color: transparent;
-  background: transparent;
+@media (hover: hover) {
+  .day-button.is-outside-month.has-records:hover {
+    background: var(--color-outside-month-active);
+  }
 }
 
-.is-outside-month.has-records {
-  opacity: 0.45;
+@media (hover: none) {
+  .day-button.is-outside-month.has-records:active {
+    background: var(--color-outside-month-active);
+  }
 }
 
-.is-today {
+.day-button.is-outside-month:disabled {
+  color: var(--color-text-subtle);
+  background: var(--color-outside-month-disabled);
+}
+
+.day-button.is-today {
   text-decoration: underline;
 }
 
-.is-initial-day {
+.day-button.is-initial-day {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 .day-number {
   font-weight: var(--font-weight-semibold);
+  align-self: end;
 }
 
 .day-count {
+  align-self: start;
   inline-size: 6px;
   block-size: 6px;
   border-radius: var(--radius-pill);
+  background: var(--color-primary);
 }
 
 .count-low .day-count {
-  background: var(--color-primary);
+  inline-size: 6px;
 }
 
 .count-medium .day-count {
-  background: var(--color-primary);
   inline-size: 9px;
 }
 
 .count-high .day-count {
-  background: var(--color-primary);
   inline-size: 12px;
 }
 
 .count-max .day-count {
   inline-size: 15px;
-  background: var(--color-primary);
 }
 </style>
