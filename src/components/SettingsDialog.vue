@@ -194,7 +194,7 @@ defineExpose({ open })
   margin: 0;
   padding: 0;
   color: var(--color-text);
-  font-size: 1.5em;
+  font-size: 1.3em;
   font-weight: var(--font-weight-bold);
 }
 
