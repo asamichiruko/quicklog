@@ -18,23 +18,23 @@ function isValidDateString(value: string): boolean {
   return !Number.isNaN(Date.parse(value))
 }
 
-export function isValidLogEntry(item: unknown): item is LogEntry {
-  if (typeof item !== "object" || item === null) {
+export function isValidLogEntry(obj: unknown): obj is LogEntry {
+  if (typeof obj !== "object" || obj === null) {
     return false
   }
 
-  if (!("id" in item) || typeof item.id !== "string") {
+  if (!("id" in obj) || typeof obj.id !== "string" || obj.id.length == 0 || obj.id.length > 128) {
     return false
   }
 
-  if (!("text" in item) || typeof item.text !== "string" || !isValidLogEntryText(item.text)) {
+  if (!("text" in obj) || typeof obj.text !== "string" || !isValidLogEntryText(obj.text)) {
     return false
   }
 
   if (
-    !("createdAt" in item) ||
-    typeof item.createdAt !== "string" ||
-    !isValidDateString(item.createdAt)
+    !("createdAt" in obj) ||
+    typeof obj.createdAt !== "string" ||
+    !isValidDateString(obj.createdAt)
   ) {
     return false
   }
