@@ -8,7 +8,7 @@ import { downloadTextFile, readJsonFile } from "@/lib/browserFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { mergeLogEntries } from "@/lib/logEntryCollection"
 import { createLogEntriesExportFile } from "@/lib/logEntryExport"
-import { parseAsLogEntries } from "@/lib/logEntrySchema"
+import { isValidLogEntryText, parseAsLogEntries } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
@@ -59,6 +59,11 @@ function openCalendar() {
 }
 
 function handleSubmit(text: string) {
+  if (!isValidLogEntryText(text)) {
+    alert("メモの記録に失敗しました。メモ内容が長すぎる可能性があります。")
+    return
+  }
+
   const logEntry: LogEntry = {
     id: crypto.randomUUID(),
     text,
@@ -66,6 +71,7 @@ function handleSubmit(text: string) {
   }
   logEntries.value.push(logEntry)
   saveLogEntries(logEntries.value)
+  logEntryForm.value?.clear()
 }
 
 function updateNewLogEntryButtonVisibility() {
