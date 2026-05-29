@@ -1,4 +1,4 @@
-import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "./logEntrySchema"
+import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "@/lib/sizeLimits"
 
 export function downloadTextFile(file: {
   content: string

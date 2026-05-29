@@ -70,8 +70,10 @@ function handleSubmit(text: string) {
     text,
     createdAt: new Date().toISOString(),
   }
-  logEntries.value.push(logEntry)
-  saveLogEntries(logEntries.value)
+
+  const nextEntries = [...logEntries.value, logEntry]
+  saveLogEntries(nextEntries)
+  logEntries.value = nextEntries
   logEntryForm.value?.clear()
 }
 
@@ -141,8 +143,8 @@ async function handleImport(file: File) {
     const merged = mergeLogEntries(logEntries.value, incoming)
     const addedCount = merged.length - previousCount
 
-    logEntries.value = merged
     saveLogEntries(merged)
+    logEntries.value = merged
 
     alert(`${addedCount} 件のメモをインポートしました。`)
   } catch {
