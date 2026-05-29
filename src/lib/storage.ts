@@ -2,6 +2,7 @@ import type { LogEntry, AppSettings } from "@/types"
 import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings"
 import { parseAsLogEntries } from "@/lib/logEntrySchema"
 import { getUtf8ByteLength, MAX_LOG_ENTRIES_STORAGE_BYTES, MAX_SETTINGS_STORAGE_BYTES } from "@/lib/sizeLimits"
+import { SizeError } from "@/lib/error"
 
 const LOG_ENTRIES_KEY = "quicklog.items"
 const SETTINGS_KEY = "quicklog.settings"
@@ -24,7 +25,11 @@ export function saveLogEntries(logEntries: LogEntry[]) {
   const serialized = JSON.stringify(normalized)
 
   if (getUtf8ByteLength(serialized) > MAX_LOG_ENTRIES_STORAGE_BYTES) {
-    throw new Error("Log entries are too large.")
+    throw new SizeError("Log entries are too large.", {
+      target: "storage",
+      limitBytes: MAX_LOG_ENTRIES_STORAGE_BYTES,
+      actualBytes: getUtf8ByteLength(serialized)
+    })
   }
 
   localStorage.setItem(LOG_ENTRIES_KEY, serialized)
@@ -48,7 +53,11 @@ export function saveSettings(settings: AppSettings) {
   const serialized = JSON.stringify(normalized)
 
   if (getUtf8ByteLength(serialized) > MAX_SETTINGS_STORAGE_BYTES) {
-    throw new Error("Settings are too large.")
+    throw new SizeError("Settings are too large.", {
+      target: "storage",
+      limitBytes: MAX_SETTINGS_STORAGE_BYTES,
+      actualBytes: getUtf8ByteLength(serialized),
+     })
   }
 
   localStorage.setItem(SETTINGS_KEY, serialized)

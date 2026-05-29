@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { formatTimeWithSeconds, formatLongJapaneseDate, formatRelativeDate } from "./dateFormat"
+import { InvalidDateError } from "@/lib/error"
 
 describe("formatTimeWithSeconds", () => {
   it("正規の Date オブジェクトから HH:MM:SS 形式の文字列を取得できる", () => {
@@ -10,7 +11,7 @@ describe("formatTimeWithSeconds", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { formatTimeWithSeconds(invalidDate) }).toThrow()
+    expect(() => { formatTimeWithSeconds(invalidDate) }).toThrow(InvalidDateError)
   })
 })
 
@@ -22,7 +23,7 @@ describe("formatLongJapaneseDate", () => {
 
   it("不正な date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { formatLongJapaneseDate(invalidDate) }).toThrow()
+    expect(() => { formatLongJapaneseDate(invalidDate) }).toThrow(InvalidDateError)
   })
 })
 
@@ -52,6 +53,6 @@ describe("formatRelativeDate", () => {
 
   it("不正な date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { formatRelativeDate(invalidDate) }).toThrow()
+    expect(() => { formatRelativeDate(invalidDate) }).toThrow(InvalidDateError)
   })
 })

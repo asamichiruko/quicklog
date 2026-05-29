@@ -3,6 +3,7 @@ import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } f
 import { formatLongJapaneseDate, formatTimeWithSeconds } from "@/lib/dateFormat"
 import { isValidLogEntry } from "@/lib/logEntrySchema"
 import { getUtf8ByteLength, MAX_LOG_ENTRIES_EXPORT_FILE_BYTES } from "@/lib/sizeLimits"
+import { SchemaValidationError, SizeError } from "@/lib/error"
 
 type ExportFile = {
   content: string
@@ -22,7 +23,7 @@ function createSizeLimitedTextBuilder(maxBytes: number) {
     bytes += getUtf8ByteLength(text)
 
     if (bytes > maxBytes) {
-      throw new Error("Export file is too large.")
+      throw new SizeError("Export file is too large.", { target: "export", limitBytes: maxBytes, actualBytes: bytes })
     }
 
     parts.push(text)
@@ -42,7 +43,7 @@ function createSizeLimitedTextBuilder(maxBytes: number) {
 function validateLogEntries(logEntries: LogEntry[]): LogEntry[] {
   return logEntries.map((logEntry) => {
     if (!isValidLogEntry(logEntry)) {
-      throw new Error("Invalid LogEntry")
+      throw new SchemaValidationError("Invalid LogEntry object.")
     }
     return logEntry
   })
@@ -114,7 +115,11 @@ export function formatLogEntriesAsJson(logEntries: LogEntry[]): string {
   const formatted = JSON.stringify(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)), null, 2)
 
   if (getUtf8ByteLength(formatted) > MAX_LOG_ENTRIES_EXPORT_FILE_BYTES) {
-    throw new Error("Export file is too large.")
+    throw new SizeError("Export file is too large.", {
+      target: "export",
+      limitBytes: MAX_LOG_ENTRIES_EXPORT_FILE_BYTES,
+      actualBytes: getUtf8ByteLength(formatted),
+    })
   }
 
   return formatted

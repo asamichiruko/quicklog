@@ -1,14 +1,15 @@
 import type { LogEntry } from "@/types"
 import { getUtf8ByteLength, MAX_LOG_ENTRY_TEXT_BYTES } from "@/lib/sizeLimits"
+import { SchemaValidationError } from "@/lib/error"
 
 export function parseAsLogEntries(data: unknown): LogEntry[] {
   if (!Array.isArray(data)) {
-    throw new Error("データの最上位は配列である必要があります。")
+    throw new SchemaValidationError("Top-level of data must be Array object.")
   }
 
   return data.map((item, index) => {
     if (!isValidLogEntry(item)) {
-      throw new Error(`${index + 1} 件目のデータをメモとして読み込めませんでした。`)
+      throw new SchemaValidationError(`Cannot parse object as LogEntry at index ${index}.`, { index: index })
     }
     return item
   })

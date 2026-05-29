@@ -1,4 +1,5 @@
 import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "@/lib/sizeLimits"
+import { SizeError } from "@/lib/error"
 
 export function downloadTextFile(file: {
   content: string
@@ -18,7 +19,11 @@ export function downloadTextFile(file: {
 
 export async function readLogEntriesImportFile(file: File): Promise<unknown> {
   if (file.size > MAX_LOG_ENTRIES_IMPORT_FILE_BYTES) {
-    throw new Error("Import file is too large.")
+    throw new SizeError("Import file is too large.", {
+      target: "import",
+      limitBytes: MAX_LOG_ENTRIES_IMPORT_FILE_BYTES,
+      actualBytes: file.size,
+    })
   }
 
   const text = await file.text()

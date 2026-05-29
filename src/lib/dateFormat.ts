@@ -1,8 +1,9 @@
 import { startOfLocalDay } from "@/lib/date"
+import { InvalidDateError } from "@/lib/error"
 
 export function formatTimeWithSeconds(date: Date) {
   if (isNaN(date.getTime())) {
-    throw new Error()
+    throw new InvalidDateError("Invalid date.")
   }
 
   const hour = String(date.getHours()).padStart(2, "0")
@@ -20,7 +21,7 @@ const longDateFormatter = new Intl.DateTimeFormat("ja-JP", {
 
 export function formatLongJapaneseDate(date: Date) {
   if (isNaN(date.getTime())) {
-    throw new Error()
+    throw new InvalidDateError("Invalid date.")
   }
 
   return longDateFormatter.format(date)
@@ -28,7 +29,7 @@ export function formatLongJapaneseDate(date: Date) {
 
 export function formatRelativeDate(date: Date) {
     if (isNaN(date.getTime())) {
-    throw new Error()
+    throw new InvalidDateError("Invalid date.")
   }
 
   const today = startOfLocalDay(new Date())

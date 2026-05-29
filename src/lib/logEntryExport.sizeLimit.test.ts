@@ -19,6 +19,7 @@ describe("formatLogEntriesAsMarkdown size limit", () => {
     })
 
     const { formatLogEntriesAsMarkdown } = await import("./logEntryExport")
+    const { SizeError } = await import("@/lib/error")
 
     const logEntries = [
       {
@@ -28,7 +29,7 @@ describe("formatLogEntriesAsMarkdown size limit", () => {
       },
     ]
 
-    expect(() => formatLogEntriesAsMarkdown(logEntries)).toThrow("Export file is too large.")
+    expect(() => formatLogEntriesAsMarkdown(logEntries)).toThrow(SizeError)
   })
 })
 
@@ -46,6 +47,7 @@ describe("formatLogEntriesAsJson size limit", () => {
     })
 
     const { formatLogEntriesAsJson } = await import("./logEntryExport")
+    const { SizeError } = await import("@/lib/error")
 
     const logEntries = [
       {
@@ -55,6 +57,6 @@ describe("formatLogEntriesAsJson size limit", () => {
       },
     ]
 
-    expect(() => formatLogEntriesAsJson(logEntries)).toThrow("Export file is too large.")
+    expect(() => formatLogEntriesAsJson(logEntries)).toThrow(SizeError)
   })
 })

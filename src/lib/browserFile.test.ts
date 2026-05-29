@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { downloadTextFile, readLogEntriesImportFile } from "./browserFile"
+import { SizeError } from "@/lib/error"
 
 describe("downloadTextFile", () => {
   afterEach(() => {
@@ -63,7 +64,7 @@ describe("readLogEntriesImportFile", () => {
       type: "application/json",
     })
 
-    await expect(readLogEntriesImportFile(file)).rejects.toThrow()
+    await expect(readLogEntriesImportFile(file)).rejects.toThrow(SyntaxError)
   })
 
   it("ファイルサイズが大きすぎる場合は reject する", async () => {
@@ -71,6 +72,6 @@ describe("readLogEntriesImportFile", () => {
       type: "application/json"
     })
 
-    await expect(readLogEntriesImportFile(file)).rejects.toThrow()
+    await expect(readLogEntriesImportFile(file)).rejects.toThrow(SizeError)
   })
 })

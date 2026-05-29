@@ -10,10 +10,10 @@ import { mergeLogEntries } from "@/lib/logEntryCollection"
 import { createLogEntriesExportFile } from "@/lib/logEntryExport"
 import { isValidLogEntryText, parseAsLogEntries } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "@/lib/sizeLimits"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
+import { SchemaValidationError, SizeError } from "./lib/error"
 
 const logEntries = ref<LogEntry[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
@@ -120,19 +120,20 @@ function handleExport(exportType: ExportType) {
       mimeType: exportFile.mimeType,
       filename: `quicklog-${dateKey}${exportFile.extension}`,
     })
-  } catch {
-    alert("エクスポートに失敗しました。データサイズが大きすぎる可能性があります。")
+  } catch (error) {
+    if (error instanceof SizeError) {
+      alert("エクスポートに失敗しました。エクスポートするデータのサイズが大きすぎます。")
+    } else if (error instanceof SchemaValidationError) {
+      alert("エクスポートに失敗しました。データの一部が破損しています。")
+    } else {
+      alert("エクスポートに失敗しました。")
+    }
   }
 }
 
 async function handleImport(file: File) {
   if (file.type && file.type !== "application/json") {
     alert("ファイル形式が JSON ではありません。JSON 形式のファイルを選択してください。")
-    return
-  }
-
-  if (file.size > MAX_LOG_ENTRIES_IMPORT_FILE_BYTES) {
-    alert("ファイルサイズが大きすぎます。")
     return
   }
 
@@ -147,10 +148,16 @@ async function handleImport(file: File) {
     logEntries.value = merged
 
     alert(`${addedCount} 件のメモをインポートしました。`)
-  } catch {
-    alert(
-      "インポートに失敗しました。quicklog からエクスポートしたファイルであることを確認してください。",
-    )
+  } catch (error) {
+    if (error instanceof SizeError) {
+      alert("インポートに失敗しました。ファイルサイズが大きすぎます。")
+    } else if (error instanceof SyntaxError) {
+      alert("インポートに失敗しました。ファイル内容が JSON 形式であることを確認してください。")
+    } else if (error instanceof SchemaValidationError) {
+      alert("インポートに失敗しました。異常なデータが含まれています。")
+    } else {
+      alert("インポートに失敗しました。")
+    }
   }
 }
 
