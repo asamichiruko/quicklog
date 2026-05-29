@@ -1,3 +1,5 @@
+import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "./logEntrySchema"
+
 export function downloadTextFile(file: {
   content: string
   mimeType: string
@@ -14,7 +16,11 @@ export function downloadTextFile(file: {
   URL.revokeObjectURL(url)
 }
 
-export async function readJsonFile(file: File): Promise<unknown> {
+export async function readLogEntriesImportFile(file: File): Promise<unknown> {
+  if (file.size > MAX_LOG_ENTRIES_IMPORT_FILE_BYTES) {
+    throw new Error("Import file is too large.")
+  }
+
   const text = await file.text()
   return JSON.parse(text)
 }

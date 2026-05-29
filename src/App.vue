@@ -4,11 +4,15 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
-import { downloadTextFile, readJsonFile } from "@/lib/browserFile"
+import { downloadTextFile, readLogEntriesImportFile } from "@/lib/browserFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { mergeLogEntries } from "@/lib/logEntryCollection"
 import { createLogEntriesExportFile } from "@/lib/logEntryExport"
-import { isValidLogEntryText, parseAsLogEntries } from "@/lib/logEntrySchema"
+import {
+  isValidLogEntryText,
+  MAX_LOG_ENTRIES_IMPORT_FILE_BYTES,
+  parseAsLogEntries,
+} from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
@@ -124,8 +128,13 @@ async function handleImport(file: File) {
     return
   }
 
+  if (file.size > MAX_LOG_ENTRIES_IMPORT_FILE_BYTES) {
+    alert("ファイルサイズが大きすぎます。")
+    return
+  }
+
   try {
-    const data = await readJsonFile(file)
+    const data = await readLogEntriesImportFile(file)
     const previousCount = logEntries.value.length
     const incoming = parseAsLogEntries(data)
     const merged = mergeLogEntries(logEntries.value, incoming)

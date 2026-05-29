@@ -1,7 +1,8 @@
 import type { LogEntry } from "@/types"
 
 export const MAX_LOG_ENTRY_TEXT_BYTES = 256 * 1024
-export const MAX_LOG_ENTRIES_FILE_BYTES = 10 * 1024 * 1024
+export const MAX_LOG_ENTRIES_IMPORT_FILE_BYTES = 10 * 1024 * 1024
+export const MAX_LOG_ENTRIES_EXPORT_FILE_BYTES = 10 * 1024 * 1024
 
 export function parseAsLogEntries(data: unknown): LogEntry[] {
   if (!Array.isArray(data)) {
