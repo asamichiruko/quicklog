@@ -8,12 +8,9 @@ import { downloadTextFile, readLogEntriesImportFile } from "@/lib/browserFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { mergeLogEntries } from "@/lib/logEntryCollection"
 import { createLogEntriesExportFile } from "@/lib/logEntryExport"
-import {
-  isValidLogEntryText,
-  MAX_LOG_ENTRIES_IMPORT_FILE_BYTES,
-  parseAsLogEntries,
-} from "@/lib/logEntrySchema"
+import { isValidLogEntryText, parseAsLogEntries } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
+import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "@/lib/sizeLimits"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
@@ -112,14 +109,18 @@ function handleRemove(id: string) {
 }
 
 function handleExport(exportType: ExportType) {
-  const exportFile = createLogEntriesExportFile(logEntries.value, exportType)
-  const dateKey = getLocalDateKey(new Date())
+  try {
+    const exportFile = createLogEntriesExportFile(logEntries.value, exportType)
+    const dateKey = getLocalDateKey(new Date())
 
-  downloadTextFile({
-    content: exportFile.content,
-    mimeType: exportFile.mimeType,
-    filename: `quicklog-${dateKey}${exportFile.extension}`,
-  })
+    downloadTextFile({
+      content: exportFile.content,
+      mimeType: exportFile.mimeType,
+      filename: `quicklog-${dateKey}${exportFile.extension}`,
+    })
+  } catch {
+    alert("エクスポートに失敗しました。データサイズが大きすぎる可能性があります。")
+  }
 }
 
 async function handleImport(file: File) {
