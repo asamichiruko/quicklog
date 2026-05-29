@@ -55,7 +55,8 @@ describe("CalendarDialog", () => {
     await user.click(screen.getByRole("button", { name: "カレンダーを開く" }))
 
     expect(container.querySelector("dialog")).toHaveAttribute("open")
-    expect(screen.getByText("2026年5月")).toBeInTheDocument()
+    expect(screen.getByText("2026年")).toBeInTheDocument()
+    expect(screen.getByText("5月")).toBeInTheDocument()
   })
 
   it("記録がある日付を選択すると select されて閉じる", async () => {
@@ -94,11 +95,11 @@ describe("CalendarDialog", () => {
     await user.click(screen.getByRole("button", { name: "カレンダーを開く" }))
     await user.click(screen.getByRole("button", { name: "前月を表示" }))
 
-    expect(screen.getByText("2026年4月")).toBeInTheDocument()
+    expect(screen.getByText("4月")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "翌月を表示" }))
 
-    expect(screen.getByText("2026年5月")).toBeInTheDocument()
+    expect(screen.getByText("5月")).toBeInTheDocument()
   })
 
   it("閉じるボタン操作では select が emit されない", async () => {
@@ -117,7 +118,7 @@ describe("CalendarDialog", () => {
     const { emitted, container } = render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "カレンダーを開く" }))
-    await user.click(screen.getByLabelText("表示する日付を選択"))
+    await user.click(screen.getByLabelText("日付を選択して移動"))
     await user.keyboard("{Escape}")
 
     expect(emitted("select")).toBeUndefined()
