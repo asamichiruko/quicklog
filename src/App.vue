@@ -4,12 +4,13 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
-import { downloadTextFile, readJsonFile } from "@/lib/browserFile"
+import { downloadTextFile, readLogEntriesImportFile } from "@/lib/browserFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { mergeLogEntries } from "@/lib/logEntryCollection"
 import { createLogEntriesExportFile } from "@/lib/logEntryExport"
-import { parseAsLogEntries } from "@/lib/logEntrySchema"
+import { isValidLogEntryText, parseAsLogEntries } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
+import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "@/lib/sizeLimits"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import { type AppSettings, type ExportType, type LogEntry } from "@/types"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
@@ -59,13 +60,21 @@ function openCalendar() {
 }
 
 function handleSubmit(text: string) {
+  if (!isValidLogEntryText(text)) {
+    alert("メモの記録に失敗しました。メモ内容が長すぎる可能性があります。")
+    return
+  }
+
   const logEntry: LogEntry = {
     id: crypto.randomUUID(),
     text,
     createdAt: new Date().toISOString(),
   }
-  logEntries.value.push(logEntry)
-  saveLogEntries(logEntries.value)
+
+  const nextEntries = [...logEntries.value, logEntry]
+  saveLogEntries(nextEntries)
+  logEntries.value = nextEntries
+  logEntryForm.value?.clear()
 }
 
 function updateNewLogEntryButtonVisibility() {
@@ -102,14 +111,18 @@ function handleRemove(id: string) {
 }
 
 function handleExport(exportType: ExportType) {
-  const exportFile = createLogEntriesExportFile(logEntries.value, exportType)
-  const dateKey = getLocalDateKey(new Date())
+  try {
+    const exportFile = createLogEntriesExportFile(logEntries.value, exportType)
+    const dateKey = getLocalDateKey(new Date())
 
-  downloadTextFile({
-    content: exportFile.content,
-    mimeType: exportFile.mimeType,
-    filename: `quicklog-${dateKey}${exportFile.extension}`,
-  })
+    downloadTextFile({
+      content: exportFile.content,
+      mimeType: exportFile.mimeType,
+      filename: `quicklog-${dateKey}${exportFile.extension}`,
+    })
+  } catch {
+    alert("エクスポートに失敗しました。データサイズが大きすぎる可能性があります。")
+  }
 }
 
 async function handleImport(file: File) {
@@ -118,15 +131,20 @@ async function handleImport(file: File) {
     return
   }
 
+  if (file.size > MAX_LOG_ENTRIES_IMPORT_FILE_BYTES) {
+    alert("ファイルサイズが大きすぎます。")
+    return
+  }
+
   try {
-    const data = await readJsonFile(file)
+    const data = await readLogEntriesImportFile(file)
     const previousCount = logEntries.value.length
     const incoming = parseAsLogEntries(data)
     const merged = mergeLogEntries(logEntries.value, incoming)
     const addedCount = merged.length - previousCount
 
-    logEntries.value = merged
     saveLogEntries(merged)
+    logEntries.value = merged
 
     alert(`${addedCount} 件のメモをインポートしました。`)
   } catch {

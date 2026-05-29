@@ -1,4 +1,5 @@
 import type { LogEntry } from "@/types"
+import { getUtf8ByteLength, MAX_LOG_ENTRY_TEXT_BYTES } from "@/lib/sizeLimits"
 
 export function parseAsLogEntries(data: unknown): LogEntry[] {
   if (!Array.isArray(data)) {
@@ -6,7 +7,7 @@ export function parseAsLogEntries(data: unknown): LogEntry[] {
   }
 
   return data.map((item, index) => {
-    if (!isLogEntry(item)) {
+    if (!isValidLogEntry(item)) {
       throw new Error(`${index + 1} 件目のデータをメモとして読み込めませんでした。`)
     }
     return item
@@ -17,7 +18,7 @@ function isValidDateString(value: string): boolean {
   return !Number.isNaN(Date.parse(value))
 }
 
-export function isLogEntry(item: unknown): item is LogEntry {
+export function isValidLogEntry(item: unknown): item is LogEntry {
   if (typeof item !== "object" || item === null) {
     return false
   }
@@ -26,7 +27,7 @@ export function isLogEntry(item: unknown): item is LogEntry {
     return false
   }
 
-  if (!("text" in item) || typeof item.text !== "string") {
+  if (!("text" in item) || typeof item.text !== "string" || !isValidLogEntryText(item.text)) {
     return false
   }
 
@@ -39,4 +40,8 @@ export function isLogEntry(item: unknown): item is LogEntry {
   }
 
   return true
+}
+
+export function isValidLogEntryText(text: string) {
+  return getUtf8ByteLength(text) <= MAX_LOG_ENTRY_TEXT_BYTES && text.trim().length > 0
 }

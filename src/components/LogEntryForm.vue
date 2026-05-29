@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { MAX_LOG_ENTRY_TEXT_BYTES } from "@/lib/sizeLimits"
 import { ref } from "vue"
 
 const text = ref("")
@@ -13,7 +14,6 @@ function onSubmit() {
   if (!value) return
 
   emit("submit", value)
-  text.value = ""
 }
 
 function onKeydownEnter(e: KeyboardEvent) {
@@ -29,7 +29,11 @@ function focus(options?: FocusOptions) {
   textarea.value?.focus(options)
 }
 
-defineExpose({ focus })
+function clear() {
+  text.value = ""
+}
+
+defineExpose({ focus, clear })
 </script>
 
 <template>
@@ -45,6 +49,7 @@ defineExpose({ focus })
       placeholder="メモを書く"
       @keydown.enter="onKeydownEnter"
       required
+      :maxlength="MAX_LOG_ENTRY_TEXT_BYTES"
     ></textarea>
     <button class="button-primary submit-button" type="submit">記録</button>
   </form>

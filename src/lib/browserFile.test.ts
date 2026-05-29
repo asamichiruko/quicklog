@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { downloadTextFile, readJsonFile } from "./browserFile"
+import { downloadTextFile, readLogEntriesImportFile } from "./browserFile"
 
 describe("downloadTextFile", () => {
   afterEach(() => {
@@ -43,7 +43,7 @@ describe("downloadTextFile", () => {
   })
 })
 
-describe("readJsonFile", () => {
+describe("readLogEntriesImportFile", () => {
   it("JSON ファイルの内容を parse する", async () => {
     const file = new File(
       [JSON.stringify({ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" })],
@@ -51,7 +51,7 @@ describe("readJsonFile", () => {
       { type: "application/json" },
     )
 
-    await expect(readJsonFile(file)).resolves.toEqual({
+    await expect(readLogEntriesImportFile(file)).resolves.toEqual({
       id: "id1",
       text: "text1",
       createdAt: "2026-05-22T00:00:00.000Z",
@@ -63,6 +63,14 @@ describe("readJsonFile", () => {
       type: "application/json",
     })
 
-    await expect(readJsonFile(file)).rejects.toThrow()
+    await expect(readLogEntriesImportFile(file)).rejects.toThrow()
+  })
+
+  it("ファイルサイズが大きすぎる場合は reject する", async () => {
+    const file = new File(["a".repeat(100 * 1024 * 1024)], "data.json", {
+      type: "application/json"
+    })
+
+    await expect(readLogEntriesImportFile(file)).rejects.toThrow()
   })
 })

@@ -13,7 +13,6 @@ describe("LogEntryForm", () => {
     await user.click(screen.getByRole("button", { name: "記録" }))
 
     expect(emitted("submit")).toEqual([["text1"]])
-    expect(textarea).toHaveValue("")
   })
 
   it("入力したテキストの前後の空白は trim されて emit される", async () => {
