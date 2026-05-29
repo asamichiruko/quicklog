@@ -1,8 +1,5 @@
 import type { LogEntry } from "@/types"
-
-export const MAX_LOG_ENTRY_TEXT_BYTES = 256 * 1024
-export const MAX_LOG_ENTRIES_IMPORT_FILE_BYTES = 10 * 1024 * 1024
-export const MAX_LOG_ENTRIES_EXPORT_FILE_BYTES = 10 * 1024 * 1024
+import { getUtf8ByteLength, MAX_LOG_ENTRY_TEXT_BYTES } from "@/lib/sizeLimits"
 
 export function parseAsLogEntries(data: unknown): LogEntry[] {
   if (!Array.isArray(data)) {
@@ -46,7 +43,5 @@ export function isValidLogEntry(item: unknown): item is LogEntry {
 }
 
 export function isValidLogEntryText(text: string) {
-  const encoder = new TextEncoder()
-  const length = encoder.encode(text).byteLength
-  return length <= MAX_LOG_ENTRY_TEXT_BYTES && text.trim().length > 0
+  return getUtf8ByteLength(text) <= MAX_LOG_ENTRY_TEXT_BYTES && text.trim().length > 0
 }
