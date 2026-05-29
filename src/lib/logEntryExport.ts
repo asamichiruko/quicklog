@@ -2,6 +2,7 @@ import type { ExportType, LogEntry } from "@/types"
 import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } from "@/lib/logEntryCollection"
 import { formatLongJapaneseDate, formatTimeWithSeconds } from "@/lib/dateFormat"
 import { isValidLogEntry } from "@/lib/logEntrySchema"
+import { getUtf8ByteLength, MAX_LOG_ENTRIES_EXPORT_FILE_BYTES } from "@/lib/sizeLimits"
 
 type ExportFile = {
   content: string
@@ -12,6 +13,31 @@ type ExportFile = {
 const groupsHeading = "##"
 const logEntriesHeading = "###"
 const markdownFenceMaxLength = 16
+
+function createSizeLimitedTextBuilder(maxBytes: number) {
+  const parts: string[] = []
+  let bytes = 0
+
+  function append(text: string) {
+    bytes += getUtf8ByteLength(text)
+
+    if (bytes > maxBytes) {
+      throw new Error("Export file is too large.")
+    }
+
+    parts.push(text)
+  }
+
+  return {
+    appendSeparated(text: string, separator = "\n\n") {
+      if (parts.length > 0) append(separator)
+      append(text)
+    },
+    toString() {
+      return parts.join("")
+    },
+  }
+}
 
 function validateLogEntries(logEntries: LogEntry[]): LogEntry[] {
   return logEntries.map((logEntry) => {
@@ -62,21 +88,36 @@ function formatLogEntryAsMarkdown(logEntry: LogEntry): string {
   return `${logEntriesHeading} ${formatTimeWithSeconds(new Date(logEntry.createdAt))}\n\n${formatLogEntryTextAsMarkdown(logEntry.text)}`
 }
 
-function formatDateGroupAsMarkdown(group: DateGroup): string {
-  return [
-    `${groupsHeading} ${formatLongJapaneseDate(group.date)}`,
-    ...group.logEntries.map(formatLogEntryAsMarkdown),
-  ].join("\n\n")
+function appendDateGroupAsMarkdown(
+  builder: ReturnType<typeof createSizeLimitedTextBuilder>,
+  group: DateGroup,
+) {
+  builder.appendSeparated(`${groupsHeading} ${formatLongJapaneseDate(group.date)}`)
+
+  for (const logEntry of group.logEntries) {
+    builder.appendSeparated(formatLogEntryAsMarkdown(logEntry))
+  }
 }
 
 export function formatLogEntriesAsMarkdown(logEntries: LogEntry[]): string {
-  return groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)))
-    .map(formatDateGroupAsMarkdown)
-    .join("\n\n")
+  const groupedLogEntries = groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)))
+  const builder = createSizeLimitedTextBuilder(MAX_LOG_ENTRIES_EXPORT_FILE_BYTES)
+
+  for (const group of groupedLogEntries) {
+    appendDateGroupAsMarkdown(builder, group)
+  }
+
+  return builder.toString()
 }
 
 export function formatLogEntriesAsJson(logEntries: LogEntry[]): string {
-  return JSON.stringify(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)), null, 2)
+  const formatted = JSON.stringify(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)), null, 2)
+
+  if (getUtf8ByteLength(formatted) > MAX_LOG_ENTRIES_EXPORT_FILE_BYTES) {
+    throw new Error("Export file is too large.")
+  }
+
+  return formatted
 }
 
 const exportFormats: Record<
