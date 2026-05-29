@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { MAX_LOG_ENTRY_TEXT_BYTES } from "@/lib/logEntrySchema"
+import { MAX_LOG_ENTRY_TEXT_BYTES } from "@/lib/sizeLimits"
 import { ref } from "vue"
 
 const text = ref("")
