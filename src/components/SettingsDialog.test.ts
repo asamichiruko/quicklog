@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
-import { render, screen } from "@testing-library/vue"
+import { afterEach, describe, expect, it, vi } from "vitest"
+import { fireEvent, render, screen, waitFor } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
 import { defineComponent, ref } from "vue"
@@ -10,6 +10,11 @@ const TestHost = defineComponent({
   setup() {
     const dialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
     const settings = ref({ showDailySummary: false })
+    const logEntries = ref([
+      { id: "id1", text: "text1", createdAt: "2026-05-21T12:00:00.000Z" },
+      { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" },
+      { id: "id3", text: "text3", createdAt: "2026-05-22T12:00:00.000Z" },
+    ])
     const savedSettings = ref<unknown>(null)
     const exportType = ref<ExportType | null>(null)
     const importedFile = ref<File | null>(null)
@@ -21,6 +26,7 @@ const TestHost = defineComponent({
     return {
       dialog,
       settings,
+      logEntries,
       enableSummary,
       savedSettings,
       exportType,
@@ -33,6 +39,7 @@ const TestHost = defineComponent({
   <SettingsDialog
     ref="dialog"
     :settings="settings"
+    :log-entries="logEntries"
     @save="savedSettings = $event"
     @export="exportType = $event"
     @import="importedFile = $event"
@@ -45,6 +52,10 @@ const TestHost = defineComponent({
 })
 
 describe("SettingsDialog", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it("open で dialog が表示される", async () => {
     const user = userEvent.setup()
     const { container } = render(TestHost)
@@ -85,6 +96,7 @@ describe("SettingsDialog", () => {
     render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByText("記録のエクスポート"))
     await user.click(screen.getByRole("radio", { name: "Markdown" }))
     await user.click(screen.getByRole("button", { name: "ファイルをダウンロード" }))
 
@@ -96,6 +108,7 @@ describe("SettingsDialog", () => {
     render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByText("記録のインポート"))
 
     const importButton = screen.getByRole("button", { name: "ファイルをインポート" })
     expect(importButton).toBeDisabled()
@@ -113,6 +126,35 @@ describe("SettingsDialog", () => {
     await user.click(importButton)
 
     expect(screen.getByTestId("import-file-name")).toHaveTextContent("quicklog.json")
+  })
+
+  it("期間を選択して 記録をコピー ボタンを押すと Markdown テキストがクリップボードにコピーされる", async () => {
+    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined)
+
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByText("記録のコピー"))
+
+    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-22")
+    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-22")
+
+    const preview = screen.getByRole("textbox", {
+      name: "コピーする Markdown テキスト",
+    }) as HTMLTextAreaElement
+    expect(preview.value).toContain("text2")
+
+    const copyButton = screen.getByRole("button", { name: "クリップボードにコピー" })
+    expect(copyButton).toBeEnabled()
+
+    await user.click(copyButton)
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
+    expect(writeText.mock.calls[0][0]).toContain("text2")
+    expect(writeText.mock.calls[0][0]).toContain("text3")
+    expect(writeText.mock.calls[0][0]).not.toContain("text1")
+    expect(screen.getByText("クリップボードにコピーしました。")).toBeInTheDocument()
   })
 
   it("props で与えた初期値が UI に反映される", async () => {

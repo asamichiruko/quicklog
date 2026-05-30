@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { addDays, addMonths, getDateGroupId, getLocalDateKey, startOfLocalDay, startOfMonth } from "./date"
+import { addDays, addMonths, getDateGroupId, getLocalDateKey, parseLocalDateKey, startOfLocalDay, startOfMonth } from "./date"
 import { InvalidDateError } from "@/lib/error"
 
 describe("getLocalDateKey", () => {
@@ -106,5 +106,19 @@ describe("addDays", () => {
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
     expect(() => { addDays(invalidDate, 0) }).toThrow(InvalidDateError)
+  })
+})
+
+describe("parseLocalDateKey", () => {
+  it("正式なキーを Date オブジェクトに parse できる", () => {
+    expect(parseLocalDateKey("2026-05-22")).toEqual(new Date(2026, 4, 22))
+  })
+
+  it("不正な形式のキーを与えると例外を出す", () => {
+    expect(() => { parseLocalDateKey("2026/5/22") }).toThrow(SyntaxError)
+  })
+
+  it("存在しない日付のキーを与えると例外を出す", () => {
+    expect(() => { parseLocalDateKey("2020-02-30") }).toThrow(SyntaxError)
   })
 })

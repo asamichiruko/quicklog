@@ -11,7 +11,7 @@ import { createLogEntriesExportFile } from "@/lib/logEntryExport"
 import { isValidLogEntryText, parseAsLogEntries } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
-import { type AppSettings, type ExportType, type LogEntry } from "@/types"
+import type { AppSettings, ExportType, LogEntry } from "@/types"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { SchemaValidationError, SizeError } from "./lib/error"
 
@@ -23,7 +23,6 @@ const newLogEntryButtonShowScrollY = 320
 const newLogEntryButtonHideScrollY = 120
 
 const initialDate = ref<Date>(new Date())
-
 const recordCounts = computed(() => {
   const counts = new Map<string, number>()
 
@@ -186,8 +185,8 @@ function handleSaveSettings(nextSettings: AppSettings) {
         <SettingsButton @click="openSettings" />
       </div>
       <LogEntryList
-        :logEntries="logEntries"
-        :showDailySummary="settings.showDailySummary"
+        :log-entries="logEntries"
+        :show-daily-summary="settings.showDailySummary"
         @remove="handleRemove"
         @open-calendar="handleOpenCalendar"
       />
@@ -219,6 +218,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
   <SettingsDialog
     ref="settingsDialog"
     :settings="settings"
+    :log-entries="logEntries"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"
@@ -226,8 +226,8 @@ function handleSaveSettings(nextSettings: AppSettings) {
 
   <CalendarDialog
     ref="calendarDialog"
-    :initialDate="initialDate"
-    :recordCounts="recordCounts"
+    :initial-date="initialDate"
+    :record-counts="recordCounts"
     @select="handleSelectDate"
   />
 </template>

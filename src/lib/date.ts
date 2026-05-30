@@ -14,6 +14,19 @@ export function getLocalDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+export function parseLocalDateKey(key: string) {
+  const [year, month, day] = key.split("-").map(Number)
+  const date = new Date(year, month - 1, day)
+
+  if (!isValidDate(date)
+    || date.getFullYear() !== year
+    || date.getMonth() !== month - 1
+    || date.getDate() !== day) {
+    throw new SyntaxError("Invalid date key.")
+  }
+  return date
+}
+
 export function startOfLocalDay(date: Date) {
   if (!isValidDate(date)) throw new InvalidDateError("Invalid date.")
 
