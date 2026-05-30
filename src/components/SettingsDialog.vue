@@ -100,9 +100,13 @@ defineExpose({ open })
           </li>
         </ul>
       </section>
-      <section class="section">
-        <h3 class="section-heading">記録のエクスポート</h3>
-        <div class="settings-panel">
+      <details class="settings-panel">
+        <summary class="settings-panel-summary">記録のコピー</summary>
+        <div class="settings-panel-body"></div>
+      </details>
+      <details class="settings-panel">
+        <summary class="settings-panel-summary">記録のエクスポート</summary>
+        <div class="settings-panel-body">
           <fieldset class="export-type-selector">
             <legend class="export-type-selector-label">ファイル形式</legend>
             <label class="export-type-option">
@@ -130,10 +134,10 @@ defineExpose({ open })
             ファイルをダウンロード
           </button>
         </div>
-      </section>
-      <section class="section">
-        <h3 class="section-heading">記録のインポート</h3>
-        <div class="settings-panel">
+      </details>
+      <details class="settings-panel">
+        <summary class="settings-panel-summary">記録のインポート</summary>
+        <div class="settings-panel-body">
           <p class="import-description">
             事前にエクスポートした JSON
             ファイルを読み込みます。既存のメモは残り、重複するものは取り込まれません。
@@ -166,7 +170,7 @@ defineExpose({ open })
             ファイルをインポート
           </button>
         </div>
-      </section>
+      </details>
       <div class="confirm-actions">
         <button class="button-primary" type="submit" @click="saveAndClose">設定を保存</button>
         <button class="button-secondary" type="button" @click="close">キャンセル</button>
@@ -186,7 +190,7 @@ defineExpose({ open })
 
 .dialog-form {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-2);
   padding: var(--space-2);
 }
 
@@ -238,13 +242,23 @@ defineExpose({ open })
 }
 
 .settings-panel {
-  display: grid;
   min-width: 0;
-  gap: var(--space-2);
   padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   background: var(--color-surface);
+}
+
+.settings-panel-summary {
+  color: var(--color-text);
+  font-size: 1em;
+  font-weight: var(--font-weight-bold);
+}
+
+.settings-panel-body {
+  margin-top: var(--space-2);
+  display: grid;
+  gap: var(--space-2);
 }
 
 .export-type-selector {
@@ -376,6 +390,7 @@ defineExpose({ open })
 }
 
 .confirm-actions {
+  margin-top: var(--space-2);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
