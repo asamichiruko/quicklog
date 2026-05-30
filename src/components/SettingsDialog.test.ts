@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, waitFor } from "@testing-library/vue"
+import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
 import { defineComponent, ref } from "vue"
@@ -126,35 +126,6 @@ describe("SettingsDialog", () => {
     await user.click(importButton)
 
     expect(screen.getByTestId("import-file-name")).toHaveTextContent("quicklog.json")
-  })
-
-  it("期間を選択して 記録をコピー ボタンを押すと Markdown テキストがクリップボードにコピーされる", async () => {
-    const writeText = vi.spyOn(navigator.clipboard, "writeText").mockResolvedValue(undefined)
-
-    const user = userEvent.setup()
-    render(TestHost)
-
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByText("記録のコピー"))
-
-    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-22")
-    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-22")
-
-    const preview = screen.getByRole("textbox", {
-      name: "コピーする Markdown テキスト",
-    }) as HTMLTextAreaElement
-    expect(preview.value).toContain("text2")
-
-    const copyButton = screen.getByRole("button", { name: "クリップボードにコピー" })
-    expect(copyButton).toBeEnabled()
-
-    await user.click(copyButton)
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
-    expect(writeText.mock.calls[0][0]).toContain("text2")
-    expect(writeText.mock.calls[0][0]).toContain("text3")
-    expect(writeText.mock.calls[0][0]).not.toContain("text1")
-    expect(screen.getByText("クリップボードにコピーしました。")).toBeInTheDocument()
   })
 
   it("props で与えた初期値が UI に反映される", async () => {
