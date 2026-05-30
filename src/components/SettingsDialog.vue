@@ -102,13 +102,31 @@ defineExpose({ open })
       </section>
       <details class="settings-panel">
         <summary class="settings-panel-summary">記録のコピー</summary>
-        <div class="settings-panel-body"></div>
+        <div class="settings-panel-body">
+          <fieldset class="copy-period">
+            <legend class="copy-period-legend">期間</legend>
+
+            <label class="copy-date-field">
+              <span class="copy-date-label">開始</span>
+              <input id="copy-start-date" class="copy-date-input" type="date" required />
+            </label>
+
+            <label class="copy-date-field">
+              <span class="copy-date-label">終了</span>
+              <input id="copy-end-date" class="copy-date-input" type="date" required />
+            </label>
+          </fieldset>
+          <output class="copy-summary" for="copy-start-date copy-end-date">
+            対象: 0 件 / Markdown 形式</output
+          >
+          <button class="button-secondary copy-button" type="button">クリップボードにコピー</button>
+        </div>
       </details>
       <details class="settings-panel">
         <summary class="settings-panel-summary">記録のエクスポート</summary>
         <div class="settings-panel-body">
           <fieldset class="export-type-selector">
-            <legend class="export-type-selector-label">ファイル形式</legend>
+            <legend class="export-type-selector-legend">ファイル形式</legend>
             <label class="export-type-option">
               <input
                 type="radio"
@@ -142,8 +160,8 @@ defineExpose({ open })
             事前にエクスポートした JSON
             ファイルを読み込みます。既存のメモは残り、重複するものは取り込まれません。
           </p>
-          <label class="import-file-label">
-            <span class="import-file-label-text">インポートする JSON ファイルを選択</span>
+          <label class="import-file-field">
+            <span class="import-file-label">インポートする JSON ファイルを選択</span>
             <span class="import-file-control">
               <span class="import-file-button" aria-hidden="true">ファイルを選択</span>
               <span id="import-file-name" class="import-file-name">
@@ -243,22 +261,74 @@ defineExpose({ open })
 
 .settings-panel {
   min-width: 0;
-  padding: var(--space-2);
+  padding: 0;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   background: var(--color-surface);
 }
 
 .settings-panel-summary {
+  min-height: var(--control-min-size);
+  padding: 0 var(--space-2);
+  align-content: center;
   color: var(--color-text);
   font-size: 1em;
   font-weight: var(--font-weight-bold);
+  cursor: pointer;
 }
 
 .settings-panel-body {
-  margin-top: var(--space-2);
   display: grid;
   gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.settings-panel[open] .settings-panel-body {
+  padding-top: var(--space-2);
+}
+
+.copy-period {
+  display: grid;
+  gap: var(--space-2);
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+.copy-period-legend {
+  margin-bottom: var(--space-1);
+  font-weight: var(--font-weight-bold);
+}
+
+.copy-date-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.copy-date-label {
+  font-weight: var(--font-weight-bold);
+}
+
+.copy-date-input {
+  min-width: 0;
+  min-height: var(--control-min-size);
+}
+
+.copy-summary {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-surface);
+  background: var(--color-page);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.copy-button {
+  width: fit-content;
 }
 
 .export-type-selector {
@@ -270,7 +340,7 @@ defineExpose({ open })
   padding: 0;
 }
 
-.export-type-selector-label {
+.export-type-selector-legend {
   width: 100%;
   margin: var(--space-1) 0;
   font-weight: var(--font-weight-bold);
@@ -317,14 +387,14 @@ defineExpose({ open })
   font-size: var(--font-size-small);
 }
 
-.import-file-label {
+.import-file-field {
   display: grid;
   min-width: 0;
   gap: var(--space-1);
   cursor: pointer;
 }
 
-.import-file-label-text {
+.import-file-label {
   font-weight: var(--font-weight-bold);
 }
 
@@ -341,7 +411,7 @@ defineExpose({ open })
   border: 1px solid var(--color-border);
 }
 
-.import-file-label:focus-within .import-file-control {
+.import-file-field:focus-within .import-file-control {
   outline: 2px solid var(--color-primary);
 }
 
@@ -375,12 +445,12 @@ defineExpose({ open })
 }
 
 @media (hover: hover) {
-  .import-file-label:hover .import-file-button {
+  .import-file-field:hover .import-file-button {
     background: var(--color-control-hover);
   }
 }
 @media (hover: none) {
-  .import-file-label:active .import-file-button {
+  .import-file-field:active .import-file-button {
     background: var(--color-control-hover);
   }
 }
