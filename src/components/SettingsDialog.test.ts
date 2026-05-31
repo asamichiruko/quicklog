@@ -93,18 +93,6 @@ describe("SettingsDialog", () => {
     expect(container.querySelector("dialog")).not.toHaveAttribute("open")
   })
 
-  it("ファイルをダウンロード ボタンを押すと export される", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
-
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByText("記録のエクスポート"))
-    await user.click(screen.getByRole("radio", { name: "Markdown" }))
-    await user.click(screen.getByRole("button", { name: "ファイルをダウンロード" }))
-
-    expect(screen.getByTestId("export-type")).toHaveTextContent("markdown")
-  })
-
   it("props で与えた初期値が UI に反映される", async () => {
     const user = userEvent.setup()
     render(TestHost)
@@ -144,6 +132,31 @@ describe("SettingsDialog", () => {
     await user.click(screen.getByText("記録のインポート"))
 
     expect(screen.getByText("選択されていません")).toBeInTheDocument()
+  })
+
+  it("開き直すと 記録のエクスポート パネルが閉じて入力状態がリセットされる", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const exportPanel = screen.getByText("記録のエクスポート").closest("details")
+    expect(exportPanel).not.toBeNull()
+
+    await user.click(screen.getByText("記録のエクスポート"))
+    expect(exportPanel).toHaveAttribute("open")
+
+    await user.click(screen.getByRole("radio", { name: "Markdown" }))
+    expect(screen.getByRole("radio", { name: "Markdown" })).toBeChecked()
+
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    expect(exportPanel).not.toHaveAttribute("open")
+
+    await user.click(screen.getByText("記録のエクスポート"))
+
+    expect(screen.getByRole("radio", { name: "JSON" })).toBeChecked()
   })
 
   it("開き直すと 記録のコピー パネルが閉じて入力状態がリセットされる", async () => {
