@@ -50,12 +50,12 @@ const copyTextResult = computed<{ text: string; errorMessage: string }>(() => {
     }
   } catch (error) {
     if (error instanceof SizeError) {
-      return { text: "", errorMessage: "記録のサイズが大きすぎます。" }
+      return { text: "", errorMessage: "記録のサイズが大きすぎます" }
     }
     if (error instanceof SchemaValidationError) {
-      return { text: "", errorMessage: "データが破損しています。" }
+      return { text: "", errorMessage: "データが破損しています" }
     }
-    return { text: "", errorMessage: "コピーテキストの生成に失敗しました。" }
+    return { text: "", errorMessage: "コピーテキストの生成に失敗しました" }
   }
 })
 
@@ -92,10 +92,9 @@ async function handleCopy() {
 
   try {
     await window.navigator.clipboard.writeText(copyText.value)
-    copyResultMessage.value = "クリップボードにコピーしました。"
+    copyResultMessage.value = "クリップボードにコピーしました"
   } catch {
-    copyResultMessage.value =
-      "クリップボードにコピーできません。下の内容を手動でコピーしてください。"
+    copyResultMessage.value = "クリップボードにコピーできません。下の内容を手動でコピーしてください"
   }
 }
 </script>
