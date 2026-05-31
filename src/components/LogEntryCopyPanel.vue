@@ -5,21 +5,21 @@ import { formatLogEntriesAsMarkdown } from "@/lib/logEntryExport"
 import type { LogEntry } from "@/types"
 import { computed, ref } from "vue"
 
-const copyStartDate = ref<string>(getLocalDateKey(new Date()))
-const copyEndDate = ref<string>(getLocalDateKey(new Date()))
-const copyResultMessage = ref<string>("")
+const startDate = ref<string>(getLocalDateKey(new Date()))
+const endDate = ref<string>(getLocalDateKey(new Date()))
+const resultMessage = ref<string>("")
 
 const props = defineProps<{
   logEntries: LogEntry[]
 }>()
 
-const copyRecordsTarget = computed<LogEntry[]>(() => {
+const targetLogEntries = computed<LogEntry[]>(() => {
   let start
   let endExclusive
 
   try {
-    start = parseLocalDateKey(copyStartDate.value).getTime()
-    endExclusive = addDays(parseLocalDateKey(copyEndDate.value), 1).getTime()
+    start = parseLocalDateKey(startDate.value).getTime()
+    endExclusive = addDays(parseLocalDateKey(endDate.value), 1).getTime()
   } catch {
     return []
   }
@@ -34,18 +34,18 @@ const copyRecordsTarget = computed<LogEntry[]>(() => {
   return targets
 })
 
-const copyRecordsCount = computed(() => {
-  return copyRecordsTarget.value.length
+const targetCount = computed(() => {
+  return targetLogEntries.value.length
 })
 
 const copyTextResult = computed<{ text: string; errorMessage: string }>(() => {
-  if (copyRecordsCount.value === 0) {
+  if (targetCount.value === 0) {
     return { text: "", errorMessage: "" }
   }
 
   try {
     return {
-      text: formatLogEntriesAsMarkdown(copyRecordsTarget.value),
+      text: formatLogEntriesAsMarkdown(targetLogEntries.value),
       errorMessage: "",
     }
   } catch (error) {
@@ -63,38 +63,38 @@ const copyText = computed(() => {
   return copyTextResult.value.text
 })
 
-const canCopyRecords = computed(() => {
-  return copyRecordsCount.value > 0 && copyText.value !== ""
+const canCopy = computed(() => {
+  return targetCount.value > 0 && copyText.value !== ""
 })
 
-const copySummaryText = computed(() => {
+const selectionStatusMessage = computed(() => {
   let start
   let endExclusive
 
   try {
-    start = parseLocalDateKey(copyStartDate.value).getTime()
-    endExclusive = addDays(parseLocalDateKey(copyEndDate.value), 1).getTime()
+    start = parseLocalDateKey(startDate.value).getTime()
+    endExclusive = addDays(parseLocalDateKey(endDate.value), 1).getTime()
   } catch {
     return "有効な日付を指定してください"
   }
 
   if (endExclusive <= start) return "開始日が終了日より後です"
-  if (copyRecordsCount.value === 0) return "指定範囲に記録がありません"
-  return `対象: ${copyRecordsCount.value} 件 / Markdown 形式`
+  if (targetCount.value === 0) return "指定範囲に記録がありません"
+  return `対象: ${targetCount.value} 件 / Markdown 形式`
 })
 
-const copyFeedbackMessage = computed(() => {
-  return copyTextResult.value.errorMessage || copyResultMessage.value
+const feedbackMessage = computed(() => {
+  return copyTextResult.value.errorMessage || resultMessage.value
 })
 
 async function handleCopy() {
-  if (!canCopyRecords.value) return
+  if (!canCopy.value) return
 
   try {
     await window.navigator.clipboard.writeText(copyText.value)
-    copyResultMessage.value = "クリップボードにコピーしました"
+    resultMessage.value = "クリップボードにコピーしました"
   } catch {
-    copyResultMessage.value = "クリップボードにコピーできません。下の内容を手動でコピーしてください"
+    resultMessage.value = "クリップボードにコピーできません。下の内容を手動でコピーしてください"
   }
 }
 </script>
@@ -106,42 +106,30 @@ async function handleCopy() {
 
       <label class="copy-date-field">
         <span class="copy-date-label">開始</span>
-        <input
-          id="copy-start-date"
-          class="copy-date-input"
-          type="date"
-          v-model="copyStartDate"
-          required
-        />
+        <input id="copy-start-date" class="date-input" type="date" v-model="startDate" required />
       </label>
 
       <label class="copy-date-field">
         <span class="copy-date-label">終了</span>
-        <input
-          id="copy-end-date"
-          class="copy-date-input"
-          type="date"
-          v-model="copyEndDate"
-          required
-        />
+        <input id="copy-end-date" class="date-input" type="date" v-model="endDate" required />
       </label>
     </fieldset>
-    <output class="copy-summary" for="copy-start-date copy-end-date">
-      {{ copySummaryText }}
+    <output class="copy-selection-status" for="copy-start-date copy-end-date">
+      {{ selectionStatusMessage }}
     </output>
     <button
       class="button-secondary copy-button"
       type="button"
       @click="handleCopy"
-      :disabled="!canCopyRecords"
+      :disabled="!canCopy"
     >
       クリップボードにコピー
     </button>
-    <p v-if="copyFeedbackMessage" class="copy-result" role="status" aria-live="polite">
-      {{ copyFeedbackMessage }}
+    <p v-if="feedbackMessage" class="feedback-message" role="status" aria-live="polite">
+      {{ feedbackMessage }}
     </p>
-    <details v-if="canCopyRecords" class="copy-preview-panel">
-      <summary class="copy-preview-summary">コピー内容</summary>
+    <details v-if="canCopy" class="copy-preview-panel">
+      <summary class="copy-preview-toggle">コピー内容</summary>
       <textarea
         class="copy-preview"
         readonly
@@ -182,12 +170,12 @@ async function handleCopy() {
   font-weight: var(--font-weight-bold);
 }
 
-.copy-date-input {
+.date-input {
   min-width: 0;
   min-height: var(--control-min-size);
 }
 
-.copy-summary {
+.copy-selection-status {
   display: block;
   width: fit-content;
   max-width: 100%;
@@ -203,7 +191,7 @@ async function handleCopy() {
   width: fit-content;
 }
 
-.copy-result {
+.feedback-message {
   display: block;
   width: fit-content;
   max-width: 100%;
@@ -215,7 +203,7 @@ async function handleCopy() {
   font-size: var(--font-size-small);
 }
 
-.copy-preview-summary {
+.copy-preview-toggle {
   min-height: var(--control-min-size);
   padding: 0;
   align-content: center;
