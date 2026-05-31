@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { isValidLogEntry, isValidLogEntryText, parseAsLogEntries } from "./logEntrySchema"
 import { SchemaValidationError } from "@/lib/errors"
 
-describe("isLogEntry", () => {
+describe("isValidLogEntry", () => {
   it("valid な LogEntry を true と判定する", () => {
     const item = {
       id: "id1",
