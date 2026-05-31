@@ -4,14 +4,12 @@ import { SchemaValidationError } from "@/lib/errors"
 
 describe("isValidSyncOperation", () => {
   it("valid な SyncOperation を true と判定する", () => {
-    const item = {
+    expect(isValidSyncOperation({
       id: "id1",
       type: "delete",
       createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "entryId1",
-    }
-
-    expect(isValidSyncOperation(item)).toBe(true)
+      entryId: "id1",
+    })).toBe(true)
   })
 
   it("object 型でないものを false と判定する", () => {
@@ -21,89 +19,94 @@ describe("isValidSyncOperation", () => {
     expect(isValidSyncOperation("invalid item")).toBe(false)
   })
 
-  it("id が存在しない、または不正な値のとき false と判定する", () => {
-    const item1 = {
+  it("id が存在しない、または不正な型のとき false と判定する", () => {
+    expect(isValidSyncOperation({
       id: 42,
       type: "delete",
       createdAt: "2026-05-31T00:00:00.000Z",
       entryId: "entryId1",
-    }
-    const item2 = {
-      id: "",
-      type: "delete",
-      createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "entryId1",
-    }
-    const item3 = {
-      id: "a".repeat(1000),
-      type: "delete",
-      createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "entryId1",
-    }
-    const item4 = {
-      type: "delete",
-      createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "entryId1",
-    }
+    })).toBe(false)
 
-    expect(isValidSyncOperation(item1)).toBe(false)
-    expect(isValidSyncOperation(item2)).toBe(false)
-    expect(isValidSyncOperation(item3)).toBe(false)
-    expect(isValidSyncOperation(item4)).toBe(false)
+    expect(isValidSyncOperation({
+      type: "delete",
+      createdAt: "2026-05-31T00:00:00.000Z",
+      entryId: "entryId1",
+    })).toBe(false)
+  })
+
+  it("id は 1 文字以上 128 文字以下を valid, それ以外を invalid と判定する", () => {
+    const itemBase = {
+      type: "delete",
+      createdAt: "2026-05-31T00:00:00.000Z",
+      entryId: "id1",
+    }
+    expect(isValidSyncOperation({ ...itemBase, id: "" })).toBe(false)
+    expect(isValidSyncOperation({ ...itemBase, id: "a" })).toBe(true)
+    expect(isValidSyncOperation({ ...itemBase, id: "a".repeat(128) })).toBe(true)
+    expect(isValidSyncOperation({ ...itemBase, id: "a".repeat(129) })).toBe(false)
+  })
+
+  it("entryId は 1 文字以上 128 文字以下を valid, それ以外を invalid と判定する", () => {
+    const itemBase = {
+      id: "id1",
+      type: "delete",
+      createdAt: "2026-05-31T00:00:00.000Z",
+    }
+    expect(isValidSyncOperation({ ...itemBase, entryId: "" })).toBe(false)
+    expect(isValidSyncOperation({ ...itemBase, entryId: "a" })).toBe(true)
+    expect(isValidSyncOperation({ ...itemBase, entryId: "a".repeat(128) })).toBe(true)
+    expect(isValidSyncOperation({ ...itemBase, entryId: "a".repeat(129) })).toBe(false)
   })
 
   it("type が存在しない、または不正な値のとき false と判定する", () => {
-    const item1 = {
+    expect(isValidSyncOperation({
       id: "id1",
       type: "invalid-type",
       createdAt: "2026-05-31T00:00:00.000Z",
       entryId: "entryId1",
-    }
-    const item2 = {
+    })).toBe(false)
+
+    expect(isValidSyncOperation({
       id: "id1",
       type: 42,
       createdAt: "2026-05-31T00:00:00.000Z",
       entryId: "entryId1",
-    }
-    const item3 = {
+    })).toBe(false)
+
+    expect(isValidSyncOperation({
       id: "id1",
       createdAt: "2026-05-31T00:00:00.000Z",
       entryId: "entryId1",
-    }
-
-    expect(isValidSyncOperation(item1)).toBe(false)
-    expect(isValidSyncOperation(item2)).toBe(false)
-    expect(isValidSyncOperation(item3)).toBe(false)
+    })).toBe(false)
   })
 
   it("createdAt が存在しない、または invalid な date string であるとき false と判定する", () => {
-    const item1 = {
+    expect(isValidSyncOperation({
       id: "id1",
       type: "delete",
       createdAt: "invalid date",
       entryId: "entryId1",
-    }
-    const item2 = {
+    })).toBe(false)
+
+    expect(isValidSyncOperation({
       id: "id1",
       type: "delete",
       createdAt: new Date("2026-05-31T00:00:00.000Z"),
       entryId: "entryId1",
-    }
-    const item3 = {
+    })).toBe(false)
+
+    expect(isValidSyncOperation({
       id: "id1",
       type: "delete",
       createdAt: "",
       entryId: "entryId1",
-    }
-    const item4 = {
+    })).toBe(false)
+
+    expect(isValidSyncOperation({
       id: "id1",
       type: "delete",
       entryId: "entryId1",
-    }
-    expect(isValidSyncOperation(item1)).toBe(false)
-    expect(isValidSyncOperation(item2)).toBe(false)
-    expect(isValidSyncOperation(item3)).toBe(false)
-    expect(isValidSyncOperation(item4)).toBe(false)
+    })).toBe(false)
   })
 
   it("object が余分なプロパティを持っているとき true と判定する", () => {
@@ -117,35 +120,19 @@ describe("isValidSyncOperation", () => {
     expect(isValidSyncOperation(item)).toBe(true)
   })
 
-  it("type が delete であり、entryId が存在しない、または invalid な id string であるとき false を返す", () => {
-    const item1 = {
-      id: "id1",
-      type: "delete",
-      createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "",
-    }
-    const item2 = {
+  it("type が delete であり、entryId が存在しない、または型が異なるとき false を返す", () => {
+    expect(isValidSyncOperation({
       id: "id1",
       type: "delete",
       createdAt: "2026-05-31T00:00:00.000Z",
       entryId: 42,
-    }
-    const item3 = {
-      id: "id1",
-      type: "delete",
-      createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "a".repeat(1000),
-    }
-    const item4 = {
-      id: "id1",
-      type: "delete",
-      createdAt: "2026-05-31T00:00:00.000Z",
-    }
+    })).toBe(false)
 
-    expect(isValidSyncOperation(item1)).toBe(false)
-    expect(isValidSyncOperation(item2)).toBe(false)
-    expect(isValidSyncOperation(item3)).toBe(false)
-    expect(isValidSyncOperation(item4)).toBe(false)
+    expect(isValidSyncOperation({
+      id: "id1",
+      type: "delete",
+      createdAt: "2026-05-31T00:00:00.000Z",
+    })).toBe(false)
   })
 })
 
@@ -165,15 +152,13 @@ describe("parseAsSyncOperations", () => {
   })
 
   it("配列でない object に対して例外を出す", () => {
-    const data = { name: "invalid object" }
-    expect(() => { parseAsSyncOperations(data) }).toThrow(SchemaValidationError)
+    expect(() => { parseAsSyncOperations({ name: "invalid object" }) }).toThrow(SchemaValidationError)
     expect(() => { parseAsSyncOperations(undefined) }).toThrow(SchemaValidationError)
     expect(() => { parseAsSyncOperations(null) }).toThrow(SchemaValidationError)
   })
 
   it("invalid な SyncOperation を含む配列に対して例外を出す", () => {
-    const data = [{ name: "invalid data" }]
-    expect(() => { parseAsSyncOperations(data) }).toThrow(SchemaValidationError)
+    expect(() => { parseAsSyncOperations([{ name: "invalid data" }]) }).toThrow(SchemaValidationError)
   })
 
   it("空の配列をそのまま返す", () => {

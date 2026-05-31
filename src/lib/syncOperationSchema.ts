@@ -6,7 +6,7 @@ function isValidDateString(value: string): boolean {
 }
 
 function isValidIdString(value: string): boolean {
-  return value.length > 0 && value.length < 128
+  return value.length > 0 && value.length <= 128
 }
 
 export function parseAsSyncOperations(data: unknown): SyncOperation[] {
