@@ -105,31 +105,6 @@ describe("SettingsDialog", () => {
     expect(screen.getByTestId("export-type")).toHaveTextContent("markdown")
   })
 
-  it("ファイルを選択して ファイルをインポート ボタンを押すと import される", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
-
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByText("記録のインポート"))
-
-    const importButton = screen.getByRole("button", { name: "ファイルをインポート" })
-    expect(importButton).toBeDisabled()
-
-    const file = new File(
-      [JSON.stringify([{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }])],
-      "quicklog.json",
-      { type: "application/json" },
-    )
-    await user.upload(screen.getByLabelText("インポートする JSON ファイル"), file)
-
-    expect(importButton).toBeEnabled()
-    expect(screen.getByText("quicklog.json")).toBeInTheDocument()
-
-    await user.click(importButton)
-
-    expect(screen.getByTestId("import-file-name")).toHaveTextContent("quicklog.json")
-  })
-
   it("props で与えた初期値が UI に反映される", async () => {
     const user = userEvent.setup()
     render(TestHost)
@@ -140,7 +115,38 @@ describe("SettingsDialog", () => {
     expect(screen.getByRole("checkbox", { name: "日別サマリーを表示" })).toBeChecked()
   })
 
-  it("開き直すと記録のコピー パネルが閉じて入力状態がリセットされる", async () => {
+  it("開き直すと 記録のインポート パネルが閉じて入力状態がリセットされる", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const importPanel = screen.getByText("記録のインポート").closest("details")
+    expect(importPanel).not.toBeNull()
+
+    await user.click(screen.getByText("記録のインポート"))
+    expect(importPanel).toHaveAttribute("open")
+
+    const file = new File(
+      [JSON.stringify([{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }])],
+      "quicklog.json",
+      { type: "application/json" },
+    )
+    await user.upload(screen.getByLabelText("インポートする JSON ファイル"), file)
+
+    expect(screen.getByText("quicklog.json")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    expect(importPanel).not.toHaveAttribute("open")
+
+    await user.click(screen.getByText("記録のインポート"))
+
+    expect(screen.getByText("選択されていません")).toBeInTheDocument()
+  })
+
+  it("開き直すと 記録のコピー パネルが閉じて入力状態がリセットされる", async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 4, 24))
 
