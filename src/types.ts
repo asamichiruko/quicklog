@@ -21,7 +21,7 @@ export type SyncOperation =
   }
 
 export type QuicklogData = {
-  version: number
+  version: 2
   logEntries: LogEntry[]
   syncOperations: SyncOperation[]
 }
