@@ -2,7 +2,7 @@ import type { LogEntry, AppSettings } from "@/types"
 import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings"
 import { parseAsLogEntries } from "@/lib/logEntrySchema"
 import { getUtf8ByteLength, MAX_LOG_ENTRIES_STORAGE_BYTES, MAX_SETTINGS_STORAGE_BYTES } from "@/lib/sizeLimits"
-import { SizeError } from "@/lib/error"
+import { SizeError } from "@/lib/errors"
 
 const LOG_ENTRIES_KEY = "quicklog.items"
 const SETTINGS_KEY = "quicklog.settings"

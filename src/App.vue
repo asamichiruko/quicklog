@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
 import type { AppSettings, ExportType, LogEntry } from "@/types"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
-import { SchemaValidationError, SizeError } from "./lib/error"
+import { SchemaValidationError, SizeError } from "./lib/errors"
 
 const logEntries = ref<LogEntry[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })

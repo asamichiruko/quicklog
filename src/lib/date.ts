@@ -1,4 +1,4 @@
-import { InvalidDateError } from "@/lib/error"
+import { InvalidDateError } from "@/lib/errors"
 
 function isValidDate(date: Date) {
   return !isNaN(date.getTime())

@@ -1,5 +1,5 @@
 import { MAX_LOG_ENTRIES_IMPORT_FILE_BYTES } from "@/lib/sizeLimits"
-import { SizeError } from "@/lib/error"
+import { SizeError } from "@/lib/errors"
 
 export function downloadTextFile(file: {
   content: string

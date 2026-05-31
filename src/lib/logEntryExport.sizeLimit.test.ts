@@ -19,7 +19,7 @@ describe("formatLogEntriesAsMarkdown size limit", () => {
     })
 
     const { formatLogEntriesAsMarkdown } = await import("./logEntryExport")
-    const { SizeError } = await import("@/lib/error")
+    const { SizeError } = await import("@/lib/errors")
 
     const logEntries = [
       {
@@ -47,7 +47,7 @@ describe("formatLogEntriesAsJson size limit", () => {
     })
 
     const { formatLogEntriesAsJson } = await import("./logEntryExport")
-    const { SizeError } = await import("@/lib/error")
+    const { SizeError } = await import("@/lib/errors")
 
     const logEntries = [
       {

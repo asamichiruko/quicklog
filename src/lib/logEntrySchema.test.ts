@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { isValidLogEntry, isValidLogEntryText, parseAsLogEntries } from "./logEntrySchema"
-import { SchemaValidationError } from "@/lib/error"
+import { SchemaValidationError } from "@/lib/errors"
 
 describe("isLogEntry", () => {
   it("valid な LogEntry を true と判定する", () => {

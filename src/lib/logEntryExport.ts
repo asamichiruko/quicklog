@@ -3,7 +3,7 @@ import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } f
 import { formatLongJapaneseDate, formatTimeWithSeconds } from "@/lib/dateFormat"
 import { isValidLogEntry } from "@/lib/logEntrySchema"
 import { getUtf8ByteLength, MAX_LOG_ENTRIES_EXPORT_FILE_BYTES } from "@/lib/sizeLimits"
-import { SchemaValidationError, SizeError } from "@/lib/error"
+import { SchemaValidationError, SizeError } from "@/lib/errors"
 
 type ExportFile = {
   content: string

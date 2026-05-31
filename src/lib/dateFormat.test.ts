@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { formatTimeWithSeconds, formatLongJapaneseDate, formatRelativeDate } from "./dateFormat"
-import { InvalidDateError } from "@/lib/error"
+import { InvalidDateError } from "@/lib/errors"
 
 describe("formatTimeWithSeconds", () => {
   it("正規の Date オブジェクトから HH:MM:SS 形式の文字列を取得できる", () => {

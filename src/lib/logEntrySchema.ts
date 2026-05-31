@@ -1,6 +1,6 @@
 import type { LogEntry } from "@/types"
 import { getUtf8ByteLength, MAX_LOG_ENTRY_TEXT_BYTES } from "@/lib/sizeLimits"
-import { SchemaValidationError } from "@/lib/error"
+import { SchemaValidationError } from "@/lib/errors"
 
 export function parseAsLogEntries(data: unknown): LogEntry[] {
   if (!Array.isArray(data)) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { addDays, addMonths, getDateGroupId, getLocalDateKey, parseLocalDateKey, startOfLocalDay, startOfMonth } from "./date"
-import { InvalidDateError } from "@/lib/error"
+import { InvalidDateError } from "@/lib/errors"
 
 describe("getLocalDateKey", () => {
   it("正規の Date オブジェクトから YYYY-MM-DD 形式の文字列を取得できる", () => {

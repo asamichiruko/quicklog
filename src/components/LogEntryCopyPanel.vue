@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { addDays, getLocalDateKey, parseLocalDateKey } from "@/lib/date"
-import { SchemaValidationError, SizeError } from "@/lib/error"
+import { SchemaValidationError, SizeError } from "@/lib/errors"
 import { formatLogEntriesAsMarkdown } from "@/lib/logEntryExport"
 import type { LogEntry } from "@/types"
 import { computed, ref } from "vue"

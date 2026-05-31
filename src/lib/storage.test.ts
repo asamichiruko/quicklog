@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest"
 import { loadLogEntries, saveLogEntries, loadSettings, saveSettings } from "./storage"
 import { DEFAULT_SETTINGS } from "./settings"
 import type { AppSettings, LogEntry } from "@/types"
-import { SchemaValidationError } from "@/lib/error"
+import { SchemaValidationError } from "@/lib/errors"
 
 const LOG_ENTRIES_KEY = "quicklog.items"
 const SETTINGS_KEY = "quicklog.settings"

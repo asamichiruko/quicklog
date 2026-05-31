@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { downloadTextFile, readLogEntriesImportFile } from "./browserFile"
-import { SizeError } from "@/lib/error"
+import { SizeError } from "@/lib/errors"
 
 describe("downloadTextFile", () => {
   afterEach(() => {
