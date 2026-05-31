@@ -112,10 +112,8 @@ defineExpose({ reset })
 <template>
   <div class="container">
     <fieldset class="copy-period">
-      <legend class="copy-period-legend">期間</legend>
-
       <label class="copy-date-field">
-        <span class="copy-date-label">開始</span>
+        <span class="copy-date-label">開始日</span>
         <input
           id="copy-start-date"
           name="copy-start-date"
@@ -127,7 +125,7 @@ defineExpose({ reset })
       </label>
 
       <label class="copy-date-field">
-        <span class="copy-date-label">終了</span>
+        <span class="copy-date-label">終了日</span>
         <input
           id="copy-end-date"
           name="copy-end-date"
@@ -153,7 +151,7 @@ defineExpose({ reset })
       {{ feedbackMessage }}
     </p>
     <details v-if="canCopy" class="copy-preview-panel" ref="previewDetails">
-      <summary class="copy-preview-toggle">コピー内容</summary>
+      <summary class="copy-preview-toggle">コピー内容を確認</summary>
       <textarea
         class="copy-preview"
         name="copy-preview"
@@ -179,16 +177,11 @@ defineExpose({ reset })
   padding: 0;
 }
 
-.copy-period-legend {
-  margin-bottom: var(--space-1);
-  font-weight: var(--font-weight-bold);
-}
-
 .copy-date-field {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .copy-date-label {
@@ -198,6 +191,7 @@ defineExpose({ reset })
 .date-input {
   min-width: 0;
   min-height: var(--control-min-size);
+  width: fit-content;
   padding: var(--space-1);
 }
 

@@ -22,9 +22,9 @@ describe("LogEntryCopyPanel", () => {
       }
     })
 
-    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-22")
-    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-22")
-    await user.click(screen.getByText("コピー内容"))
+    await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
+    await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-22")
+    await user.click(screen.getByText("コピー内容を確認"))
 
     const preview = screen.getByRole("textbox", {
       name: "コピーする Markdown テキスト",
@@ -53,8 +53,8 @@ describe("LogEntryCopyPanel", () => {
       }
     })
 
-    const startDateInput = screen.getByLabelText("開始") as HTMLInputElement
-    const endDateInput = screen.getByLabelText("終了") as HTMLInputElement
+    const startDateInput = screen.getByLabelText("開始日") as HTMLInputElement
+    const endDateInput = screen.getByLabelText("終了日") as HTMLInputElement
     expect(startDateInput.value).toBe("2026-05-22")
     expect(endDateInput.value).toBe("2026-05-22")
   })
@@ -70,8 +70,8 @@ describe("LogEntryCopyPanel", () => {
       }
     })
 
-    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-23")
-    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-23")
+    await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-23")
+    await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-23")
 
     const copyButton = screen.getByRole("button", { name: "クリップボードにコピー" })
     expect(copyButton).toBeDisabled()
@@ -79,15 +79,15 @@ describe("LogEntryCopyPanel", () => {
     expect(screen.getByText("指定範囲に記録がありません")).toBeInTheDocument()
   })
 
-  it("開始期間が終了日より後だと記録をコピーできない", async () => {
+  it("開始日が終了日より後だと記録をコピーできない", async () => {
     render(LogEntryCopyPanel, {
       props: {
         logEntries: [],
       }
     })
 
-    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-22")
-    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-20")
+    await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
+    await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-20")
 
     const copyButton = screen.getByRole("button", { name: "クリップボードにコピー" })
     expect(copyButton).toBeDisabled()
@@ -102,7 +102,7 @@ describe("LogEntryCopyPanel", () => {
       }
     })
 
-    await fireEvent.update(screen.getByLabelText("開始"), "")
+    await fireEvent.update(screen.getByLabelText("開始日"), "")
 
     const copyButton = screen.getByRole("button", { name: "クリップボードにコピー" })
     expect(copyButton).toBeDisabled()
@@ -119,8 +119,8 @@ describe("LogEntryCopyPanel", () => {
       }
     })
 
-    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-21")
-    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-21")
+    await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-21")
+    await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-21")
 
     const copyButton = screen.getByRole("button", { name: "クリップボードにコピー" })
     expect(copyButton).toBeDisabled()

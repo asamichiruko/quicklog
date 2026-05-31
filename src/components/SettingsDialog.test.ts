@@ -174,13 +174,13 @@ describe("SettingsDialog", () => {
     await user.click(screen.getByText("記録のコピー"))
     expect(copyPanel).toHaveAttribute("open")
 
-    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-22")
-    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-22")
-    await user.click(screen.getByText("コピー内容"))
+    await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
+    await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-22")
+    await user.click(screen.getByText("コピー内容を確認"))
 
-    expect(screen.getByText("コピー内容").closest("details")).toHaveAttribute("open")
-    expect(screen.getByLabelText("開始")).toHaveValue("2026-05-22")
-    expect(screen.getByLabelText("終了")).toHaveValue("2026-05-22")
+    expect(screen.getByText("コピー内容を確認").closest("details")).toHaveAttribute("open")
+    expect(screen.getByLabelText("開始日")).toHaveValue("2026-05-22")
+    expect(screen.getByLabelText("終了日")).toHaveValue("2026-05-22")
 
     await user.click(screen.getByRole("button", { name: "キャンセル" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
@@ -189,8 +189,8 @@ describe("SettingsDialog", () => {
 
     await user.click(screen.getByText("記録のコピー"))
 
-    expect(screen.getByLabelText("開始")).toHaveValue("2026-05-24")
-    expect(screen.getByLabelText("終了")).toHaveValue("2026-05-24")
-    expect(screen.queryByText("コピー内容")).not.toBeInTheDocument()
+    expect(screen.getByLabelText("開始日")).toHaveValue("2026-05-24")
+    expect(screen.getByLabelText("終了日")).toHaveValue("2026-05-24")
+    expect(screen.queryByText("コピー内容を確認")).not.toBeInTheDocument()
   })
 })
