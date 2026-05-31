@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import LogEntryCopyPanel from "@/components/LogEntryCopyPanel.vue"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type { AppSettings, ExportType, LogEntry } from "@/types"
 import { ref } from "vue"
-import LogEntryCopyPanel from "./LogEntryCopyPanel.vue"
 
 const dialog = ref<HTMLDialogElement | null>(null)
 const importFileInput = ref<HTMLInputElement | null>(null)
 const nextSettings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
+const copyPanel = ref<InstanceType<typeof LogEntryCopyPanel> | null>(null)
+const copyPanelDetails = ref<HTMLDetailsElement | null>(null)
 
 const exportType = ref<ExportType>("json")
 const importFile = ref<File | null>(null)
@@ -27,8 +29,10 @@ function open() {
 
   nextSettings.value = { ...props.settings }
   resetImportFile()
+  copyPanel.value?.reset()
+  if (copyPanelDetails.value) copyPanelDetails.value.open = false
 
-  dialog.value?.showModal()
+  dialog.value.showModal()
 }
 
 function saveAndClose() {
@@ -103,10 +107,10 @@ defineExpose({ open })
           </li>
         </ul>
       </section>
-      <details class="settings-panel" aria-labelledby="settings-panel-copy">
+      <details class="settings-panel" aria-labelledby="settings-panel-copy" ref="copyPanelDetails">
         <summary class="settings-panel-summary" id="settings-panel-copy">記録のコピー</summary>
         <div class="settings-panel-body">
-          <LogEntryCopyPanel :log-entries="props.logEntries" />
+          <LogEntryCopyPanel :log-entries="props.logEntries" ref="copyPanel" />
         </div>
       </details>
       <details class="settings-panel" aria-labelledby="settings-panel-export">

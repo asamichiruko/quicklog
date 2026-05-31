@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/vue"
+import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
 import { defineComponent, ref } from "vue"
@@ -53,7 +53,9 @@ const TestHost = defineComponent({
 
 describe("SettingsDialog", () => {
   afterEach(() => {
+    vi.restoreAllMocks()
     vi.unstubAllGlobals()
+    vi.useRealTimers()
   })
 
   it("open で dialog が表示される", async () => {
@@ -136,5 +138,40 @@ describe("SettingsDialog", () => {
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
     expect(screen.getByRole("checkbox", { name: "日別サマリーを表示" })).toBeChecked()
+  })
+
+  it("開き直すと記録のコピー パネルが閉じて入力状態がリセットされる", async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 4, 24))
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const copyPanel = screen.getByText("記録のコピー").closest("details")
+    expect(copyPanel).not.toBeNull()
+
+    await user.click(screen.getByText("記録のコピー"))
+    expect(copyPanel).toHaveAttribute("open")
+
+    await fireEvent.update(screen.getByLabelText("開始"), "2026-05-22")
+    await fireEvent.update(screen.getByLabelText("終了"), "2026-05-22")
+    await user.click(screen.getByText("コピー内容"))
+
+    expect(screen.getByText("コピー内容").closest("details")).toHaveAttribute("open")
+    expect(screen.getByLabelText("開始")).toHaveValue("2026-05-22")
+    expect(screen.getByLabelText("終了")).toHaveValue("2026-05-22")
+
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    expect(copyPanel).not.toHaveAttribute("open")
+
+    await user.click(screen.getByText("記録のコピー"))
+
+    expect(screen.getByLabelText("開始")).toHaveValue("2026-05-24")
+    expect(screen.getByLabelText("終了")).toHaveValue("2026-05-24")
+    expect(screen.queryByText("コピー内容")).not.toBeInTheDocument()
   })
 })

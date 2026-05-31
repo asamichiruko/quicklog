@@ -40,7 +40,7 @@ describe("LogEntryCopyPanel", () => {
     expect(copiedText).toContain("text2")
     expect(copiedText).toContain("text3")
     expect(copiedText).not.toContain("text1")
-    expect(screen.getByText("クリップボードにコピーしました。")).toBeInTheDocument()
+    expect(screen.getByText("クリップボードにコピーしました")).toBeInTheDocument()
   })
 
   it("初期状態で開始日と終了日が今日にセットされている", () => {

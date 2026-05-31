@@ -8,6 +8,7 @@ import { computed, ref } from "vue"
 const startDate = ref<string>(getLocalDateKey(new Date()))
 const endDate = ref<string>(getLocalDateKey(new Date()))
 const resultMessage = ref<string>("")
+const previewDetails = ref<HTMLDetailsElement | null>(null)
 
 const props = defineProps<{
   logEntries: LogEntry[]
@@ -97,6 +98,15 @@ async function handleCopy() {
     resultMessage.value = "クリップボードにコピーできません。下の内容を手動でコピーしてください"
   }
 }
+
+function reset() {
+  startDate.value = getLocalDateKey(new Date())
+  endDate.value = getLocalDateKey(new Date())
+  resultMessage.value = ""
+  if (previewDetails.value) previewDetails.value.open = false
+}
+
+defineExpose({ reset })
 </script>
 
 <template>
@@ -106,12 +116,26 @@ async function handleCopy() {
 
       <label class="copy-date-field">
         <span class="copy-date-label">開始</span>
-        <input id="copy-start-date" class="date-input" type="date" v-model="startDate" required />
+        <input
+          id="copy-start-date"
+          name="copy-start-date"
+          class="date-input"
+          type="date"
+          v-model="startDate"
+          required
+        />
       </label>
 
       <label class="copy-date-field">
         <span class="copy-date-label">終了</span>
-        <input id="copy-end-date" class="date-input" type="date" v-model="endDate" required />
+        <input
+          id="copy-end-date"
+          name="copy-end-date"
+          class="date-input"
+          type="date"
+          v-model="endDate"
+          required
+        />
       </label>
     </fieldset>
     <output class="copy-selection-status" for="copy-start-date copy-end-date">
@@ -128,10 +152,11 @@ async function handleCopy() {
     <p v-if="feedbackMessage" class="feedback-message" role="status" aria-live="polite">
       {{ feedbackMessage }}
     </p>
-    <details v-if="canCopy" class="copy-preview-panel">
+    <details v-if="canCopy" class="copy-preview-panel" ref="previewDetails">
       <summary class="copy-preview-toggle">コピー内容</summary>
       <textarea
         class="copy-preview"
+        name="copy-preview"
         readonly
         :value="copyText"
         aria-label="コピーする Markdown テキスト"
@@ -173,6 +198,7 @@ async function handleCopy() {
 .date-input {
   min-width: 0;
   min-height: var(--control-min-size);
+  padding: var(--space-1);
 }
 
 .copy-selection-status {
@@ -223,5 +249,9 @@ async function handleCopy() {
   border-radius: var(--radius-surface);
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+.copy-preview-panel[open] .copy-preview {
+  margin-top: var(--space-2);
 }
 </style>
