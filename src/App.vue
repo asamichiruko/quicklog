@@ -6,16 +6,18 @@ import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { downloadTextFile, readLogEntriesImportFile } from "@/lib/browserFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
-import { mergeLogEntries } from "@/lib/logEntryCollection"
 import { createLogEntriesExportFile } from "@/lib/logEntryExport"
-import { isValidLogEntryText, parseAsLogEntries } from "@/lib/logEntrySchema"
+import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import { loadLogEntries, loadSettings, saveLogEntries, saveSettings } from "@/lib/storage"
-import type { AppSettings, ExportType, LogEntry } from "@/types"
+import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
+import type { AppSettings, ExportType, LogEntry, QuicklogData, SyncOperation } from "@/types"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { SchemaValidationError, SizeError } from "./lib/errors"
+import { parseAsQuicklogData } from "./lib/quicklogDataMigration"
+import { mergeQuicklogData } from "./lib/syncQuicklogData"
 
 const logEntries = ref<LogEntry[]>([])
+const syncOperations = ref<SyncOperation[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 
 const showNewLogEntryButton = ref(false)
@@ -40,7 +42,9 @@ const logEntryForm = ref<InstanceType<typeof LogEntryForm> | null>(null)
 const logEntryFormArea = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-  logEntries.value = loadLogEntries()
+  const quicklogData = loadQuicklogData()
+  logEntries.value = quicklogData.logEntries
+  syncOperations.value = quicklogData.syncOperations
   settings.value = loadSettings()
   updateNewLogEntryButtonVisibility()
   window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
@@ -60,7 +64,7 @@ function openCalendar() {
 
 function handleSubmit(text: string) {
   if (!isValidLogEntryText(text)) {
-    alert("メモの記録に失敗しました。メモ内容が長すぎる可能性があります。")
+    alert("メモの記録に失敗しました。メモ内容が長すぎます")
     return
   }
 
@@ -70,9 +74,25 @@ function handleSubmit(text: string) {
     createdAt: new Date().toISOString(),
   }
 
-  const nextEntries = [...logEntries.value, logEntry]
-  saveLogEntries(nextEntries)
-  logEntries.value = nextEntries
+  try {
+    const nextEntries = [...logEntries.value, logEntry]
+
+    saveQuicklogData({
+      version: 2,
+      logEntries: nextEntries,
+      syncOperations: syncOperations.value,
+    } satisfies QuicklogData)
+
+    logEntries.value = nextEntries
+  } catch (error) {
+    if (error instanceof SizeError) {
+      alert("メモの記録に失敗しました。記録が多すぎます")
+    } else {
+      alert("メモの記録に失敗しました")
+    }
+    return
+  }
+
   logEntryForm.value?.clear()
 }
 
@@ -105,8 +125,32 @@ function handleRemove(id: string) {
   const ok = confirm("メモを削除しますか？")
   if (!ok) return
 
-  logEntries.value = logEntries.value.filter((logEntry) => logEntry.id !== id)
-  saveLogEntries(logEntries.value)
+  try {
+    const nextLogEntries = logEntries.value.filter((logEntry) => logEntry.id !== id)
+    const deleteOperation: SyncOperation = {
+      id: crypto.randomUUID(),
+      type: "delete",
+      createdAt: new Date().toISOString(),
+      entryId: id,
+    }
+    const nextSyncOperations = [...syncOperations.value, deleteOperation]
+
+    saveQuicklogData({
+      version: 2,
+      logEntries: nextLogEntries,
+      syncOperations: nextSyncOperations,
+    } satisfies QuicklogData)
+
+    logEntries.value = nextLogEntries
+    syncOperations.value = nextSyncOperations
+  } catch (error) {
+    if (error instanceof SizeError) {
+      alert("削除に失敗しました。同期データが多すぎます")
+    } else {
+      alert("削除に失敗しました")
+    }
+    return
+  }
 }
 
 function handleExport(exportType: ExportType) {
@@ -139,12 +183,16 @@ async function handleImport(file: File) {
   try {
     const data = await readLogEntriesImportFile(file)
     const previousCount = logEntries.value.length
-    const incoming = parseAsLogEntries(data)
-    const merged = mergeLogEntries(logEntries.value, incoming)
-    const addedCount = merged.length - previousCount
+    const incoming = parseAsQuicklogData(data)
+    const merged = mergeQuicklogData(
+      { version: 2, logEntries: logEntries.value, syncOperations: syncOperations.value },
+      incoming,
+    )
+    const addedCount = Math.max(merged.logEntries.length - previousCount)
 
-    saveLogEntries(merged)
-    logEntries.value = merged
+    saveQuicklogData(merged)
+    logEntries.value = merged.logEntries
+    syncOperations.value = merged.syncOperations
 
     alert(`${addedCount} 件のメモをインポートしました。`)
   } catch (error) {
