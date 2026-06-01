@@ -1,11 +1,162 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { loadLogEntries, saveLogEntries, loadSettings, saveSettings } from "./storage"
+import { loadLogEntries, saveLogEntries, loadSettings, saveSettings, loadQuicklogData, saveQuicklogData } from "./storage"
 import { DEFAULT_SETTINGS } from "./settings"
-import type { AppSettings, LogEntry } from "@/types"
+import type { AppSettings, LogEntry, QuicklogData } from "@/types"
 import { SchemaValidationError } from "@/lib/errors"
 
+const QUICKLOG_DATA_KEY = "quicklog.data"
 const LOG_ENTRIES_KEY = "quicklog.items"
 const SETTINGS_KEY = "quicklog.settings"
+
+describe("quicklogData", () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it("正常な quicklogData を読み書きできる", () => {
+    const data = {
+      version: 2,
+      logEntries: [
+        { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
+      ],
+      syncOperations: [
+        { id: "id1", type: "delete", createdAt: "2026-05-22T00:00:00.000Z", entryId: "id2" }
+      ],
+    } satisfies QuicklogData
+
+    saveQuicklogData(data)
+    expect(loadQuicklogData()).toEqual(data)
+  })
+
+  it("invalid な quicklogData を保存しようとすると例外を出す", () => {
+    const invalidData = { name: "invalid data" } as unknown as QuicklogData
+
+    expect(() => saveQuicklogData(invalidData)).toThrow(SchemaValidationError)
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+  })
+
+  it("不正な quicklogData を保存しようとしたとき、既存の quicklogData を上書きしない", () => {
+    const existing = {
+      version: 2,
+      logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
+      syncOperations: [],
+    } satisfies QuicklogData
+    const invalidData = [{ name: "invalid data" }] as unknown as QuicklogData
+
+    saveQuicklogData(existing)
+
+    expect(() => saveQuicklogData(invalidData)).toThrow(SchemaValidationError)
+    expect(loadQuicklogData()).toEqual(existing)
+  })
+
+  it("QUICKLOG_DATA_KEY に旧形式のデータが書き込まれているとき、データをマイグレーションして返す", () => {
+    const data = [
+      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
+    ]
+
+    localStorage.setItem(QUICKLOG_DATA_KEY, JSON.stringify(data))
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: data,
+      syncOperations: [],
+    })
+  })
+
+  it("QUICKLOG_DATA_KEY に未対応のデータが書き込まれているとき、空の quicklogData を返す", () => {
+    const data = {
+      version: 3,
+      logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
+      syncOperations: [],
+    }
+
+    localStorage.setItem(QUICKLOG_DATA_KEY, JSON.stringify(data))
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+  })
+
+  it("localStorage の内容が invalid JSON のとき、空の quicklogData を返す", () => {
+    localStorage.setItem(QUICKLOG_DATA_KEY, "invalid json")
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+  })
+
+  it("localStorage の内容が空のとき、空の quicklogData を返す", () => {
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+  })
+
+  it("QUICKLOG_DATA_KEY が空で LOG_ENTRIES_KEY に valid な logEntries が保存されているとき、データをマイグレーションして返す", () => {
+    const logEntries = [
+      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
+    ]
+
+    saveLogEntries(logEntries)
+
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries,
+      syncOperations: [],
+    })
+  })
+
+  it("QUICKLOG_DATA_KEY, LOG_ENTRIES_KEY の両方にデータが保存されているとき、QUICKLOG_DATA_KEY のデータを優先して読み込む", () => {
+    const logEntries = [
+      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
+    ]
+    const quicklogData = {
+      version: 2,
+      logEntries: [
+        { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" }
+      ],
+      syncOperations: [],
+    } satisfies QuicklogData
+
+    saveLogEntries(logEntries)
+    saveQuicklogData(quicklogData)
+
+    expect(loadQuicklogData()).toEqual(quicklogData)
+  })
+
+  it("QUICKLOG_DATA_KEY に invalid な data が、LOG_ENTRIES_KEY に valid なデータが保存されているとき、空の quicklogData を返す", () => {
+    const data = { name: "invalid data" }
+    localStorage.setItem(QUICKLOG_DATA_KEY, JSON.stringify(data))
+    saveLogEntries([
+      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
+    ])
+
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+  })
+
+  it("QUICKLOG_DATA_KEY に空文字が、LOG_ENTRIES_KEY に valid なデータが保存されているとき、空の quicklogData を返す", () => {
+    localStorage.setItem(QUICKLOG_DATA_KEY, "")
+    saveLogEntries([
+      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
+    ])
+
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+  })
+})
 
 describe("logEntries", () => {
   beforeEach(() => {
@@ -54,14 +205,6 @@ describe("logEntries", () => {
     expect(loadLogEntries()).toEqual([])
   })
 
-  it("localStorage から読み込んだデータのサイズが大きすぎるとき、空の配列が返る", () => {
-    const logs = [
-      {id: "id1", text: "a".repeat(20 * 1024 * 1024), createdAt: "2026-05-22T00:00:00.000Z"}
-    ]
-    localStorage.setItem(LOG_ENTRIES_KEY, JSON.stringify(logs))
-    expect(loadLogEntries()).toEqual([])
-  })
-
   it("localStorage の内容が空のとき、空の配列が返る", () => {
     expect(loadLogEntries()).toEqual([])
   })
@@ -94,15 +237,6 @@ describe("settings", () => {
 
     const settings = loadSettings()
     expect(settings).toEqual(DEFAULT_SETTINGS)
-    expect(settings).not.toBe(DEFAULT_SETTINGS)
-  })
-
-  it("localStorage から読み込んだデータのサイズが大きすぎるとき、デフォルト設定が返る", () => {
-    const settings = { ...DEFAULT_SETTINGS, dummyProp: "a".repeat(20 * 1024 * 1024) }
-
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
-
-    expect(loadSettings()).toEqual(DEFAULT_SETTINGS)
     expect(settings).not.toBe(DEFAULT_SETTINGS)
   })
 

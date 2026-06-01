@@ -1,0 +1,189 @@
+import { afterEach, describe, expect, it, vi } from "vitest"
+
+afterEach(() => {
+  vi.doUnmock("@/lib/sizeLimits")
+  vi.resetModules()
+})
+
+const QUICKLOG_DATA_KEY = "quicklog.data"
+const LOG_ENTRIES_KEY = "quicklog.items"
+const SETTINGS_KEY = "quicklog.settings"
+
+describe("quicklogData size limit", () => {
+  afterEach(() => {
+    localStorage.clear()
+    vi.doUnmock("@/lib/sizeLimits")
+    vi.resetModules()
+  })
+
+  it("サイズ上限を超えるデータを保存しようとすると例外を出す", async () => {
+    vi.resetModules()
+
+    vi.doMock("@/lib/sizeLimits", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/sizeLimits")>()
+
+      return {
+        ...actual,
+        MAX_QUICKLOG_DATA_STORAGE_BYTES: 160,
+      }
+    })
+
+    const { loadQuicklogData, saveQuicklogData } = await import("./storage")
+    const { SizeError } = await import("@/lib/errors")
+
+    const existing = {
+      version: 2 as 2,
+      logEntries: [
+        { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
+      ],
+      syncOperations: [],
+    }
+    const tooLargeData = {
+      version: 2 as 2,
+      logEntries: [
+        { id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" },
+      ],
+      syncOperations: [],
+    }
+
+    saveQuicklogData(existing)
+    expect(() => saveQuicklogData(tooLargeData)).toThrow(SizeError)
+    expect(loadQuicklogData()).toEqual(existing)
+  })
+
+  it("localStorage から読み込んだデータのサイズが大きすぎるとき、空の quicklogData を返す", async () => {
+    vi.resetModules()
+    vi.doMock("@/lib/sizeLimits", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/sizeLimits")>()
+
+      return {
+        ...actual,
+        MAX_QUICKLOG_DATA_STORAGE_BYTES: 160,
+      }
+    })
+
+    const { loadQuicklogData } = await import("./storage")
+
+    const tooLargeData = {
+      version: 2,
+      logEntries: [
+        { id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" },
+      ],
+      syncOperations: [],
+    }
+
+    localStorage.setItem(QUICKLOG_DATA_KEY, JSON.stringify(tooLargeData))
+    expect(loadQuicklogData()).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+  })
+})
+
+describe("logEntries size limit", () => {
+  it("サイズ上限を超えるデータを保存しようとすると例外を出す", async () => {
+    vi.resetModules()
+
+    vi.doMock("@/lib/sizeLimits", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/sizeLimits")>()
+
+      return {
+        ...actual,
+        MAX_LOG_ENTRIES_STORAGE_BYTES: 160,
+      }
+    })
+
+    const { loadLogEntries, saveLogEntries } = await import("./storage")
+    const { SizeError } = await import("@/lib/errors")
+
+    const existing = [
+      {id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z"},
+    ]
+    const tooLargeData = [
+      {id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z"},
+    ]
+
+    saveLogEntries(existing)
+    expect(() => { saveLogEntries(tooLargeData) }).toThrow(SizeError)
+    expect(loadLogEntries()).toEqual(existing)
+  })
+
+  it("localStorage から読み込んだデータのサイズが大きすぎるとき、空の配列を返す", async () => {
+    vi.resetModules()
+
+    vi.doMock("@/lib/sizeLimits", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/sizeLimits")>()
+
+      return {
+        ...actual,
+        MAX_LOG_ENTRIES_STORAGE_BYTES: 160,
+      }
+    })
+
+    const { loadLogEntries } = await import("./storage")
+
+    const data = [
+      {id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z"}
+    ]
+    localStorage.setItem(LOG_ENTRIES_KEY, JSON.stringify(data))
+    expect(loadLogEntries()).toEqual([])
+  })
+})
+
+describe("settings size limit", () => {
+  it("サイズ上限を超えるデータを保存しようとすると例外を出す", async () => {
+    vi.resetModules()
+
+    vi.doMock("@/lib/sizeLimits", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/sizeLimits")>()
+
+      return {
+        ...actual,
+        MAX_SETTINGS_STORAGE_BYTES: 20,
+      }
+    })
+
+    const { saveSettings } = await import("./storage")
+    const { DEFAULT_SETTINGS } = await import("@/lib/settings")
+    const { SizeError } = await import("@/lib/errors")
+
+    const existing = {
+      ...DEFAULT_SETTINGS,
+      showDailySummary: true,
+    }
+    const tooLargeData = {
+      ...DEFAULT_SETTINGS,
+    }
+
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing))
+    expect(() => { saveSettings(tooLargeData) }).toThrow(SizeError)
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    expect(raw).not.toBeNull()
+    expect(JSON.parse(raw as string)).toEqual(existing)
+  })
+
+  it("localStorage から読み込んだデータのサイズが大きすぎるとき、デフォルト設定を返す", async () => {
+    vi.resetModules()
+
+    vi.doMock("@/lib/sizeLimits", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/lib/sizeLimits")>()
+
+      return {
+        ...actual,
+        MAX_SETTINGS_STORAGE_BYTES: 160,
+      }
+    })
+
+    const { loadSettings } = await import("./storage")
+    const { DEFAULT_SETTINGS } = await import("@/lib/settings")
+
+    const tooLargeData = {
+      ...DEFAULT_SETTINGS,
+      dummyProp: "a".repeat(200),
+    }
+
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(tooLargeData))
+    expect(loadSettings()).toEqual(DEFAULT_SETTINGS)
+  })
+})
