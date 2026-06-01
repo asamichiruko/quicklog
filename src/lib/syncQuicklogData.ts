@@ -1,7 +1,13 @@
 import type { LogEntry, QuicklogData, SyncOperation } from "@/types";
 import { sortLogEntriesByCreatedAtAsc } from "@/lib/logEntryCollection";
 
-export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData): QuicklogData {
+export type MergeQuicklogDataResult = {
+  data: QuicklogData,
+  addedCount: number,
+  deletedCount: number,
+}
+
+export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData): MergeQuicklogDataResult {
   // 異なるデータ同士で id の衝突はないという前提でマージを行う
 
   // union each logEntries
@@ -10,6 +16,8 @@ export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData
   existing.logEntries.forEach((logEntry) => {
     logEntriesById.set(logEntry.id, logEntry)
   })
+
+  const existingLogEntryIds = new Set<string>(logEntriesById.keys())
 
   incoming.logEntries.forEach((logEntry) => {
     logEntriesById.set(logEntry.id, logEntry)
@@ -33,9 +41,14 @@ export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData
     }
   })
 
-  return {
+  const result = {
     version: 2,
     logEntries: sortLogEntriesByCreatedAtAsc([...logEntriesById.values()]),
     syncOperations: [...syncOperationsById.values()]
-  }
+  } satisfies QuicklogData
+
+  const addedCount = result.logEntries.filter((entry) => !existingLogEntryIds.has(entry.id)).length
+  const deletedCount = existing.logEntries.filter((entry) => !logEntriesById.has(entry.id)).length
+
+  return { data: result, addedCount, deletedCount }
 }

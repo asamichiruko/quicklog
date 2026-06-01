@@ -165,45 +165,43 @@ function handleExport(exportType: ExportType) {
     })
   } catch (error) {
     if (error instanceof SizeError) {
-      alert("エクスポートに失敗しました。エクスポートするデータのサイズが大きすぎます。")
+      alert("エクスポートに失敗しました。エクスポートするデータのサイズが大きすぎます")
     } else if (error instanceof SchemaValidationError) {
-      alert("エクスポートに失敗しました。データの一部が破損しています。")
+      alert("エクスポートに失敗しました。データの一部が破損しています")
     } else {
-      alert("エクスポートに失敗しました。")
+      alert("エクスポートに失敗しました")
     }
   }
 }
 
 async function handleImport(file: File) {
   if (file.type && file.type !== "application/json") {
-    alert("ファイル形式が JSON ではありません。JSON 形式のファイルを選択してください。")
+    alert("ファイル形式が JSON ではありません。JSON 形式のファイルを選択してください")
     return
   }
 
   try {
     const data = await readLogEntriesImportFile(file)
-    const previousCount = logEntries.value.length
     const incoming = parseAsQuicklogData(data)
-    const merged = mergeQuicklogData(
+    const result = mergeQuicklogData(
       { version: 2, logEntries: logEntries.value, syncOperations: syncOperations.value },
       incoming,
     )
-    const addedCount = Math.max(merged.logEntries.length - previousCount)
 
-    saveQuicklogData(merged)
-    logEntries.value = merged.logEntries
-    syncOperations.value = merged.syncOperations
+    saveQuicklogData(result.data)
+    logEntries.value = result.data.logEntries
+    syncOperations.value = result.data.syncOperations
 
-    alert(`${addedCount} 件のメモをインポートしました。`)
+    alert(`${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`)
   } catch (error) {
     if (error instanceof SizeError) {
-      alert("インポートに失敗しました。ファイルサイズが大きすぎます。")
+      alert("インポートに失敗しました。ファイルサイズが大きすぎます")
     } else if (error instanceof SyntaxError) {
-      alert("インポートに失敗しました。ファイル内容が JSON 形式であることを確認してください。")
+      alert("インポートに失敗しました。ファイル内容が JSON 形式であることを確認してください")
     } else if (error instanceof SchemaValidationError) {
-      alert("インポートに失敗しました。異常なデータが含まれています。")
+      alert("インポートに失敗しました。異常なデータが含まれています")
     } else {
-      alert("インポートに失敗しました。")
+      alert("インポートに失敗しました")
     }
   }
 }

@@ -8,9 +8,13 @@ describe("mergeQuicklogData", () => {
     const incoming = { version, logEntries: [], syncOperations: [] }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.logEntries).toEqual([])
-    expect(result.syncOperations).toEqual([])
-    expect(result.version).toBe(2)
+    expect(result.data).toEqual({
+      version: 2,
+      logEntries: [],
+      syncOperations: [],
+    })
+    expect(result.addedCount).toBe(0)
+    expect(result.deletedCount).toBe(0)
   })
 
   it("重複のない existing と incoming の logEntries がすべて結合される", () => {
@@ -33,12 +37,14 @@ describe("mergeQuicklogData", () => {
     }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.logEntries).toEqual([
+    expect(result.data.logEntries).toEqual([
       { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
+    expect(result.addedCount).toBe(2)
+    expect(result.deletedCount).toBe(0)
   })
 
   it("重複のある existing と incoming の logEntries が重複なく merge される", () => {
@@ -61,11 +67,13 @@ describe("mergeQuicklogData", () => {
     }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.logEntries).toEqual([
+    expect(result.data.logEntries).toEqual([
       { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
     ])
+    expect(result.addedCount).toBe(1)
+    expect(result.deletedCount).toBe(0)
   })
 
   it("logEntries が createdAt の昇順となる", () => {
@@ -88,12 +96,14 @@ describe("mergeQuicklogData", () => {
     }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.logEntries).toEqual([
+    expect(result.data.logEntries).toEqual([
       { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
+    expect(result.addedCount).toBe(2)
+    expect(result.deletedCount).toBe(0)
   })
 
   it("existing の delete operation が incoming の entry を取り除く (entry を復活させない)", () => {
@@ -118,14 +128,16 @@ describe("mergeQuicklogData", () => {
     }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.logEntries).toEqual([
+    expect(result.data.logEntries).toEqual([
       { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
-    expect(result.syncOperations).toEqual([
+    expect(result.data.syncOperations).toEqual([
       { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
     ])
+    expect(result.addedCount).toBe(1)
+    expect(result.deletedCount).toBe(0)
   })
 
   it("incoming の delete operation が existing の entry を取り除く (他環境での delete を同期する)", () => {
@@ -150,14 +162,16 @@ describe("mergeQuicklogData", () => {
     }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.logEntries).toEqual([
+    expect(result.data.logEntries).toEqual([
       { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
-    expect(result.syncOperations).toEqual([
+    expect(result.data.syncOperations).toEqual([
       { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
     ])
+    expect(result.addedCount).toBe(2)
+    expect(result.deletedCount).toBe(1)
   })
 
   it("incoming と existing に同一の delete operation があっても重複なく merge される", () => {
@@ -182,9 +196,11 @@ describe("mergeQuicklogData", () => {
     }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.syncOperations).toEqual([
+    expect(result.data.syncOperations).toEqual([
       { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
     ])
+    expect(result.addedCount).toBe(1)
+    expect(result.deletedCount).toBe(0)
   })
 
   it("削除対象の entry が存在しなくても delete operation は残ったままである", () => {
@@ -205,9 +221,37 @@ describe("mergeQuicklogData", () => {
     }
     const result = mergeQuicklogData(existing, incoming)
 
-    expect(result.syncOperations).toEqual([
+    expect(result.data.syncOperations).toEqual([
       { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" },
       { id: "sid2", type: "delete", createdAt: "2026-06-02T12:00:00.000Z", entryId: "id2" }
     ])
+    expect(result.addedCount).toBe(0)
+    expect(result.deletedCount).toBe(0)
+  })
+
+  it("削除対象の entry が incoming に含まれていたら取り除かれる", () => {
+    const version: 2 = 2
+    const existing = {
+      version,
+      logEntries: [],
+      syncOperations: [],
+    }
+    const incoming = {
+      version,
+      logEntries: [
+        { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
+      ],
+      syncOperations: [
+        { id: "sid1", type: "delete" as const, createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
+      ],
+    }
+    const result = mergeQuicklogData(existing, incoming)
+
+    expect(result.data.logEntries).toEqual([])
+    expect(result.data.syncOperations).toEqual([
+      { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" },
+    ])
+    expect(result.addedCount).toBe(0)
+    expect(result.deletedCount).toBe(0)
   })
 })
