@@ -1,3 +1,4 @@
+import type { QuicklogData } from "@/types"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 afterEach(() => {
@@ -14,11 +15,11 @@ describe("formatLogEntriesAsMarkdown size limit", () => {
 
       return {
         ...actual,
-        MAX_LOG_ENTRIES_EXPORT_FILE_BYTES: 80,
+        MAX_EXPORT_FILE_BYTES: 80,
       }
     })
 
-    const { formatLogEntriesAsMarkdown } = await import("./logEntryExport")
+    const { formatLogEntriesAsMarkdown } = await import("./createQuicklogExportFile")
     const { SizeError } = await import("@/lib/errors")
 
     const logEntries = [
@@ -33,7 +34,7 @@ describe("formatLogEntriesAsMarkdown size limit", () => {
   })
 })
 
-describe("formatLogEntriesAsJson size limit", () => {
+describe("formatQuicklogDataAsJson size limit", () => {
   it("JSON export のサイズ上限を超えると例外を出す", async () => {
     vi.resetModules()
 
@@ -42,21 +43,25 @@ describe("formatLogEntriesAsJson size limit", () => {
 
       return {
         ...actual,
-        MAX_LOG_ENTRIES_EXPORT_FILE_BYTES: 80,
+        MAX_EXPORT_FILE_BYTES: 80,
       }
     })
 
-    const { formatLogEntriesAsJson } = await import("./logEntryExport")
+    const { formatQuicklogDataAsJson } = await import("./createQuicklogExportFile")
     const { SizeError } = await import("@/lib/errors")
 
-    const logEntries = [
-      {
-        id: "id1",
-        text: "a".repeat(100),
-        createdAt: "2026-05-22T00:00:00.000Z",
-      },
-    ]
+    const quicklogData = {
+      version: 2,
+      logEntries: [
+        {
+          id: "id1",
+          text: "a".repeat(100),
+          createdAt: "2026-05-22T00:00:00.000Z",
+        },
+      ],
+      syncOperations: [],
+    } satisfies QuicklogData
 
-    expect(() => formatLogEntriesAsJson(logEntries)).toThrow(SizeError)
+    expect(() => formatQuicklogDataAsJson(quicklogData)).toThrow(SizeError)
   })
 })

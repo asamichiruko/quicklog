@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { formatLogEntriesAsMarkdown, formatLogEntriesAsJson, createLogEntriesExportFile } from "./logEntryExport"
+import { formatLogEntriesAsMarkdown, formatQuicklogDataAsJson, createQuicklogExportFile } from "./createQuicklogExportFile"
+import type { QuicklogData } from "@/types"
 
 describe("formatLogEntriesAsMarkdown", () => {
   it("LogEntry[] を Markdown 形式に format できる", () => {
@@ -161,77 +162,111 @@ text3
   })
 })
 
-describe("formatLogEntriesAsJson", () => {
-  it("LogEntry[] を JSON 形式に format できる", () => {
-    const logEntries = [
-      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
-      { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
-      { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-23T00:00:00.000Z" },
-    ]
+describe("formatQuicklogDataAsJson", () => {
+  it("QuicklogData を JSON 形式に format できる", () => {
+    const quicklogData = {
+      version: 2,
+      logEntries: [
+        { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
+        { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
+        { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-23T00:00:00.000Z" },
+      ],
+      syncOperations: [
+        { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
+      ]
+    } satisfies QuicklogData
 
-    const actual = formatLogEntriesAsJson(logEntries)
-    expect(actual).toBe(`[
-  {
-    "id": "id1",
-    "text": "text1",
-    "createdAt": "2026-05-22T00:00:00.000Z"
-  },
-  {
-    "id": "id2",
-    "text": "text2",
-    "createdAt": "2026-05-22T12:00:00.000Z"
-  },
-  {
-    "id": "id3",
-    "text": "text3a\\ntext3b",
-    "createdAt": "2026-05-23T00:00:00.000Z"
-  }
-]`)
+    const actual = formatQuicklogDataAsJson(quicklogData)
+    expect(actual).toBe(`{
+  "version": 2,
+  "logEntries": [
+    {
+      "id": "id1",
+      "text": "text1",
+      "createdAt": "2026-05-22T00:00:00.000Z"
+    },
+    {
+      "id": "id2",
+      "text": "text2",
+      "createdAt": "2026-05-22T12:00:00.000Z"
+    },
+    {
+      "id": "id3",
+      "text": "text3a\\ntext3b",
+      "createdAt": "2026-05-23T00:00:00.000Z"
+    }
+  ],
+  "syncOperations": [
+    {
+      "id": "sid1",
+      "type": "delete",
+      "createdAt": "2026-06-01T12:00:00.000Z",
+      "entryId": "id4"
+    }
+  ]
+}`)
   })
 
   it("logEntry[] は日付昇順にソートされる", () => {
-    const logEntries = [
-      { id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
-      { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
-      { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-22T00:00:00.000Z" },
-    ]
+    const quicklogData = {
+      version: 2,
+      logEntries: [
+        { id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
+        { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
+        { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-22T00:00:00.000Z" },
+      ],
+      syncOperations: [
+        { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
+      ]
+    } satisfies QuicklogData
 
-    const actual = formatLogEntriesAsJson(logEntries)
-    expect(actual).toBe(`[
-  {
-    "id": "id3",
-    "text": "text3a\\ntext3b",
-    "createdAt": "2026-05-22T00:00:00.000Z"
-  },
-  {
-    "id": "id1",
-    "text": "text1",
-    "createdAt": "2026-05-22T12:00:00.000Z"
-  },
-  {
-    "id": "id2",
-    "text": "text2",
-    "createdAt": "2026-05-23T00:00:00.000Z"
-  }
-]`)
-  })
-
-  it("空の配列は '[]' に変換される", () => {
-    expect(formatLogEntriesAsJson([])).toBe("[]")
+    const actual = formatQuicklogDataAsJson(quicklogData)
+    expect(actual).toBe(`{
+  "version": 2,
+  "logEntries": [
+    {
+      "id": "id3",
+      "text": "text3a\\ntext3b",
+      "createdAt": "2026-05-22T00:00:00.000Z"
+    },
+    {
+      "id": "id1",
+      "text": "text1",
+      "createdAt": "2026-05-22T12:00:00.000Z"
+    },
+    {
+      "id": "id2",
+      "text": "text2",
+      "createdAt": "2026-05-23T00:00:00.000Z"
+    }
+  ],
+  "syncOperations": [
+    {
+      "id": "sid1",
+      "type": "delete",
+      "createdAt": "2026-06-01T12:00:00.000Z",
+      "entryId": "id4"
+    }
+  ]
+}`)
   })
 })
 
-describe("createLogEntriesExportFile", () => {
+describe("createQuicklogExportFile", () => {
   it("ExportType に 'json' を指定したときの mimeType と extension が正しい", () => {
-    const exportFile = createLogEntriesExportFile([], "json")
+    const exportFile = createQuicklogExportFile({ version: 2, logEntries: [], syncOperations: [] }, "json")
 
-    expect(exportFile.content).toBe("[]")
+    expect(exportFile.content).toBe(`{
+  "version": 2,
+  "logEntries": [],
+  "syncOperations": []
+}`)
     expect(exportFile.mimeType).toBe("application/json")
     expect(exportFile.extension).toBe(".json")
   })
 
   it("ExportType に 'markdown' を指定したときの mimeType と extension が正しい", () => {
-    const exportFile = createLogEntriesExportFile([], "markdown")
+    const exportFile = createQuicklogExportFile({ version: 2, logEntries: [], syncOperations: [] }, "markdown")
 
     expect(exportFile.content).toBe("")
     expect(exportFile.mimeType).toBe("text/markdown")

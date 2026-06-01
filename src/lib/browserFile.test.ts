@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { downloadTextFile, readLogEntriesImportFile } from "./browserFile"
+import { downloadTextFile, readQuicklogImportFile } from "./browserFile"
 import { SizeError } from "@/lib/errors"
 
 describe("downloadTextFile", () => {
@@ -44,7 +44,7 @@ describe("downloadTextFile", () => {
   })
 })
 
-describe("readLogEntriesImportFile", () => {
+describe("readQuicklogImportFile", () => {
   it("JSON ファイルの内容を parse する", async () => {
     const file = new File(
       [JSON.stringify({ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" })],
@@ -52,7 +52,7 @@ describe("readLogEntriesImportFile", () => {
       { type: "application/json" },
     )
 
-    await expect(readLogEntriesImportFile(file)).resolves.toEqual({
+    await expect(readQuicklogImportFile(file)).resolves.toEqual({
       id: "id1",
       text: "text1",
       createdAt: "2026-05-22T00:00:00.000Z",
@@ -64,14 +64,14 @@ describe("readLogEntriesImportFile", () => {
       type: "application/json",
     })
 
-    await expect(readLogEntriesImportFile(file)).rejects.toThrow(SyntaxError)
+    await expect(readQuicklogImportFile(file)).rejects.toThrow(SyntaxError)
   })
 
   it("ファイルサイズが大きすぎる場合は reject する", async () => {
-    const file = new File(["a".repeat(100 * 1024 * 1024)], "data.json", {
+    const file = new File(["a".repeat(20 * 1024 * 1024)], "data.json", {
       type: "application/json"
     })
 
-    await expect(readLogEntriesImportFile(file)).rejects.toThrow(SizeError)
+    await expect(readQuicklogImportFile(file)).rejects.toThrow(SizeError)
   })
 })

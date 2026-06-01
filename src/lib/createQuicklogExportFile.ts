@@ -1,9 +1,10 @@
-import type { ExportType, LogEntry } from "@/types"
+import type { ExportType, LogEntry, QuicklogData } from "@/types"
 import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } from "@/lib/logEntryCollection"
 import { formatLongJapaneseDate, formatTimeWithSeconds } from "@/lib/dateFormat"
-import { isValidLogEntry } from "@/lib/logEntrySchema"
-import { getUtf8ByteLength, MAX_LOG_ENTRIES_EXPORT_FILE_BYTES } from "@/lib/sizeLimits"
+import { getUtf8ByteLength, MAX_EXPORT_FILE_BYTES } from "@/lib/sizeLimits"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
+import { parseAsQuicklogData } from "./quicklogDataMigration"
+import { isValidLogEntry } from "./logEntrySchema"
 
 type ExportFile = {
   content: string
@@ -102,7 +103,7 @@ function appendDateGroupAsMarkdown(
 
 export function formatLogEntriesAsMarkdown(logEntries: LogEntry[]): string {
   const groupedLogEntries = groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)))
-  const builder = createSizeLimitedTextBuilder(MAX_LOG_ENTRIES_EXPORT_FILE_BYTES)
+  const builder = createSizeLimitedTextBuilder(MAX_EXPORT_FILE_BYTES)
 
   for (const group of groupedLogEntries) {
     appendDateGroupAsMarkdown(builder, group)
@@ -111,13 +112,17 @@ export function formatLogEntriesAsMarkdown(logEntries: LogEntry[]): string {
   return builder.toString()
 }
 
-export function formatLogEntriesAsJson(logEntries: LogEntry[]): string {
-  const formatted = JSON.stringify(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)), null, 2)
+export function formatQuicklogDataAsJson(quicklogData: QuicklogData): string {
+  const normalized = parseAsQuicklogData(quicklogData)
+  const formatted = JSON.stringify({
+    ...normalized,
+    logEntries: sortLogEntriesByCreatedAtAsc(normalized.logEntries),
+  }, null, 2)
 
-  if (getUtf8ByteLength(formatted) > MAX_LOG_ENTRIES_EXPORT_FILE_BYTES) {
+  if (getUtf8ByteLength(formatted) > MAX_EXPORT_FILE_BYTES) {
     throw new SizeError("Export file is too large.", {
       target: "export",
-      limitBytes: MAX_LOG_ENTRIES_EXPORT_FILE_BYTES,
+      limitBytes: MAX_EXPORT_FILE_BYTES,
       actualBytes: getUtf8ByteLength(formatted),
     })
   }
@@ -128,28 +133,28 @@ export function formatLogEntriesAsJson(logEntries: LogEntry[]): string {
 const exportFormats: Record<
   ExportType,
   {
-    format: (logEntries: LogEntry[]) => string
+    format: (data: QuicklogData) => string
     mimeType: string
     extension: string
   }
 > = {
   json: {
-    format: formatLogEntriesAsJson,
+    format: formatQuicklogDataAsJson,
     mimeType: "application/json",
     extension: ".json",
   },
   markdown: {
-    format: formatLogEntriesAsMarkdown,
+    format: (data) => formatLogEntriesAsMarkdown(data.logEntries),
     mimeType: "text/markdown",
     extension: ".md",
   },
 }
 
-export function createLogEntriesExportFile(logEntries: LogEntry[], exportType: ExportType): ExportFile {
+export function createQuicklogExportFile(quicklogData: QuicklogData, exportType: ExportType): ExportFile {
   const exportFormat = exportFormats[exportType]
 
   return {
-    content: exportFormat.format(logEntries),
+    content: exportFormat.format(quicklogData),
     mimeType: exportFormat.mimeType,
     extension: exportFormat.extension,
   }

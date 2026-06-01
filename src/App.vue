@@ -4,9 +4,9 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
-import { downloadTextFile, readLogEntriesImportFile } from "@/lib/browserFile"
+import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
+import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
-import { createLogEntriesExportFile } from "@/lib/logEntryExport"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
@@ -155,7 +155,14 @@ function handleRemove(id: string) {
 
 function handleExport(exportType: ExportType) {
   try {
-    const exportFile = createLogEntriesExportFile(logEntries.value, exportType)
+    const exportFile = createQuicklogExportFile(
+      {
+        version: 2,
+        logEntries: logEntries.value,
+        syncOperations: syncOperations.value,
+      },
+      exportType,
+    )
     const dateKey = getLocalDateKey(new Date())
 
     downloadTextFile({
@@ -181,7 +188,7 @@ async function handleImport(file: File) {
   }
 
   try {
-    const data = await readLogEntriesImportFile(file)
+    const data = await readQuicklogImportFile(file)
     const incoming = parseAsQuicklogData(data)
     const result = mergeQuicklogData(
       { version: 2, logEntries: logEntries.value, syncOperations: syncOperations.value },
