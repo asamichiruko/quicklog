@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import CloudSyncPanel from "@/components/CloudSyncPanel.vue"
 import LogEntryCopyPanel from "@/components/LogEntryCopyPanel.vue"
 import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
-import { signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type { AppSettings, ExportType, LogEntry } from "@/types"
 import type { Session } from "@supabase/supabase-js"
@@ -11,11 +11,13 @@ import { ref } from "vue"
 const dialog = ref<HTMLDialogElement | null>(null)
 const nextSettings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 
+const cloudSyncPanel = ref<InstanceType<typeof CloudSyncPanel> | null>(null)
+const cloudSyncPanelDetails = ref<HTMLDetailsElement | null>(null)
 const copyPanel = ref<InstanceType<typeof LogEntryCopyPanel> | null>(null)
 const copyPanelDetails = ref<HTMLDetailsElement | null>(null)
 const importPanel = ref<InstanceType<typeof LogEntryImportPanel> | null>(null)
 const importPanelDetails = ref<HTMLDetailsElement | null>(null)
-const exportPanel = ref<InstanceType<typeof LogEntryImportPanel> | null>(null)
+const exportPanel = ref<InstanceType<typeof LogEntryExportPanel> | null>(null)
 const exportPanelDetails = ref<HTMLDetailsElement | null>(null)
 
 const props = defineProps<{
@@ -30,15 +32,13 @@ const emit = defineEmits<{
   import: [file: File]
 }>()
 
-const authEmail = ref("")
-const authPassword = ref("")
-const authErrorMessage = ref("")
-const isAuthLoading = ref(false)
-
 function open() {
   if (!dialog.value || dialog.value.open) return
 
   nextSettings.value = { ...props.settings }
+
+  cloudSyncPanel.value?.reset()
+  if (cloudSyncPanelDetails.value) cloudSyncPanelDetails.value.open = false
 
   copyPanel.value?.reset()
   if (copyPanelDetails.value) copyPanelDetails.value.open = false
@@ -67,45 +67,6 @@ function handleDialogClick(event: MouseEvent) {
   }
 }
 
-async function handleSignUp(): Promise<void> {
-  authErrorMessage.value = ""
-  isAuthLoading.value = true
-
-  try {
-    await signUpWithEmail(authEmail.value, authPassword.value)
-  } catch (error) {
-    authErrorMessage.value = error instanceof Error ? error.message : "登録に失敗しました"
-  } finally {
-    isAuthLoading.value = false
-  }
-}
-
-async function handleSignIn(): Promise<void> {
-  authErrorMessage.value = ""
-  isAuthLoading.value = true
-
-  try {
-    await signInWithEmail(authEmail.value, authPassword.value)
-  } catch (error) {
-    authErrorMessage.value = error instanceof Error ? error.message : "ログインに失敗しました"
-  } finally {
-    isAuthLoading.value = false
-  }
-}
-
-async function handleSignOut(): Promise<void> {
-  authErrorMessage.value = ""
-  isAuthLoading.value = true
-
-  try {
-    await signOut()
-  } catch (error) {
-    authErrorMessage.value = error instanceof Error ? error.message : "ログアウトに失敗しました"
-  } finally {
-    isAuthLoading.value = false
-  }
-}
-
 defineExpose({ open })
 </script>
 
@@ -118,28 +79,6 @@ defineExpose({ open })
   >
     <form class="dialog-form" @submit.prevent="saveAndClose">
       <h2 id="settings-dialog-heading" class="dialog-heading">設定</h2>
-      <section class="section">
-        <h3 class="section-heading">アカウント</h3>
-        <div class="section-body">
-          <label class="account-label">
-            <span class="account-label-text">メールアドレス</span>
-            <input type="email" class="account-email" v-model="authEmail" />
-          </label>
-          <label class="account-label">
-            <span class="account-label-text">パスワード</span>
-            <input type="password" class="account-password" v-model="authPassword" />
-          </label>
-          <button type="button" class="button-secondary" @click="handleSignIn">ログイン</button>
-          <button type="button" class="button-secondary" @click="handleSignUp">新規登録</button>
-          <output class="auth-message" role="status" aria-live="polite">{{
-            authErrorMessage
-          }}</output>
-        </div>
-        <div class="section-body">
-          <p class="login-status">ログイン中: {{ session?.user.email }}</p>
-          <button type="button" class="button-secondary" @click="handleSignOut">ログアウト</button>
-        </div>
-      </section>
       <section class="section">
         <h3 class="section-heading">表示</h3>
         <ul class="setting-items">
@@ -156,6 +95,18 @@ defineExpose({ open })
           </li>
         </ul>
       </section>
+      <details
+        class="settings-panel"
+        aria-labelledby="settings-panel-cloud-sync"
+        ref="cloudSyncPanelDetails"
+      >
+        <summary class="settings-panel-summary" id="settings-panel-cloud-sync">
+          クラウド同期
+        </summary>
+        <div class="settings-panel-body">
+          <CloudSyncPanel :session="props.session" ref="cloudSyncPanel" />
+        </div>
+      </details>
       <details class="settings-panel" aria-labelledby="settings-panel-copy" ref="copyPanelDetails">
         <summary class="settings-panel-summary" id="settings-panel-copy">記録のコピー</summary>
         <div class="settings-panel-body">
@@ -213,7 +164,7 @@ defineExpose({ open })
   margin: 0;
   padding: 0;
   color: var(--color-text);
-  font-size: 1.3em;
+  font-size: 1.4em;
   font-weight: var(--font-weight-bold);
 }
 
@@ -226,13 +177,8 @@ defineExpose({ open })
   margin: 0;
   padding: 0;
   color: var(--color-text);
-  font-size: 1em;
+  font-size: 1.2em;
   font-weight: var(--font-weight-bold);
-}
-
-.section-body {
-  display: grid;
-  gap: var(--space-2);
 }
 
 .setting-items {
