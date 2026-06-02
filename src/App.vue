@@ -18,7 +18,14 @@ import {
   pruneQuicklogDataSyncOperations,
 } from "@/lib/syncQuicklogData"
 import type { AppSettings, ExportType, LogEntry, QuicklogData, SyncOperation } from "@/types"
+import { type Session } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
+import { getCurrentSession } from "./lib/auth"
+import { supabase } from "./lib/supabase"
+
+const session = ref<Session | null>(null)
+
+let unsubscribeAuth: (() => void) | undefined
 
 const logEntries = ref<LogEntry[]>([])
 const syncOperations = ref<SyncOperation[]>([])
@@ -45,7 +52,15 @@ const calendarDialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
 const logEntryForm = ref<InstanceType<typeof LogEntryForm> | null>(null)
 const logEntryFormArea = ref<HTMLElement | null>(null)
 
-onMounted(() => {
+onMounted(async () => {
+  session.value = await getCurrentSession()
+  const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    session.value = nextSession
+  })
+  unsubscribeAuth = () => {
+    data.subscription.unsubscribe()
+  }
+
   const quicklogData = pruneQuicklogDataSyncOperations(loadQuicklogData(), new Date())
   logEntries.value = quicklogData.logEntries
   syncOperations.value = quicklogData.syncOperations
@@ -57,6 +72,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  unsubscribeAuth?.()
   window.removeEventListener("scroll", updateNewLogEntryButtonVisibility)
 })
 
@@ -281,6 +297,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
 
   <SettingsDialog
     ref="settingsDialog"
+    :session="session"
     :settings="settings"
     :log-entries="logEntries"
     @save="handleSaveSettings"
