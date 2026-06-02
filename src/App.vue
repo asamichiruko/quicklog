@@ -7,14 +7,18 @@ import SettingsDialog from "@/components/SettingsDialog.vue"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
+import { SchemaValidationError, SizeError } from "@/lib/errors"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
+import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
+import {
+  mergeQuicklogData,
+  pruneExpiredSyncOperations,
+  pruneQuicklogDataSyncOperations,
+} from "@/lib/syncQuicklogData"
 import type { AppSettings, ExportType, LogEntry, QuicklogData, SyncOperation } from "@/types"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
-import { SchemaValidationError, SizeError } from "./lib/errors"
-import { parseAsQuicklogData } from "./lib/quicklogDataMigration"
-import { mergeQuicklogData } from "./lib/syncQuicklogData"
 
 const logEntries = ref<LogEntry[]>([])
 const syncOperations = ref<SyncOperation[]>([])
@@ -42,9 +46,11 @@ const logEntryForm = ref<InstanceType<typeof LogEntryForm> | null>(null)
 const logEntryFormArea = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-  const quicklogData = loadQuicklogData()
+  const quicklogData = pruneQuicklogDataSyncOperations(loadQuicklogData(), new Date())
   logEntries.value = quicklogData.logEntries
   syncOperations.value = quicklogData.syncOperations
+  saveQuicklogData(quicklogData)
+
   settings.value = loadSettings()
   updateNewLogEntryButtonVisibility()
   window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
@@ -188,10 +194,15 @@ async function handleImport(file: File) {
   }
 
   try {
+    const now = new Date()
     const data = await readQuicklogImportFile(file)
-    const incoming = parseAsQuicklogData(data)
+    const incoming = pruneQuicklogDataSyncOperations(parseAsQuicklogData(data), now)
     const result = mergeQuicklogData(
-      { version: 2, logEntries: logEntries.value, syncOperations: syncOperations.value },
+      {
+        version: 2,
+        logEntries: logEntries.value,
+        syncOperations: pruneExpiredSyncOperations(syncOperations.value, now),
+      },
       incoming,
     )
 

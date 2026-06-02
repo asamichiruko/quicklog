@@ -1,11 +1,14 @@
 import type { LogEntry, QuicklogData, SyncOperation } from "@/types";
 import { sortLogEntriesByCreatedAtAsc } from "@/lib/logEntryCollection";
+import { addDays, startOfLocalDay } from "@/lib/date";
 
 export type MergeQuicklogDataResult = {
   data: QuicklogData,
   addedCount: number,
   deletedCount: number,
 }
+
+const SYNC_OPERATION_RETENTION_DAYS = 60
 
 export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData): MergeQuicklogDataResult {
   // 異なるデータ同士で id の衝突はないという前提でマージを行う
@@ -51,4 +54,19 @@ export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData
   const deletedCount = existing.logEntries.filter((entry) => !logEntriesById.has(entry.id)).length
 
   return { data: result, addedCount, deletedCount }
+}
+
+export function pruneQuicklogDataSyncOperations(data: QuicklogData, today: Date): QuicklogData {
+  return {
+    ...data,
+    syncOperations: pruneExpiredSyncOperations(data.syncOperations, today)
+  }
+}
+
+export function pruneExpiredSyncOperations(data: SyncOperation[], today: Date, retentionDays = SYNC_OPERATION_RETENTION_DAYS): SyncOperation[] {
+  const pruned = data.filter((syncOperation) => {
+    return addDays(new Date(syncOperation.createdAt), retentionDays).getTime() >= startOfLocalDay(today).getTime()
+  })
+
+  return pruned
 }

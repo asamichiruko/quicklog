@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeQuicklogData } from "./syncQuicklogData";
+import { mergeQuicklogData, pruneExpiredSyncOperations } from "./syncQuicklogData";
 
 describe("mergeQuicklogData", () => {
   it("空のデータ同士を merge できる", () => {
@@ -253,5 +253,51 @@ describe("mergeQuicklogData", () => {
     ])
     expect(result.addedCount).toBe(0)
     expect(result.deletedCount).toBe(0)
+  })
+})
+
+describe("pruneExpiredSyncOperations", () => {
+  it("期限が切れた SyncOperation が prune される", () => {
+    const syncOperations = [
+      { id: "sid1", type: "delete" as const, createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
+    ]
+    const result = pruneExpiredSyncOperations(syncOperations, new Date(2026, 5, 1), 3)
+    expect(result).toEqual([])
+  })
+
+  it("期限が切れていない SyncOperation は prune されない", () => {
+    const syncOperations = [
+      { id: "sid1", type: "delete" as const, createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
+    ]
+    const result = pruneExpiredSyncOperations(syncOperations, new Date(2026, 5, 1), 60)
+    expect(result).toEqual(syncOperations)
+  })
+
+  it("有効な SyncOperation と期限切れのものが混在しているとき、期限切れのもののみ prune される", () => {
+    const syncOperations = [
+      { id: "sid1", type: "delete" as const, createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
+      { id: "sid2", type: "delete" as const, createdAt: new Date(2026, 4, 20).toISOString(), entryId: "id2" },
+    ]
+    const result = pruneExpiredSyncOperations(syncOperations, new Date(2026, 5, 1), 15)
+    expect(result).toEqual([syncOperations[1]])
+  })
+
+  it("ちょうど有効期限にある SyncOperation は prune されない", () => {
+    const syncOperations = [
+      { id: "sid1", type: "delete" as const, createdAt: new Date(2026, 4, 14, 23, 59, 59, 999).toISOString(), entryId: "id1" },
+      { id: "sid2", type: "delete" as const, createdAt: new Date(2026, 4, 15, 0, 0, 0, 0).toISOString(), entryId: "id2" },
+      { id: "sid3", type: "delete" as const, createdAt: new Date(2026, 4, 15, 0, 0, 0, 1).toISOString(), entryId: "id3" },
+    ]
+    const result = pruneExpiredSyncOperations(syncOperations, new Date(2026, 4, 16), 1)
+    expect(result).toEqual([syncOperations[1], syncOperations[2]])
+  })
+
+  it("有効期限は日付だけが参照される", () => {
+    const syncOperations = [
+      { id: "sid1", type: "delete" as const, createdAt: new Date(2026, 4, 14, 12, 0, 0, 0).toISOString(), entryId: "id1" },
+      { id: "sid2", type: "delete" as const, createdAt: new Date(2026, 4, 14, 8, 0, 0, 0).toISOString(), entryId: "id2" },
+    ]
+    const result = pruneExpiredSyncOperations(syncOperations, new Date(2026, 4, 15, 10, 0, 0, 0), 1)
+    expect(result).toEqual(syncOperations)
   })
 })
