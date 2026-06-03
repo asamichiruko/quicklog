@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
+import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
+import {
+  validateCreatedPassword,
+  validateEmail,
+  validateRequiredPassword,
+} from "@/lib/authFormValidation"
 import type { Session } from "@supabase/supabase-js"
 import { computed, ref } from "vue"
 
@@ -26,78 +32,9 @@ const feedbackMessage = ref("")
 const feedbackKind = ref<FeedbackKind | null>(null)
 const isLoading = ref(false)
 
-const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  invalid_credentials: "メールアドレスまたはパスワードが正しくありません",
-  email_not_confirmed: "メールアドレスの確認が完了していません。メールをご確認ください",
-  email_exists: "登録できませんでした。入力内容を確認してください",
-  user_already_exists: "登録できませんでした。入力内容を確認してください",
-  weak_password: "パスワードが条件を満たしていません",
-  signup_disabled: "現在、メールアドレスでの新規登録は利用できません",
-  email_provider_disabled: "現在、メールアドレスでの新規登録は利用できません",
-  over_request_rate_limit: "試行回数が多すぎます。しばらく待ってから再度お試しください",
-  over_email_send_rate_limit: "メール送信回数が多すぎます。しばらく待ってから再度お試しください",
-  request_timeout: "タイムアウトしました。通信状況を確認して再度お試しください",
-  unexpected_failure: "認証サービスで問題が発生しました。時間をおいて再度お試しください",
-}
-
-const EMAIL_VALIDATION_REGEXP =
-  /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
-const PASSWORD_MIN_LENGTH = 8
-
-function validateEmail(value: string): string {
-  const email = value.trim()
-  if (!email) return "メールアドレスを入力してください"
-  if (!EMAIL_VALIDATION_REGEXP.test(email)) return "正しい形式のメールアドレスを入力してください"
-  return ""
-}
-
-function validateRequiredPassword(value: string): string {
-  if (!value) return "パスワードを入力してください"
-  return ""
-}
-
-function validateCreatedPassword(value: string): string {
-  if (!value) return "パスワードを入力してください"
-  if (value.length < PASSWORD_MIN_LENGTH)
-    return `パスワードは${PASSWORD_MIN_LENGTH}文字以上で作成してください`
-  if (
-    !/[a-z]/.test(value) ||
-    !/[A-Z]/.test(value) ||
-    !/[0-9]/.test(value) ||
-    !/[\!@#$%\^&\*\(\)_\+\-=\[\]\{\};':"|<>\?,\.\/`~\.]/.test(value)
-  ) {
-    return "パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください"
-  }
-  return ""
-}
-
 function clearFeedbackMessage() {
   feedbackMessage.value = ""
   feedbackKind.value = null
-}
-
-function getAuthErrorCode(error: unknown): string | undefined {
-  if (typeof error !== "object" || error === null) {
-    return undefined
-  }
-
-  const maybeError = error as { code?: unknown }
-
-  return typeof maybeError.code === "string" ? maybeError.code : undefined
-}
-
-function getAuthFeedbackMessage(error: unknown): string {
-  const code = getAuthErrorCode(error)
-
-  if (code !== undefined && AUTH_ERROR_MESSAGES[code] !== undefined) {
-    return AUTH_ERROR_MESSAGES[code]
-  }
-
-  if (import.meta.env.DEV) {
-    console.warn("Unhandled auth error:", error)
-  }
-
-  return "認証処理に失敗しました。時間をおいて再度お試しください"
 }
 
 function validateSignInEmail() {
