@@ -356,7 +356,7 @@ defineExpose({ reset })
 .field-error {
   margin: 0;
   padding: 0;
-  color: hsl(0, 90%, 50%);
+  color: var(--color-error);
 }
 
 .password-rules {
@@ -392,28 +392,6 @@ defineExpose({ reset })
   color: var(--color-text-muted);
 }
 .feedback-message.error {
-  color: hsl(0, 90%, 50%);
-}
-
-.button-link {
-  display: inline-block;
-  background: transparent;
-  border: none;
-  color: var(--color-text-muted);
-  padding: 6px 0;
-  border-radius: var(--radius-surface);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-@media (hover: hover) {
-  .button-link:not(:disabled):hover {
-    color: var(--color-primary);
-  }
-}
-@media (hover: none) {
-  .button-link:not(:disabled):active {
-    color: var(--color-primary);
-  }
+  color: var(--color-error);
 }
 </style>
