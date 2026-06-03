@@ -136,7 +136,7 @@ const canSignIn = computed(() => {
     !validateEmail(signInEmail.value) &&
     !validateRequiredPassword(signInPassword.value) &&
     !signInEmailErrorMessage.value &&
-    !signInEmailErrorMessage.value
+    !signInPasswordErrorMessage.value
   )
 })
 
@@ -145,8 +145,8 @@ const canSignUp = computed(() => {
     !isLoading.value &&
     !validateEmail(signUpEmail.value) &&
     !validateCreatedPassword(signUpPassword.value) &&
-    !signInPasswordErrorMessage.value &&
-    !signInPasswordErrorMessage.value
+    !signUpEmailErrorMessage.value &&
+    !signUpPasswordErrorMessage.value
   )
 })
 
