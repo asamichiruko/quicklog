@@ -21,6 +21,7 @@ import type { AppSettings, ExportType, LogEntry, QuicklogData, SyncOperation } f
 import { type Session } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { getCurrentSession } from "./lib/auth"
+import { fetchRemoteLogEntries, upsertRemoteLogEntry } from "./lib/logEntryRepository"
 import { supabase } from "./lib/supabase"
 
 const session = ref<Session | null>(null)
@@ -84,7 +85,7 @@ function openCalendar() {
   calendarDialog.value?.open()
 }
 
-function handleSubmit(text: string) {
+async function handleSubmit(text: string) {
   if (!isValidLogEntryText(text)) {
     alert("メモの記録に失敗しました。メモ内容が長すぎます")
     return
@@ -112,10 +113,27 @@ function handleSubmit(text: string) {
     } else {
       alert("メモの記録に失敗しました")
     }
+
     return
   }
 
   logEntryForm.value?.clear()
+
+  if (session.value?.user) {
+    try {
+      await upsertRemoteLogEntry(logEntry, session.value.user)
+    } catch (error) {
+      console.warn("Failed to save log entry to Supabase", error)
+    }
+
+    // 動作確認用
+    try {
+      const remoteEntries = await fetchRemoteLogEntries(session.value.user)
+      console.log(remoteEntries)
+    } catch (error) {
+      console.warn("Faild to fetch log entry from Supabase", error)
+    }
+  }
 }
 
 function updateNewLogEntryButtonVisibility() {
