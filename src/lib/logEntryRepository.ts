@@ -1,6 +1,6 @@
 import type { LogEntry } from "@/types"
 import type { User } from "@supabase/supabase-js"
-import { supabase } from "./supabase"
+import { supabase } from "@/lib/supabase"
 
 type LogEntryRow = {
   id: string
@@ -28,7 +28,7 @@ function toLogEntryRow(entry: LogEntry, user: User): Omit<LogEntryRow, "created_
   }
 }
 
-export async function fetchRemoteLogEntries(user: User): Promise<LogEntry[]> {
+export async function fetchCloudLogEntries(user: User): Promise<LogEntry[]> {
   const { data, error } = await supabase
     .from("log_entries")
     .select("*")
@@ -40,7 +40,7 @@ export async function fetchRemoteLogEntries(user: User): Promise<LogEntry[]> {
   return data.map(toLogEntry)
 }
 
-export async function upsertRemoteLogEntry(entry: LogEntry, user: User): Promise<void> {
+export async function upsertCloudLogEntry(entry: LogEntry, user: User): Promise<void> {
   const row = toLogEntryRow(entry, user)
 
   const { error } = await supabase
@@ -50,7 +50,7 @@ export async function upsertRemoteLogEntry(entry: LogEntry, user: User): Promise
   if (error) throw error
 }
 
-export async function upsertRemoteLogEntries(entries: LogEntry[], user: User): Promise<void> {
+export async function upsertCloudLogEntries(entries: LogEntry[], user: User): Promise<void> {
   if (entries.length === 0) return
 
   const rows = entries.map((entry) => toLogEntryRow(entry, user))

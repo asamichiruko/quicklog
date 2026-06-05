@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeQuicklogData, pruneExpiredSyncOperations } from "./syncQuicklogData";
+import { mergeQuicklogData, pruneExpiredSyncOperations } from "./quicklogDataMerge";
 
 describe("mergeQuicklogData", () => {
   it("空のデータ同士を merge できる", () => {

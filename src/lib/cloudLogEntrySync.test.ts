@@ -1,12 +1,12 @@
 import type { LogEntry, QuicklogData } from "@/types"
 import type { User } from "@supabase/supabase-js"
 import { describe, expect, it, vi } from "vitest"
-import { fetchRemoteLogEntries, upsertRemoteLogEntries } from "@/lib/logEntryRepository"
-import { mergeLogEntriesWithRemote, syncLogEntriesWithRemote } from "./cloudLogEntrySync"
+import { fetchCloudLogEntries, upsertCloudLogEntries } from "@/lib/logEntryRepository"
+import { mergeLogEntriesWithCloud, syncLogEntriesWithCloud } from "./cloudLogEntrySync"
 
 vi.mock("@/lib/logEntryRepository", () => ({
-  fetchRemoteLogEntries: vi.fn(),
-  upsertRemoteLogEntries: vi.fn(),
+  fetchCloudLogEntries: vi.fn(),
+  upsertCloudLogEntries: vi.fn(),
 }))
 
 const localOnlyEntry = {
@@ -15,9 +15,9 @@ const localOnlyEntry = {
   createdAt: "2026-06-05T10:00:00.000Z",
 } satisfies LogEntry
 
-const remoteOnlyEntry = {
-  id: "remote-only",
-  text: "remote",
+const cloudOnlyEntry = {
+  id: "cloud-only",
+  text: "cloud",
   createdAt: "2026-06-05T11:00:00.000Z",
 } satisfies LogEntry
 
@@ -35,42 +35,42 @@ function createLocalData(): QuicklogData {
       {
         id: "delete-operation",
         type: "delete",
-        entryId: "remote-only",
+        entryId: "cloud-only",
         createdAt: "2026-06-05T13:00:00.000Z",
       },
     ],
   }
 }
 
-describe("mergeLogEntriesWithRemote", () => {
+describe("mergeLogEntriesWithCloud", () => {
   it("SyncOperation を適用せず、ローカルとリモートの LogEntry を id でマージする", () => {
     const localData = createLocalData()
-    const result = mergeLogEntriesWithRemote(localData, [remoteOnlyEntry, sharedEntry])
+    const result = mergeLogEntriesWithCloud(localData, [cloudOnlyEntry, sharedEntry])
 
     expect(result.data).toEqual({
       ...localData,
-      logEntries: [localOnlyEntry, remoteOnlyEntry, sharedEntry],
+      logEntries: [localOnlyEntry, cloudOnlyEntry, sharedEntry],
     })
     expect(result.addedCount).toBe(1)
     expect(result.uploadedCount).toBe(1)
   })
 })
 
-describe("syncLogEntriesWithRemote", () => {
+describe("syncLogEntriesWithCloud", () => {
   it("リモートから取得したメモをマージして Supabase に upsert する", async () => {
     const localData = createLocalData()
     const user = { id: "user-id" } as unknown as User
 
-    vi.mocked(fetchRemoteLogEntries).mockResolvedValue([remoteOnlyEntry, sharedEntry])
-    vi.mocked(upsertRemoteLogEntries).mockResolvedValue()
+    vi.mocked(fetchCloudLogEntries).mockResolvedValue([cloudOnlyEntry, sharedEntry])
+    vi.mocked(upsertCloudLogEntries).mockResolvedValue()
 
-    const result = await syncLogEntriesWithRemote(localData, user)
+    const result = await syncLogEntriesWithCloud(localData, user)
 
-    expect(fetchRemoteLogEntries).toHaveBeenCalledWith(user)
-    expect(upsertRemoteLogEntries).toHaveBeenCalledWith(
-      [localOnlyEntry, remoteOnlyEntry, sharedEntry],
+    expect(fetchCloudLogEntries).toHaveBeenCalledWith(user)
+    expect(upsertCloudLogEntries).toHaveBeenCalledWith(
+      [localOnlyEntry, cloudOnlyEntry, sharedEntry],
       user,
     )
-    expect(result.data.logEntries).toEqual([localOnlyEntry, remoteOnlyEntry, sharedEntry])
+    expect(result.data.logEntries).toEqual([localOnlyEntry, cloudOnlyEntry, sharedEntry])
   })
 })

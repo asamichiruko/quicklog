@@ -1,8 +1,8 @@
-import type { LogEntry, QuicklogData, SyncOperation } from "@/types";
-import { sortLogEntriesByCreatedAtAsc } from "@/lib/logEntryCollection";
-import { addDays, startOfLocalDay } from "@/lib/date";
+import type { LogEntry, QuicklogData, SyncOperation } from "@/types"
+import { sortLogEntriesByCreatedAtAsc } from "@/lib/logEntryCollection"
+import { addDays, startOfLocalDay } from "@/lib/date"
 
-export type MergeQuicklogDataResult = {
+export type QuicklogDataMergeResult = {
   data: QuicklogData,
   addedCount: number,
   deletedCount: number,
@@ -10,7 +10,7 @@ export type MergeQuicklogDataResult = {
 
 const SYNC_OPERATION_RETENTION_DAYS = 60
 
-export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData): MergeQuicklogDataResult {
+export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData): QuicklogDataMergeResult {
   // 異なるデータ同士で id の衝突はないという前提でマージを行う
 
   // union each logEntries

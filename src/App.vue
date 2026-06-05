@@ -4,26 +4,26 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
+import { getCurrentSession } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
-import { syncLogEntriesWithRemote, type CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
+import { syncLogEntriesWithCloud, type CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
+import { upsertCloudLogEntry } from "@/lib/logEntryRepository"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
-import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
-import { DEFAULT_SETTINGS } from "@/lib/settings"
-import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
 import {
   mergeQuicklogData,
   pruneExpiredSyncOperations,
   pruneQuicklogDataSyncOperations,
-} from "@/lib/syncQuicklogData"
+} from "@/lib/quicklogDataMerge"
+import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
+import { DEFAULT_SETTINGS } from "@/lib/settings"
+import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
+import { supabase } from "@/lib/supabase"
 import type { AppSettings, ExportType, LogEntry, QuicklogData, SyncOperation } from "@/types"
 import { type Session } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
-import { getCurrentSession } from "./lib/auth"
-import { upsertRemoteLogEntry } from "./lib/logEntryRepository"
-import { supabase } from "./lib/supabase"
 
 const session = ref<Session | null>(null)
 
@@ -122,7 +122,7 @@ async function handleSubmit(text: string) {
 
   if (session.value?.user) {
     try {
-      await upsertRemoteLogEntry(logEntry, session.value.user)
+      await upsertCloudLogEntry(logEntry, session.value.user)
     } catch (error) {
       console.warn("Failed to save log entry to Supabase", error)
     }
@@ -262,7 +262,7 @@ async function handleCloudSync(): Promise<CloudLogEntrySyncResult> {
     syncOperations: syncOperations.value,
   } satisfies QuicklogData
 
-  const result = await syncLogEntriesWithRemote(localData, session.value.user)
+  const result = await syncLogEntriesWithCloud(localData, session.value.user)
 
   saveQuicklogData(result.data)
   logEntries.value = result.data.logEntries

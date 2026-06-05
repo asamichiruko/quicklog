@@ -1,7 +1,7 @@
 import type { LogEntry, QuicklogData } from "@/types"
 import type { User } from "@supabase/supabase-js"
 import { mergeLogEntries } from "@/lib/logEntryCollection"
-import { fetchRemoteLogEntries, upsertRemoteLogEntries } from "@/lib/logEntryRepository"
+import { fetchCloudLogEntries, upsertCloudLogEntries } from "@/lib/logEntryRepository"
 
 export type CloudLogEntrySyncResult = {
   data: QuicklogData
@@ -9,32 +9,32 @@ export type CloudLogEntrySyncResult = {
   uploadedCount: number
 }
 
-export function mergeLogEntriesWithRemote(
+export function mergeLogEntriesWithCloud(
   localData: QuicklogData,
-  remoteLogEntries: LogEntry[],
+  cloudLogEntries: LogEntry[],
 ): CloudLogEntrySyncResult {
   const localLogEntryIds = new Set(localData.logEntries.map((entry) => entry.id))
-  const remoteLogEntryIds = new Set(remoteLogEntries.map((entry) => entry.id))
-  const logEntries = mergeLogEntries(localData.logEntries, remoteLogEntries)
+  const cloudLogEntryIds = new Set(cloudLogEntries.map((entry) => entry.id))
+  const logEntries = mergeLogEntries(localData.logEntries, cloudLogEntries)
 
   return {
     data: {
       ...localData,
       logEntries,
     },
-    addedCount: remoteLogEntries.filter((entry) => !localLogEntryIds.has(entry.id)).length,
-    uploadedCount: localData.logEntries.filter((entry) => !remoteLogEntryIds.has(entry.id)).length,
+    addedCount: cloudLogEntries.filter((entry) => !localLogEntryIds.has(entry.id)).length,
+    uploadedCount: localData.logEntries.filter((entry) => !cloudLogEntryIds.has(entry.id)).length,
   }
 }
 
-export async function syncLogEntriesWithRemote(
+export async function syncLogEntriesWithCloud(
   localData: QuicklogData,
   user: User,
 ): Promise<CloudLogEntrySyncResult> {
-  const remoteLogEntries = await fetchRemoteLogEntries(user)
-  const result = mergeLogEntriesWithRemote(localData, remoteLogEntries)
+  const cloudLogEntries = await fetchCloudLogEntries(user)
+  const result = mergeLogEntriesWithCloud(localData, cloudLogEntries)
 
-  await upsertRemoteLogEntries(result.data.logEntries, user)
+  await upsertCloudLogEntries(result.data.logEntries, user)
 
   return result
 }
