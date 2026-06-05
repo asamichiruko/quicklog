@@ -29,12 +29,11 @@ const sharedEntry = {
 
 function createLocalData(): QuicklogData {
   return {
-    version: 2,
+    version: 3,
     logEntries: [localOnlyEntry, sharedEntry],
-    syncOperations: [
+    logEntryDeletions: [
       {
         id: "delete-operation",
-        type: "delete",
         entryId: "cloud-only",
         createdAt: "2026-06-05T13:00:00.000Z",
       },
@@ -43,7 +42,7 @@ function createLocalData(): QuicklogData {
 }
 
 describe("mergeLogEntriesWithCloud", () => {
-  it("SyncOperation を適用せず、ローカルとリモートの LogEntry を id でマージする", () => {
+  it("LogEntryDeletion を適用せず、ローカルとリモートの LogEntry を id でマージする", () => {
     const localData = createLocalData()
     const result = mergeLogEntriesWithCloud(localData, [cloudOnlyEntry, sharedEntry])
 

@@ -32,18 +32,18 @@ describe("quicklogData size limit", () => {
     const { SizeError } = await import("@/lib/errors")
 
     const existing = {
-      version: 2 as 2,
+      version: 3 as 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
       ],
-      syncOperations: [],
+      logEntryDeletions: [],
     }
     const tooLargeData = {
-      version: 2 as 2,
+      version: 3 as 3,
       logEntries: [
         { id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" },
       ],
-      syncOperations: [],
+      logEntryDeletions: [],
     }
 
     saveQuicklogData(existing)
@@ -65,18 +65,18 @@ describe("quicklogData size limit", () => {
     const { loadQuicklogData } = await import("./storage")
 
     const tooLargeData = {
-      version: 2,
+      version: 3,
       logEntries: [
         { id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" },
       ],
-      syncOperations: [],
+      logEntryDeletions: [],
     }
 
     localStorage.setItem(QUICKLOG_DATA_KEY, JSON.stringify(tooLargeData))
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 })

@@ -1,18 +1,31 @@
 import type { LogEntry, QuicklogData } from "@/types";
 import { parseAsLogEntries } from "@/lib/logEntrySchema";
 import { SchemaValidationError } from "@/lib/errors";
-import { parseAsSyncOperations } from "@/lib/syncOperationSchema";
+import { parseAsLogEntryDeletions } from "@/lib/logEntryDeletionSchema";
 
-const LATEST_VERSION = 2
+const LATEST_VERSION = 3
 
 type QuicklogDataV1 = {
   version: 1
   logEntries: LogEntry[]
 }
 
-type QuicklogDataV2 = QuicklogData
+type QuicklogDataV2Deletion = {
+  id: string
+  type: "delete"
+  entryId: string
+  createdAt: string
+}
 
-type KnownQuickLogData = QuicklogDataV1 | QuicklogDataV2
+type QuicklogDataV2 = {
+  version: 2
+  logEntries: LogEntry[]
+  syncOperations: QuicklogDataV2Deletion[]
+}
+
+type QuicklogDataV3 = QuicklogData
+
+type KnownQuickLogData = QuicklogDataV1 | QuicklogDataV2 | QuicklogDataV3
 
 function isRecord(value: unknown): value is Record < string, unknown > {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -31,6 +44,10 @@ function parseAsKnownQuicklogData(data: unknown): KnownQuickLogData {
     return parseAsQuicklogDataV2(data)
   }
 
+  if (isRecord(data) && data.version === 3) {
+    return parseAsQuicklogDataV3(data)
+  }
+
   throw new SchemaValidationError("Invalid data type.")
 }
 
@@ -39,7 +56,19 @@ function migrateToLatest(data: KnownQuickLogData): QuicklogData {
     return {
       version: LATEST_VERSION,
       logEntries: data.logEntries,
-      syncOperations: [],
+      logEntryDeletions: [],
+    }
+  }
+
+  if (data.version === 2) {
+    return {
+      version: LATEST_VERSION,
+      logEntries: data.logEntries,
+      logEntryDeletions: data.syncOperations.map(({ id, entryId, createdAt }) => ({
+        id,
+        entryId,
+        createdAt,
+      })),
     }
   }
 
@@ -57,6 +86,49 @@ function parseAsQuicklogDataV2(data: Record<string, unknown>): QuicklogDataV2 {
   return {
     version: 2,
     logEntries: parseAsLogEntries(data.logEntries),
-    syncOperations: parseAsSyncOperations(data.syncOperations),
+    syncOperations: parseAsQuicklogDataV2Deletions(data.syncOperations),
   }
+}
+
+function parseAsQuicklogDataV3(data: Record<string, unknown>): QuicklogDataV3 {
+  return {
+    version: 3,
+    logEntries: parseAsLogEntries(data.logEntries),
+    logEntryDeletions: parseAsLogEntryDeletions(data.logEntryDeletions),
+  }
+}
+
+function parseAsQuicklogDataV2Deletions(data: unknown): QuicklogDataV2Deletion[] {
+  if (!Array.isArray(data)) {
+    throw new SchemaValidationError("Top-level of data must be Array object.")
+  }
+
+  return data.map((item, index) => {
+    if (!isValidQuicklogDataV2Deletion(item)) {
+      throw new SchemaValidationError(`Cannot parse object as QuicklogDataV2Deletion at index ${index}.`, { index: index })
+    }
+    return item
+  })
+}
+
+function isValidQuicklogDataV2Deletion(obj: unknown): obj is QuicklogDataV2Deletion {
+  if (typeof obj !== "object" || obj === null) {
+    return false
+  }
+
+  return (
+    "id" in obj &&
+    typeof obj.id === "string" &&
+    obj.id.length > 0 &&
+    obj.id.length <= 128 &&
+    "type" in obj &&
+    obj.type === "delete" &&
+    "entryId" in obj &&
+    typeof obj.entryId === "string" &&
+    obj.entryId.length > 0 &&
+    obj.entryId.length <= 128 &&
+    "createdAt" in obj &&
+    typeof obj.createdAt === "string" &&
+    !Number.isNaN(Date.parse(obj.createdAt))
+  )
 }

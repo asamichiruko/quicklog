@@ -14,14 +14,14 @@ import { upsertCloudLogEntry } from "@/lib/logEntryRepository"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import {
   mergeQuicklogData,
-  pruneExpiredSyncOperations,
-  pruneQuicklogDataSyncOperations,
+  pruneExpiredLogEntryDeletions,
+  pruneQuicklogDataLogEntryDeletions,
 } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
 import { supabase } from "@/lib/supabase"
-import type { AppSettings, ExportType, LogEntry, QuicklogData, SyncOperation } from "@/types"
+import type { AppSettings, ExportType, LogEntry, QuicklogData, LogEntryDeletion } from "@/types"
 import { type Session } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
@@ -30,7 +30,7 @@ const session = ref<Session | null>(null)
 let unsubscribeAuth: (() => void) | undefined
 
 const logEntries = ref<LogEntry[]>([])
-const syncOperations = ref<SyncOperation[]>([])
+const logEntryDeletions = ref<LogEntryDeletion[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 
 const showNewLogEntryButton = ref(false)
@@ -63,9 +63,9 @@ onMounted(async () => {
     data.subscription.unsubscribe()
   }
 
-  const quicklogData = pruneQuicklogDataSyncOperations(loadQuicklogData(), new Date())
+  const quicklogData = pruneQuicklogDataLogEntryDeletions(loadQuicklogData(), new Date())
   logEntries.value = quicklogData.logEntries
-  syncOperations.value = quicklogData.syncOperations
+  logEntryDeletions.value = quicklogData.logEntryDeletions
   saveQuicklogData(quicklogData)
 
   settings.value = loadSettings()
@@ -102,9 +102,9 @@ async function handleSubmit(text: string) {
     const nextEntries = [...logEntries.value, logEntry]
 
     saveQuicklogData({
-      version: 2,
+      version: 3,
       logEntries: nextEntries,
-      syncOperations: syncOperations.value,
+      logEntryDeletions: logEntryDeletions.value,
     } satisfies QuicklogData)
 
     logEntries.value = nextEntries
@@ -160,25 +160,24 @@ function handleRemove(id: string) {
 
   try {
     const nextLogEntries = logEntries.value.filter((logEntry) => logEntry.id !== id)
-    const deleteOperation: SyncOperation = {
+    const logEntryDeletion: LogEntryDeletion = {
       id: crypto.randomUUID(),
-      type: "delete",
       createdAt: new Date().toISOString(),
       entryId: id,
     }
-    const nextSyncOperations = [...syncOperations.value, deleteOperation]
+    const nextLogEntryDeletions = [...logEntryDeletions.value, logEntryDeletion]
 
     saveQuicklogData({
-      version: 2,
+      version: 3,
       logEntries: nextLogEntries,
-      syncOperations: nextSyncOperations,
+      logEntryDeletions: nextLogEntryDeletions,
     } satisfies QuicklogData)
 
     logEntries.value = nextLogEntries
-    syncOperations.value = nextSyncOperations
+    logEntryDeletions.value = nextLogEntryDeletions
   } catch (error) {
     if (error instanceof SizeError) {
-      alert("削除に失敗しました。同期データが多すぎます")
+      alert("削除に失敗しました。削除履歴が多すぎます")
     } else {
       alert("削除に失敗しました")
     }
@@ -190,9 +189,9 @@ function handleExport(exportType: ExportType) {
   try {
     const exportFile = createQuicklogExportFile(
       {
-        version: 2,
+        version: 3,
         logEntries: logEntries.value,
-        syncOperations: syncOperations.value,
+        logEntryDeletions: logEntryDeletions.value,
       },
       exportType,
     )
@@ -223,19 +222,19 @@ async function handleImport(file: File) {
   try {
     const now = new Date()
     const data = await readQuicklogImportFile(file)
-    const incoming = pruneQuicklogDataSyncOperations(parseAsQuicklogData(data), now)
+    const incoming = pruneQuicklogDataLogEntryDeletions(parseAsQuicklogData(data), now)
     const result = mergeQuicklogData(
       {
-        version: 2,
+        version: 3,
         logEntries: logEntries.value,
-        syncOperations: pruneExpiredSyncOperations(syncOperations.value, now),
+        logEntryDeletions: pruneExpiredLogEntryDeletions(logEntryDeletions.value, now),
       },
       incoming,
     )
 
     saveQuicklogData(result.data)
     logEntries.value = result.data.logEntries
-    syncOperations.value = result.data.syncOperations
+    logEntryDeletions.value = result.data.logEntryDeletions
 
     alert(`${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`)
   } catch (error) {
@@ -257,16 +256,16 @@ async function handleCloudSync(): Promise<CloudLogEntrySyncResult> {
   }
 
   const localData = {
-    version: 2,
+    version: 3,
     logEntries: logEntries.value,
-    syncOperations: syncOperations.value,
+    logEntryDeletions: logEntryDeletions.value,
   } satisfies QuicklogData
 
   const result = await syncLogEntriesWithCloud(localData, session.value.user)
 
   saveQuicklogData(result.data)
   logEntries.value = result.data.logEntries
-  syncOperations.value = result.data.syncOperations
+  logEntryDeletions.value = result.data.logEntryDeletions
 
   return result
 }

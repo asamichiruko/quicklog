@@ -17,9 +17,9 @@ export function loadQuicklogData(): QuicklogData {
   }
 
   const empty = {
-    version: 2,
+    version: 3,
     logEntries: [],
-    syncOperations: [],
+    logEntryDeletions: [],
   } satisfies QuicklogData
 
   if (getUtf8ByteLength(raw) > MAX_QUICKLOG_DATA_STORAGE_BYTES) {

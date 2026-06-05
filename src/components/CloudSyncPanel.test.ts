@@ -152,9 +152,9 @@ describe("CloudSyncPanel", () => {
     const user = userEvent.setup()
     const result = {
       data: {
-        version: 2,
+        version: 3,
         logEntries: [],
-        syncOperations: [],
+        logEntryDeletions: [],
       },
       addedCount: 2,
       uploadedCount: 1,

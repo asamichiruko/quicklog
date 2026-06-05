@@ -15,12 +15,12 @@ describe("quicklogData", () => {
 
   it("正常な quicklogData を読み書きできる", () => {
     const data = {
-      version: 2,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
       ],
-      syncOperations: [
-        { id: "id1", type: "delete", createdAt: "2026-05-22T00:00:00.000Z", entryId: "id2" }
+      logEntryDeletions: [
+        { id: "id1", createdAt: "2026-05-22T00:00:00.000Z", entryId: "id2" }
       ],
     } satisfies QuicklogData
 
@@ -33,17 +33,17 @@ describe("quicklogData", () => {
 
     expect(() => saveQuicklogData(invalidData)).toThrow(SchemaValidationError)
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
   it("不正な quicklogData を保存しようとしたとき、既存の quicklogData を上書きしない", () => {
     const existing = {
-      version: 2,
+      version: 3,
       logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
-      syncOperations: [],
+      logEntryDeletions: [],
     } satisfies QuicklogData
     const invalidData = [{ name: "invalid data" }] as unknown as QuicklogData
 
@@ -60,41 +60,41 @@ describe("quicklogData", () => {
 
     localStorage.setItem(QUICKLOG_DATA_KEY, JSON.stringify(data))
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: data,
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
   it("QUICKLOG_DATA_KEY に未対応のデータが書き込まれているとき、空の quicklogData を返す", () => {
     const data = {
-      version: 3,
+      version: 4,
       logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
-      syncOperations: [],
+      logEntryDeletions: [],
     }
 
     localStorage.setItem(QUICKLOG_DATA_KEY, JSON.stringify(data))
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
   it("localStorage の内容が invalid JSON のとき、空の quicklogData を返す", () => {
     localStorage.setItem(QUICKLOG_DATA_KEY, "invalid json")
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
   it("localStorage の内容が空のとき、空の quicklogData を返す", () => {
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
@@ -106,9 +106,9 @@ describe("quicklogData", () => {
     saveLogEntries(logEntries)
 
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries,
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
@@ -117,11 +117,11 @@ describe("quicklogData", () => {
       { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
     ]
     const quicklogData = {
-      version: 2,
+      version: 3,
       logEntries: [
         { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" }
       ],
-      syncOperations: [],
+      logEntryDeletions: [],
     } satisfies QuicklogData
 
     saveLogEntries(logEntries)
@@ -138,9 +138,9 @@ describe("quicklogData", () => {
     ])
 
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
@@ -151,9 +151,9 @@ describe("quicklogData", () => {
     ])
 
     expect(loadQuicklogData()).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 })

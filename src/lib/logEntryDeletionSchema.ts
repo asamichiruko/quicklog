@@ -1,4 +1,4 @@
-import type { SyncOperation } from "@/types"
+import type { LogEntryDeletion } from "@/types"
 import { SchemaValidationError } from "@/lib/errors"
 
 function isValidDateString(value: string): boolean {
@@ -9,20 +9,20 @@ function isValidIdString(value: string): boolean {
   return value.length > 0 && value.length <= 128
 }
 
-export function parseAsSyncOperations(data: unknown): SyncOperation[] {
+export function parseAsLogEntryDeletions(data: unknown): LogEntryDeletion[] {
   if (!Array.isArray(data)) {
     throw new SchemaValidationError("Top-level of data must be Array object.")
   }
 
   return data.map((item, index) => {
-    if (!isValidSyncOperation(item)) {
-      throw new SchemaValidationError(`Cannot parse object as SyncOperation at index ${index}.`, { index: index })
+    if (!isValidLogEntryDeletion(item)) {
+      throw new SchemaValidationError(`Cannot parse object as LogEntryDeletion at index ${index}.`, { index: index })
     }
     return item
   })
 }
 
-export function isValidSyncOperation(obj: unknown): obj is SyncOperation {
+export function isValidLogEntryDeletion(obj: unknown): obj is LogEntryDeletion {
   if (typeof obj !== "object" || obj === null) {
     return false
   }
@@ -31,7 +31,7 @@ export function isValidSyncOperation(obj: unknown): obj is SyncOperation {
     return false
   }
 
-  if (!("type" in obj) || typeof obj.type !== "string") {
+  if (!("entryId" in obj) || typeof obj.entryId !== "string" || !isValidIdString(obj.entryId)) {
     return false
   }
 
@@ -40,14 +40,6 @@ export function isValidSyncOperation(obj: unknown): obj is SyncOperation {
     typeof obj.createdAt !== "string" ||
     !isValidDateString(obj.createdAt)
   ) {
-    return false
-  }
-
-  if (obj.type === "delete") {
-    if (!("entryId" in obj) || typeof obj.entryId !== "string" || !isValidIdString(obj.entryId)) {
-      return false
-    }
-  } else {
     return false
   }
 

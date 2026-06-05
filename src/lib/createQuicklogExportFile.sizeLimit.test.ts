@@ -51,7 +51,7 @@ describe("formatQuicklogDataAsJson size limit", () => {
     const { SizeError } = await import("@/lib/errors")
 
     const quicklogData = {
-      version: 2,
+      version: 3,
       logEntries: [
         {
           id: "id1",
@@ -59,7 +59,7 @@ describe("formatQuicklogDataAsJson size limit", () => {
           createdAt: "2026-05-22T00:00:00.000Z",
         },
       ],
-      syncOperations: [],
+      logEntryDeletions: [],
     } satisfies QuicklogData
 
     expect(() => formatQuicklogDataAsJson(quicklogData)).toThrow(SizeError)

@@ -8,13 +8,13 @@ describe("parseAsQuicklogData", () => {
       { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
     expect(parseAsQuicklogData(logEntries)).toEqual({
-      version: 2,
+      version: 3,
       logEntries,
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 
-  it("version 2 のデータを parse できる", () => {
+  it("version 2 のデータを latest version に migrate できる", () => {
     const dataV2 = {
       version: 2,
       logEntries: [
@@ -24,12 +24,31 @@ describe("parseAsQuicklogData", () => {
         { id: "id1", type: "delete", createdAt: "2026-05-22T00:00:00.000Z", entryId: "id1" },
       ],
     }
-    expect(parseAsQuicklogData(dataV2)).toEqual(dataV2)
+    expect(parseAsQuicklogData(dataV2)).toEqual({
+      version: 3,
+      logEntries: dataV2.logEntries,
+      logEntryDeletions: [
+        { id: "id1", createdAt: "2026-05-22T00:00:00.000Z", entryId: "id1" },
+      ],
+    })
+  })
+
+  it("version 3 のデータを parse できる", () => {
+    const dataV3 = {
+      version: 3,
+      logEntries: [
+        { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
+      ],
+      logEntryDeletions: [
+        { id: "id1", createdAt: "2026-05-22T00:00:00.000Z", entryId: "id1" },
+      ],
+    }
+    expect(parseAsQuicklogData(dataV3)).toEqual(dataV3)
   })
 
   it("未対応または不正な型の version に対して例外を出す", () => {
-    expect(() => { parseAsQuicklogData({ version: 3, logEntries: [], syncOperations: [] }) }).toThrow(SchemaValidationError)
-    expect(() => { parseAsQuicklogData({ version: "2", logEntries: [], syncOperations: [] }) }).toThrow(SchemaValidationError)
+    expect(() => { parseAsQuicklogData({ version: 4, logEntries: [], logEntryDeletions: [] }) }).toThrow(SchemaValidationError)
+    expect(() => { parseAsQuicklogData({ version: "3", logEntries: [], logEntryDeletions: [] }) }).toThrow(SchemaValidationError)
   })
 
   it("LogEntry[] 以外の version 1 風オブジェクトに対して例外を出す", () => {
@@ -59,18 +78,35 @@ describe("parseAsQuicklogData", () => {
     }).toThrow(SchemaValidationError)
   })
 
+  it("version 3 として不正なオブジェクトであるとき例外を出す", () => {
+    expect(() => { parseAsQuicklogData({ version: 3, logEntries: [] }) }).toThrow(SchemaValidationError)
+    expect(() => { parseAsQuicklogData({ version: 3, logEntryDeletions: [] }) }).toThrow(SchemaValidationError)
+    expect(() => { parseAsQuicklogData({ version: 3, logEntries: "invalid type", logEntryDeletions: [] }) }).toThrow(SchemaValidationError)
+    expect(() => { parseAsQuicklogData({ version: 3, logEntries: [], logEntryDeletions: "invalid type" }) }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsQuicklogData({
+        version: 3, logEntries: [{ name: "invalid value" }], logEntryDeletions: []
+      })
+    }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsQuicklogData({
+        version: 3, logEntries: [], logEntryDeletions: [{ name: "invalid value" }]
+      })
+    }).toThrow(SchemaValidationError)
+  })
+
   it("不正な値, object に対して例外を出す", () => {
     expect(() => { parseAsQuicklogData(undefined) }).toThrow(SchemaValidationError)
     expect(() => { parseAsQuicklogData(null) }).toThrow(SchemaValidationError)
-    expect(() => { parseAsQuicklogData("{ version: 2, logEntries: [], syncOperations: [] }") }).toThrow(SchemaValidationError)
+    expect(() => { parseAsQuicklogData("{ version: 3, logEntries: [], logEntryDeletions: [] }") }).toThrow(SchemaValidationError)
     expect(() => { parseAsQuicklogData({ name: "invalid object" }) }).toThrow(SchemaValidationError)
   })
 
   it("空の配列を version 1 と解釈して parse する", () => {
     expect(parseAsQuicklogData([])).toEqual({
-      version: 2,
+      version: 3,
       logEntries: [],
-      syncOperations: [],
+      logEntryDeletions: [],
     })
   })
 })

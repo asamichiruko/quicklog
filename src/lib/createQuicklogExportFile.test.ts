@@ -165,20 +165,20 @@ text3
 describe("formatQuicklogDataAsJson", () => {
   it("QuicklogData を JSON 形式に format できる", () => {
     const quicklogData = {
-      version: 2,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
         { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-23T00:00:00.000Z" },
       ],
-      syncOperations: [
-        { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
+      logEntryDeletions: [
+        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
       ]
     } satisfies QuicklogData
 
     const actual = formatQuicklogDataAsJson(quicklogData)
     expect(actual).toBe(`{
-  "version": 2,
+  "version": 3,
   "logEntries": [
     {
       "id": "id1",
@@ -196,10 +196,9 @@ describe("formatQuicklogDataAsJson", () => {
       "createdAt": "2026-05-23T00:00:00.000Z"
     }
   ],
-  "syncOperations": [
+  "logEntryDeletions": [
     {
       "id": "sid1",
-      "type": "delete",
       "createdAt": "2026-06-01T12:00:00.000Z",
       "entryId": "id4"
     }
@@ -209,20 +208,20 @@ describe("formatQuicklogDataAsJson", () => {
 
   it("logEntry[] は日付昇順にソートされる", () => {
     const quicklogData = {
-      version: 2,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
         { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-22T00:00:00.000Z" },
       ],
-      syncOperations: [
-        { id: "sid1", type: "delete", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
+      logEntryDeletions: [
+        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
       ]
     } satisfies QuicklogData
 
     const actual = formatQuicklogDataAsJson(quicklogData)
     expect(actual).toBe(`{
-  "version": 2,
+  "version": 3,
   "logEntries": [
     {
       "id": "id3",
@@ -240,10 +239,9 @@ describe("formatQuicklogDataAsJson", () => {
       "createdAt": "2026-05-23T00:00:00.000Z"
     }
   ],
-  "syncOperations": [
+  "logEntryDeletions": [
     {
       "id": "sid1",
-      "type": "delete",
       "createdAt": "2026-06-01T12:00:00.000Z",
       "entryId": "id4"
     }
@@ -254,19 +252,19 @@ describe("formatQuicklogDataAsJson", () => {
 
 describe("createQuicklogExportFile", () => {
   it("ExportType に 'json' を指定したときの mimeType と extension が正しい", () => {
-    const exportFile = createQuicklogExportFile({ version: 2, logEntries: [], syncOperations: [] }, "json")
+    const exportFile = createQuicklogExportFile({ version: 3, logEntries: [], logEntryDeletions: [] }, "json")
 
     expect(exportFile.content).toBe(`{
-  "version": 2,
+  "version": 3,
   "logEntries": [],
-  "syncOperations": []
+  "logEntryDeletions": []
 }`)
     expect(exportFile.mimeType).toBe("application/json")
     expect(exportFile.extension).toBe(".json")
   })
 
   it("ExportType に 'markdown' を指定したときの mimeType と extension が正しい", () => {
-    const exportFile = createQuicklogExportFile({ version: 2, logEntries: [], syncOperations: [] }, "markdown")
+    const exportFile = createQuicklogExportFile({ version: 3, logEntries: [], logEntryDeletions: [] }, "markdown")
 
     expect(exportFile.content).toBe("")
     expect(exportFile.mimeType).toBe("text/markdown")

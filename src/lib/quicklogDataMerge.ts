@@ -1,4 +1,4 @@
-import type { LogEntry, QuicklogData, SyncOperation } from "@/types"
+import type { LogEntry, QuicklogData, LogEntryDeletion } from "@/types"
 import { sortLogEntriesByCreatedAtAsc } from "@/lib/logEntryCollection"
 import { addDays, startOfLocalDay } from "@/lib/date"
 
@@ -8,7 +8,7 @@ export type QuicklogDataMergeResult = {
   deletedCount: number,
 }
 
-const SYNC_OPERATION_RETENTION_DAYS = 60
+const LOG_ENTRY_DELETION_RETENTION_DAYS = 60
 
 export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData): QuicklogDataMergeResult {
   // 異なるデータ同士で id の衝突はないという前提でマージを行う
@@ -26,28 +26,26 @@ export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData
     logEntriesById.set(logEntry.id, logEntry)
   })
 
-  // union each syncOperations
-  const syncOperationsById = new Map<string, SyncOperation>()
+  // union each logEntryDeletions
+  const logEntryDeletionsById = new Map<string, LogEntryDeletion>()
 
-  existing.syncOperations.forEach((syncOperation) => {
-    syncOperationsById.set(syncOperation.id, syncOperation)
+  existing.logEntryDeletions.forEach((logEntryDeletion) => {
+    logEntryDeletionsById.set(logEntryDeletion.id, logEntryDeletion)
   })
 
-  incoming.syncOperations.forEach((syncOperation) => {
-    syncOperationsById.set(syncOperation.id, syncOperation)
+  incoming.logEntryDeletions.forEach((logEntryDeletion) => {
+    logEntryDeletionsById.set(logEntryDeletion.id, logEntryDeletion)
   })
 
-  // apply deleteOperations
-  syncOperationsById.forEach((syncOperation) => {
-    if (syncOperation.type === "delete") {
-      logEntriesById.delete(syncOperation.entryId)
-    }
+  // apply logEntryDeletions
+  logEntryDeletionsById.forEach((logEntryDeletion) => {
+    logEntriesById.delete(logEntryDeletion.entryId)
   })
 
   const result = {
-    version: 2,
+    version: 3,
     logEntries: sortLogEntriesByCreatedAtAsc([...logEntriesById.values()]),
-    syncOperations: [...syncOperationsById.values()]
+    logEntryDeletions: [...logEntryDeletionsById.values()]
   } satisfies QuicklogData
 
   const addedCount = result.logEntries.filter((entry) => !existingLogEntryIds.has(entry.id)).length
@@ -56,16 +54,16 @@ export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData
   return { data: result, addedCount, deletedCount }
 }
 
-export function pruneQuicklogDataSyncOperations(data: QuicklogData, today: Date): QuicklogData {
+export function pruneQuicklogDataLogEntryDeletions(data: QuicklogData, today: Date): QuicklogData {
   return {
     ...data,
-    syncOperations: pruneExpiredSyncOperations(data.syncOperations, today)
+    logEntryDeletions: pruneExpiredLogEntryDeletions(data.logEntryDeletions, today)
   }
 }
 
-export function pruneExpiredSyncOperations(data: SyncOperation[], today: Date, retentionDays = SYNC_OPERATION_RETENTION_DAYS): SyncOperation[] {
-  const pruned = data.filter((syncOperation) => {
-    return addDays(new Date(syncOperation.createdAt), retentionDays).getTime() >= startOfLocalDay(today).getTime()
+export function pruneExpiredLogEntryDeletions(data: LogEntryDeletion[], today: Date, retentionDays = LOG_ENTRY_DELETION_RETENTION_DAYS): LogEntryDeletion[] {
+  const pruned = data.filter((logEntryDeletion) => {
+    return addDays(new Date(logEntryDeletion.createdAt), retentionDays).getTime() >= startOfLocalDay(today).getTime()
   })
 
   return pruned
