@@ -106,7 +106,7 @@ describe("mergeQuicklogData", () => {
     expect(result.deletedCount).toBe(0)
   })
 
-  it("existing の delete operation が incoming の entry を取り除く (entry を復活させない)", () => {
+  it("existing の LogEntryDeletion が incoming の entry を取り除く (entry を復活させない)", () => {
     const version: 3 = 3
     const existing = {
       version,
@@ -115,7 +115,7 @@ describe("mergeQuicklogData", () => {
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       ],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
       ],
     }
     const incoming = {
@@ -134,13 +134,13 @@ describe("mergeQuicklogData", () => {
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
     expect(result.data.logEntryDeletions).toEqual([
-      { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
+      { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
     ])
     expect(result.addedCount).toBe(1)
     expect(result.deletedCount).toBe(0)
   })
 
-  it("incoming の delete operation が existing の entry を取り除く (他環境での delete を同期する)", () => {
+  it("incoming の LogEntryDeletion が existing の entry を取り除く (他環境での LogEntryDeletion を取り込む)", () => {
     const version: 3 = 3
     const existing = {
       version,
@@ -157,7 +157,7 @@ describe("mergeQuicklogData", () => {
         { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
       ],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
       ],
     }
     const result = mergeQuicklogData(existing, incoming)
@@ -168,13 +168,13 @@ describe("mergeQuicklogData", () => {
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
     expect(result.data.logEntryDeletions).toEqual([
-      { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
+      { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
     ])
     expect(result.addedCount).toBe(2)
     expect(result.deletedCount).toBe(1)
   })
 
-  it("incoming と existing に同一の delete operation があっても重複なく merge される", () => {
+  it("incoming と existing に同一の LogEntryDeletion があっても重複なく merge される", () => {
     const version: 3 = 3
     const existing = {
       version,
@@ -182,7 +182,7 @@ describe("mergeQuicklogData", () => {
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       ],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
       ],
     }
     const incoming = {
@@ -191,39 +191,62 @@ describe("mergeQuicklogData", () => {
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       ],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
       ],
     }
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntryDeletions).toEqual([
-      { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
+      { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id3" }
     ])
     expect(result.addedCount).toBe(1)
     expect(result.deletedCount).toBe(0)
   })
 
-  it("削除対象の entry が存在しなくても delete operation は残ったままである", () => {
+  it("同じ entryId の LogEntryDeletion は createdAt が遅いものを残す", () => {
     const version: 3 = 3
     const existing = {
       version,
       logEntries: [],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
       ],
     }
     const incoming = {
       version,
       logEntries: [],
       logEntryDeletions: [
-        { id: "sid2", createdAt: "2026-06-02T12:00:00.000Z", entryId: "id2" }
+        { createdAt: "2026-06-02T12:00:00.000Z", entryId: "id1" }
       ],
     }
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntryDeletions).toEqual([
-      { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" },
-      { id: "sid2", createdAt: "2026-06-02T12:00:00.000Z", entryId: "id2" }
+      { createdAt: "2026-06-02T12:00:00.000Z", entryId: "id1" }
+    ])
+  })
+
+  it("削除対象の entry が存在しなくても LogEntryDeletion は残ったままである", () => {
+    const version: 3 = 3
+    const existing = {
+      version,
+      logEntries: [],
+      logEntryDeletions: [
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
+      ],
+    }
+    const incoming = {
+      version,
+      logEntries: [],
+      logEntryDeletions: [
+        { createdAt: "2026-06-02T12:00:00.000Z", entryId: "id2" }
+      ],
+    }
+    const result = mergeQuicklogData(existing, incoming)
+
+    expect(result.data.logEntryDeletions).toEqual([
+      { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" },
+      { createdAt: "2026-06-02T12:00:00.000Z", entryId: "id2" }
     ])
     expect(result.addedCount).toBe(0)
     expect(result.deletedCount).toBe(0)
@@ -242,14 +265,14 @@ describe("mergeQuicklogData", () => {
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       ],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" }
       ],
     }
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntries).toEqual([])
     expect(result.data.logEntryDeletions).toEqual([
-      { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" },
+      { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id1" },
     ])
     expect(result.addedCount).toBe(0)
     expect(result.deletedCount).toBe(0)
@@ -259,7 +282,7 @@ describe("mergeQuicklogData", () => {
 describe("pruneExpiredLogEntryDeletions", () => {
   it("期限が切れた LogEntryDeletion が prune される", () => {
     const logEntryDeletions = [
-      { id: "sid1", createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
+      { createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
     ]
     const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 5, 1), 3)
     expect(result).toEqual([])
@@ -267,7 +290,7 @@ describe("pruneExpiredLogEntryDeletions", () => {
 
   it("期限が切れていない LogEntryDeletion は prune されない", () => {
     const logEntryDeletions = [
-      { id: "sid1", createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
+      { createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
     ]
     const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 5, 1), 60)
     expect(result).toEqual(logEntryDeletions)
@@ -275,8 +298,8 @@ describe("pruneExpiredLogEntryDeletions", () => {
 
   it("有効な LogEntryDeletion と期限切れのものが混在しているとき、期限切れのもののみ prune される", () => {
     const logEntryDeletions = [
-      { id: "sid1", createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
-      { id: "sid2", createdAt: new Date(2026, 4, 20).toISOString(), entryId: "id2" },
+      { createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
+      { createdAt: new Date(2026, 4, 20).toISOString(), entryId: "id2" },
     ]
     const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 5, 1), 15)
     expect(result).toEqual([logEntryDeletions[1]])
@@ -284,9 +307,9 @@ describe("pruneExpiredLogEntryDeletions", () => {
 
   it("ちょうど有効期限にある LogEntryDeletion は prune されない", () => {
     const logEntryDeletions = [
-      { id: "sid1", createdAt: new Date(2026, 4, 14, 23, 59, 59, 999).toISOString(), entryId: "id1" },
-      { id: "sid2", createdAt: new Date(2026, 4, 15, 0, 0, 0, 0).toISOString(), entryId: "id2" },
-      { id: "sid3", createdAt: new Date(2026, 4, 15, 0, 0, 0, 1).toISOString(), entryId: "id3" },
+      { createdAt: new Date(2026, 4, 14, 23, 59, 59, 999).toISOString(), entryId: "id1" },
+      { createdAt: new Date(2026, 4, 15, 0, 0, 0, 0).toISOString(), entryId: "id2" },
+      { createdAt: new Date(2026, 4, 15, 0, 0, 0, 1).toISOString(), entryId: "id3" },
     ]
     const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 4, 16), 1)
     expect(result).toEqual([logEntryDeletions[1], logEntryDeletions[2]])
@@ -294,10 +317,19 @@ describe("pruneExpiredLogEntryDeletions", () => {
 
   it("有効期限は日付だけが参照される", () => {
     const logEntryDeletions = [
-      { id: "sid1", createdAt: new Date(2026, 4, 14, 12, 0, 0, 0).toISOString(), entryId: "id1" },
-      { id: "sid2", createdAt: new Date(2026, 4, 14, 8, 0, 0, 0).toISOString(), entryId: "id2" },
+      { createdAt: new Date(2026, 4, 14, 12, 0, 0, 0).toISOString(), entryId: "id1" },
+      { createdAt: new Date(2026, 4, 14, 8, 0, 0, 0).toISOString(), entryId: "id2" },
     ]
     const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 4, 15, 10, 0, 0, 0), 1)
     expect(result).toEqual(logEntryDeletions)
+  })
+
+  it("同じ entryId の LogEntryDeletion が複数あるとき、createdAt が遅いものを残してから prune する", () => {
+    const logEntryDeletions = [
+      { createdAt: new Date(2026, 4, 1).toISOString(), entryId: "id1" },
+      { createdAt: new Date(2026, 4, 20).toISOString(), entryId: "id1" },
+    ]
+    const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 5, 1), 15)
+    expect(result).toEqual([logEntryDeletions[1]])
   })
 })

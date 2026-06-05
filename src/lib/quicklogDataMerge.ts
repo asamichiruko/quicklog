@@ -1,4 +1,5 @@
 import type { LogEntry, QuicklogData, LogEntryDeletion } from "@/types"
+import { mergeLogEntryDeletions } from "@/lib/logEntryDeletionCollection"
 import { sortLogEntriesByCreatedAtAsc } from "@/lib/logEntryCollection"
 import { addDays, startOfLocalDay } from "@/lib/date"
 
@@ -27,25 +28,20 @@ export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData
   })
 
   // union each logEntryDeletions
-  const logEntryDeletionsById = new Map<string, LogEntryDeletion>()
-
-  existing.logEntryDeletions.forEach((logEntryDeletion) => {
-    logEntryDeletionsById.set(logEntryDeletion.id, logEntryDeletion)
-  })
-
-  incoming.logEntryDeletions.forEach((logEntryDeletion) => {
-    logEntryDeletionsById.set(logEntryDeletion.id, logEntryDeletion)
-  })
+  const logEntryDeletions = mergeLogEntryDeletions(
+    existing.logEntryDeletions,
+    incoming.logEntryDeletions,
+  )
 
   // apply logEntryDeletions
-  logEntryDeletionsById.forEach((logEntryDeletion) => {
+  logEntryDeletions.forEach((logEntryDeletion) => {
     logEntriesById.delete(logEntryDeletion.entryId)
   })
 
   const result = {
     version: 3,
     logEntries: sortLogEntriesByCreatedAtAsc([...logEntriesById.values()]),
-    logEntryDeletions: [...logEntryDeletionsById.values()]
+    logEntryDeletions,
   } satisfies QuicklogData
 
   const addedCount = result.logEntries.filter((entry) => !existingLogEntryIds.has(entry.id)).length
@@ -62,7 +58,7 @@ export function pruneQuicklogDataLogEntryDeletions(data: QuicklogData, today: Da
 }
 
 export function pruneExpiredLogEntryDeletions(data: LogEntryDeletion[], today: Date, retentionDays = LOG_ENTRY_DELETION_RETENTION_DAYS): LogEntryDeletion[] {
-  const pruned = data.filter((logEntryDeletion) => {
+  const pruned = mergeLogEntryDeletions(data).filter((logEntryDeletion) => {
     return addDays(new Date(logEntryDeletion.createdAt), retentionDays).getTime() >= startOfLocalDay(today).getTime()
   })
 

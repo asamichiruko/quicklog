@@ -27,10 +27,6 @@ export function isValidLogEntryDeletion(obj: unknown): obj is LogEntryDeletion {
     return false
   }
 
-  if (!("id" in obj) || typeof obj.id !== "string" || !isValidIdString(obj.id)) {
-    return false
-  }
-
   if (!("entryId" in obj) || typeof obj.entryId !== "string" || !isValidIdString(obj.entryId)) {
     return false
   }

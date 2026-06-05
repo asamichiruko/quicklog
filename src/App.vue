@@ -161,7 +161,6 @@ function handleRemove(id: string) {
   try {
     const nextLogEntries = logEntries.value.filter((logEntry) => logEntry.id !== id)
     const logEntryDeletion: LogEntryDeletion = {
-      id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       entryId: id,
     }

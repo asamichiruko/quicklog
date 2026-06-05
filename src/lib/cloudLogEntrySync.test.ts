@@ -33,7 +33,6 @@ function createLocalData(): QuicklogData {
     logEntries: [localOnlyEntry, sharedEntry],
     logEntryDeletions: [
       {
-        id: "delete-operation",
         entryId: "cloud-only",
         createdAt: "2026-06-05T13:00:00.000Z",
       },

@@ -172,7 +172,7 @@ describe("formatQuicklogDataAsJson", () => {
         { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-23T00:00:00.000Z" },
       ],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
       ]
     } satisfies QuicklogData
 
@@ -198,7 +198,6 @@ describe("formatQuicklogDataAsJson", () => {
   ],
   "logEntryDeletions": [
     {
-      "id": "sid1",
       "createdAt": "2026-06-01T12:00:00.000Z",
       "entryId": "id4"
     }
@@ -215,7 +214,7 @@ describe("formatQuicklogDataAsJson", () => {
         { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-22T00:00:00.000Z" },
       ],
       logEntryDeletions: [
-        { id: "sid1", createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
+        { createdAt: "2026-06-01T12:00:00.000Z", entryId: "id4" },
       ]
     } satisfies QuicklogData
 
@@ -241,7 +240,6 @@ describe("formatQuicklogDataAsJson", () => {
   ],
   "logEntryDeletions": [
     {
-      "id": "sid1",
       "createdAt": "2026-06-01T12:00:00.000Z",
       "entryId": "id4"
     }

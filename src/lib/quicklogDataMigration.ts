@@ -1,4 +1,5 @@
 import type { LogEntry, QuicklogData } from "@/types";
+import { mergeLogEntryDeletions } from "@/lib/logEntryDeletionCollection";
 import { parseAsLogEntries } from "@/lib/logEntrySchema";
 import { SchemaValidationError } from "@/lib/errors";
 import { parseAsLogEntryDeletions } from "@/lib/logEntryDeletionSchema";
@@ -64,11 +65,10 @@ function migrateToLatest(data: KnownQuickLogData): QuicklogData {
     return {
       version: LATEST_VERSION,
       logEntries: data.logEntries,
-      logEntryDeletions: data.syncOperations.map(({ id, entryId, createdAt }) => ({
-        id,
+      logEntryDeletions: mergeLogEntryDeletions(data.syncOperations.map(({ entryId, createdAt }) => ({
         entryId,
         createdAt,
-      })),
+      }))),
     }
   }
 
@@ -94,7 +94,7 @@ function parseAsQuicklogDataV3(data: Record<string, unknown>): QuicklogDataV3 {
   return {
     version: 3,
     logEntries: parseAsLogEntries(data.logEntries),
-    logEntryDeletions: parseAsLogEntryDeletions(data.logEntryDeletions),
+    logEntryDeletions: mergeLogEntryDeletions(parseAsLogEntryDeletions(data.logEntryDeletions)),
   }
 }
 

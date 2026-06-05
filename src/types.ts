@@ -11,7 +11,6 @@ export type AppSettings = {
 export type ExportType = "json" | "markdown"
 
 export type LogEntryDeletion = {
-  id: string
   entryId: string
   createdAt: string
 }
