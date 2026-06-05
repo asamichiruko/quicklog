@@ -6,11 +6,13 @@ import {
   validateEmail,
   validateRequiredPassword,
 } from "@/lib/authFormValidation"
+import type { CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
 import type { Session } from "@supabase/supabase-js"
 import { computed, ref } from "vue"
 
 const props = defineProps<{
   session: Session | null
+  syncLogEntries?: () => Promise<CloudLogEntrySyncResult>
 }>()
 
 type PanelMode = "signIn" | "signUp"
@@ -142,6 +144,30 @@ async function handleSignOut(): Promise<void> {
   }
 }
 
+async function handleSync(): Promise<void> {
+  if (isLoading.value) return
+  if (!props.session) {
+    feedbackMessage.value = "サインイン状態にありません"
+    feedbackKind.value = "error"
+    return
+  }
+  feedbackMessage.value = ""
+  isLoading.value = true
+
+  try {
+    if (!props.syncLogEntries) throw new Error("Cloud sync handler is not configured.")
+
+    const result = await props.syncLogEntries()
+    feedbackMessage.value = `同期しました（追加 ${result.addedCount} 件、アップロード ${result.uploadedCount} 件）`
+    feedbackKind.value = "success"
+  } catch (error) {
+    feedbackMessage.value = "同期に失敗しました"
+    feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
+  }
+}
+
 function handleToggleMode() {
   if (mode.value === "signIn") {
     reset()
@@ -179,6 +205,14 @@ defineExpose({ reset })
         クラウド同期は有効です<br />
         サインイン中: {{ session?.user.email }}
       </p>
+      <button
+        type="button"
+        class="button-secondary sync-button"
+        @click="handleSync"
+        :disabled="isLoading"
+      >
+        同期
+      </button>
       <button
         type="button"
         class="button-secondary sign-out-button"
@@ -374,7 +408,8 @@ defineExpose({ reset })
 .sign-in-button,
 .sign-up-button,
 .sign-out-button,
-.toggle-mode-button {
+.toggle-mode-button,
+.sync-button {
   width: fit-content;
 }
 

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import type { Session } from "@supabase/supabase-js"
 import { signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
+import type { CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
 import CloudSyncPanel from "./CloudSyncPanel.vue"
 
 function createSession(email = "user@example.com"): Session {
@@ -145,6 +146,48 @@ describe("CloudSyncPanel", () => {
     await user.click(screen.getByRole("button", { name: "サインアウト" }))
 
     expect(await screen.findByText("タイムアウトしました。通信状況を確認して再度お試しください")).toBeInTheDocument()
+  })
+
+  it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
+    const user = userEvent.setup()
+    const result = {
+      data: {
+        version: 2,
+        logEntries: [],
+        syncOperations: [],
+      },
+      addedCount: 2,
+      uploadedCount: 1,
+    } satisfies CloudLogEntrySyncResult
+    const syncLogEntries = vi.fn<() => Promise<CloudLogEntrySyncResult>>().mockResolvedValue(result)
+
+    render(CloudSyncPanel, {
+      props: {
+        session: createSession("user@example.com"),
+        syncLogEntries,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "同期" }))
+
+    expect(syncLogEntries).toHaveBeenCalledOnce()
+    expect(await screen.findByText("同期しました（追加 2 件、アップロード 1 件）")).toBeInTheDocument()
+  })
+
+  it("同期時にエラーが発生するとその旨が表示される", async () => {
+    const user = userEvent.setup()
+    const syncLogEntries = vi.fn<() => Promise<CloudLogEntrySyncResult>>().mockRejectedValue(new Error("network error"))
+
+    render(CloudSyncPanel, {
+      props: {
+        session: createSession("user@example.com"),
+        syncLogEntries,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "同期" }))
+
+    expect(await screen.findByText("同期に失敗しました")).toBeInTheDocument()
   })
 
   it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {

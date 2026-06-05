@@ -5,6 +5,7 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
+import { syncLogEntriesWithRemote, type CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
@@ -21,7 +22,7 @@ import type { AppSettings, ExportType, LogEntry, QuicklogData, SyncOperation } f
 import { type Session } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { getCurrentSession } from "./lib/auth"
-import { fetchRemoteLogEntries, upsertRemoteLogEntry } from "./lib/logEntryRepository"
+import { upsertRemoteLogEntry } from "./lib/logEntryRepository"
 import { supabase } from "./lib/supabase"
 
 const session = ref<Session | null>(null)
@@ -124,14 +125,6 @@ async function handleSubmit(text: string) {
       await upsertRemoteLogEntry(logEntry, session.value.user)
     } catch (error) {
       console.warn("Failed to save log entry to Supabase", error)
-    }
-
-    // 動作確認用
-    try {
-      const remoteEntries = await fetchRemoteLogEntries(session.value.user)
-      console.log(remoteEntries)
-    } catch (error) {
-      console.warn("Faild to fetch log entry from Supabase", error)
     }
   }
 }
@@ -258,6 +251,26 @@ async function handleImport(file: File) {
   }
 }
 
+async function handleCloudSync(): Promise<CloudLogEntrySyncResult> {
+  if (!session.value?.user) {
+    throw new Error("User is not signed in.")
+  }
+
+  const localData = {
+    version: 2,
+    logEntries: logEntries.value,
+    syncOperations: syncOperations.value,
+  } satisfies QuicklogData
+
+  const result = await syncLogEntriesWithRemote(localData, session.value.user)
+
+  saveQuicklogData(result.data)
+  logEntries.value = result.data.logEntries
+  syncOperations.value = result.data.syncOperations
+
+  return result
+}
+
 function handleSelectDate(selectedDate: Date) {
   const target = document.getElementById(getDateGroupId(selectedDate))
   target?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -321,6 +334,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"
+    :sync-log-entries="handleCloudSync"
   />
 
   <CalendarDialog
