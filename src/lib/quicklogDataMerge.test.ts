@@ -278,6 +278,49 @@ describe("mergeQuicklogData", () => {
     expect(result.addedCount).toBe(0)
     expect(result.deletedCount).toBe(0)
   })
+
+  it("LogEntryDeletion を適用して残し、同じ merge を繰り返しても結果が変わらない", () => {
+    const version: 3 = 3
+    const existing = {
+      version,
+      logEntries: [
+        { id: "existing-active", text: "existing active", createdAt: "2026-06-01T00:00:00.000Z" },
+        { id: "incoming-deleted", text: "stale local", createdAt: "2026-06-02T00:00:00.000Z" },
+      ],
+      logEntryDeletions: [
+        { createdAt: "2026-06-04T00:00:00.000Z", logEntryId: "incoming-deleted" },
+      ],
+    } satisfies QuicklogData
+    const incoming = {
+      version,
+      logEntries: [
+        { id: "incoming-active", text: "incoming active", createdAt: "2026-06-03T00:00:00.000Z" },
+        { id: "existing-deleted", text: "stale remote", createdAt: "2026-06-04T00:00:00.000Z" },
+      ],
+      logEntryDeletions: [
+        { createdAt: "2026-06-05T00:00:00.000Z", logEntryId: "existing-deleted" },
+      ],
+    } satisfies QuicklogData
+
+    const result = mergeQuicklogData(existing, incoming)
+
+    expect(result.data.logEntries).toEqual([
+      { id: "existing-active", text: "existing active", createdAt: "2026-06-01T00:00:00.000Z" },
+      { id: "incoming-active", text: "incoming active", createdAt: "2026-06-03T00:00:00.000Z" },
+    ])
+    expect(result.data.logEntryDeletions).toEqual([
+      { createdAt: "2026-06-04T00:00:00.000Z", logEntryId: "incoming-deleted" },
+      { createdAt: "2026-06-05T00:00:00.000Z", logEntryId: "existing-deleted" },
+    ])
+    expect(result.data.logEntries.some((entry) => {
+      return result.data.logEntryDeletions.some((deletion) => deletion.logEntryId === entry.id)
+    })).toBe(false)
+
+    const repeatedResult = mergeQuicklogData(result.data, result.data)
+    expect(repeatedResult.data).toEqual(result.data)
+    expect(repeatedResult.addedCount).toBe(0)
+    expect(repeatedResult.deletedCount).toBe(0)
+  })
 })
 
 describe("pruneExpiredLogEntryDeletions", () => {

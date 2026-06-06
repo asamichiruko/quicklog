@@ -66,6 +66,12 @@ const sharedLogEntryDeletion = {
   createdAt: "2026-06-05T14:00:00.000Z",
 }
 
+const expectedLogEntryDeletions = [
+  cloudLogEntryDeletion,
+  sharedLogEntryDeletion,
+  localLogEntryDeletion,
+]
+
 function createLocalData(): QuicklogData {
   return {
     version: 3,
@@ -82,6 +88,15 @@ function createCloudData(): QuicklogData {
   }
 }
 
+function expectDeletedLogEntriesToBeRemoved(data: QuicklogData) {
+  const deletedLogEntryIds = new Set(data.logEntryDeletions.map((deletion) => deletion.logEntryId))
+  expect(data.logEntries.some((entry) => deletedLogEntryIds.has(entry.id))).toBe(false)
+}
+
+function expectLogEntryDeletionsToBeRetained(data: QuicklogData) {
+  expect(data.logEntryDeletions).toEqual(expectedLogEntryDeletions)
+}
+
 describe("mergeQuicklogDataWithCloud", () => {
   it("ローカルとリモートの QuicklogData をマージする", () => {
     const localData = createLocalData()
@@ -91,8 +106,17 @@ describe("mergeQuicklogDataWithCloud", () => {
     expect(result.data).toEqual({
       ...localData,
       logEntries: [localOnlyEntry, cloudOnlyEntry, sharedEntry],
-      logEntryDeletions: [cloudLogEntryDeletion, sharedLogEntryDeletion, localLogEntryDeletion],
+      logEntryDeletions: expectedLogEntryDeletions,
     })
+    expectDeletedLogEntriesToBeRemoved(result.data)
+    expectLogEntryDeletionsToBeRetained(result.data)
+
+    const repeatedResult = mergeQuicklogDataWithCloud(result.data, result.data)
+    expect(repeatedResult.data).toEqual(result.data)
+    expect(repeatedResult.addedCount).toBe(0)
+    expect(repeatedResult.deletedCount).toBe(0)
+    expect(repeatedResult.uploadedCount).toBe(0)
+
     expect(result.addedCount).toBe(1)
     expect(result.uploadedCount).toBe(1)
   })
@@ -116,10 +140,21 @@ describe("syncQuicklogDataWithCloud", () => {
       user,
     )
     expect(recordLogEntryDeletions).toHaveBeenCalledWith(
-      [cloudLogEntryDeletion, sharedLogEntryDeletion, localLogEntryDeletion],
+      expectedLogEntryDeletions,
       user
     )
     expect(result.data.logEntries).toEqual([localOnlyEntry, cloudOnlyEntry, sharedEntry])
-    expect(result.data.logEntryDeletions).toEqual([cloudLogEntryDeletion, sharedLogEntryDeletion, localLogEntryDeletion])
+    expectLogEntryDeletionsToBeRetained(result.data)
+    expectDeletedLogEntriesToBeRemoved(result.data)
+
+    vi.mocked(fetchCloudLogEntries).mockResolvedValue(result.data.logEntries)
+    vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue(result.data.logEntryDeletions)
+
+    const repeatedResult = await syncQuicklogDataWithCloud(result.data, user)
+
+    expect(repeatedResult.data).toEqual(result.data)
+    expect(repeatedResult.addedCount).toBe(0)
+    expect(repeatedResult.deletedCount).toBe(0)
+    expect(repeatedResult.uploadedCount).toBe(0)
   })
 })
