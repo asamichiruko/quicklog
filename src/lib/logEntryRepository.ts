@@ -50,6 +50,16 @@ export async function upsertCloudLogEntry(entry: LogEntry, user: User): Promise<
   if (error) throw error
 }
 
+export async function deleteCloudLogEntry(logEntryId: string, user: User): Promise<void> {
+  const { error } = await supabase
+    .from("log_entries")
+    .delete()
+    .eq("id", logEntryId)
+    .eq("user_id", user.id)
+
+  if (error) throw error
+}
+
 export async function upsertCloudLogEntries(entries: LogEntry[], user: User): Promise<void> {
   if (entries.length === 0) return
 
@@ -58,6 +68,18 @@ export async function upsertCloudLogEntries(entries: LogEntry[], user: User): Pr
   const { error } = await supabase
     .from("log_entries")
     .upsert(rows, { onConflict: "id" })
+
+  if (error) throw error
+}
+
+export async function deleteCloudLogEntries(logEntryIds: string[], user: User): Promise<void> {
+  if (logEntryIds.length === 0) return
+
+  const { error } = await supabase
+    .from("log_entries")
+    .delete()
+    .eq("user_id", user.id)
+    .in("id", logEntryIds)
 
   if (error) throw error
 }

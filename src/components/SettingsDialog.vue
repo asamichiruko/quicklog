@@ -3,7 +3,7 @@ import CloudSyncPanel from "@/components/CloudSyncPanel.vue"
 import LogEntryCopyPanel from "@/components/LogEntryCopyPanel.vue"
 import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
-import type { CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
+import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type { AppSettings, ExportType, LogEntry } from "@/types"
 import type { Session } from "@supabase/supabase-js"
@@ -25,7 +25,7 @@ const props = defineProps<{
   session: Session | null
   logEntries: LogEntry[]
   settings: AppSettings
-  syncLogEntries?: () => Promise<CloudLogEntrySyncResult>
+  syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
 }>()
 
 const emit = defineEmits<{

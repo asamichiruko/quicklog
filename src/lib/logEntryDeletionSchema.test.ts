@@ -6,7 +6,7 @@ describe("isValidLogEntryDeletion", () => {
   it("valid な LogEntryDeletion を true と判定する", () => {
     expect(isValidLogEntryDeletion({
       createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "id1",
+      logEntryId: "id1",
     })).toBe(true)
   })
 
@@ -21,37 +21,37 @@ describe("isValidLogEntryDeletion", () => {
     const itemBase = {
       createdAt: "2026-05-31T00:00:00.000Z",
     }
-    expect(isValidLogEntryDeletion({ ...itemBase, entryId: "" })).toBe(false)
-    expect(isValidLogEntryDeletion({ ...itemBase, entryId: "a" })).toBe(true)
-    expect(isValidLogEntryDeletion({ ...itemBase, entryId: "a".repeat(128) })).toBe(true)
-    expect(isValidLogEntryDeletion({ ...itemBase, entryId: "a".repeat(129) })).toBe(false)
+    expect(isValidLogEntryDeletion({ ...itemBase, logEntryId: "" })).toBe(false)
+    expect(isValidLogEntryDeletion({ ...itemBase, logEntryId: "a" })).toBe(true)
+    expect(isValidLogEntryDeletion({ ...itemBase, logEntryId: "a".repeat(128) })).toBe(true)
+    expect(isValidLogEntryDeletion({ ...itemBase, logEntryId: "a".repeat(129) })).toBe(false)
   })
 
   it("createdAt が存在しない、または invalid な date string であるとき false と判定する", () => {
     expect(isValidLogEntryDeletion({
       createdAt: "invalid date",
-      entryId: "entryId1",
+      logEntryId: "entryId1",
     })).toBe(false)
 
     expect(isValidLogEntryDeletion({
       createdAt: new Date("2026-05-31T00:00:00.000Z"),
-      entryId: "entryId1",
+      logEntryId: "entryId1",
     })).toBe(false)
 
     expect(isValidLogEntryDeletion({
       createdAt: "",
-      entryId: "entryId1",
+      logEntryId: "entryId1",
     })).toBe(false)
 
     expect(isValidLogEntryDeletion({
-      entryId: "entryId1",
+      logEntryId: "entryId1",
     })).toBe(false)
   })
 
   it("object が余分なプロパティを持っているとき true と判定する", () => {
     const item = {
       createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: "entryId1",
+      logEntryId: "entryId1",
       unknownProperty: 42,
     }
     expect(isValidLogEntryDeletion(item)).toBe(true)
@@ -60,7 +60,7 @@ describe("isValidLogEntryDeletion", () => {
   it("entryId が存在しない、または型が異なるとき false を返す", () => {
     expect(isValidLogEntryDeletion({
       createdAt: "2026-05-31T00:00:00.000Z",
-      entryId: 42,
+      logEntryId: 42,
     })).toBe(false)
 
     expect(isValidLogEntryDeletion({
@@ -74,7 +74,7 @@ describe("parseAsLogEntryDeletions", () => {
     const data = [
       {
         createdAt: "2026-05-31T00:00:00.000Z",
-        entryId: "entryId1",
+        logEntryId: "entryId1",
       },
     ]
 

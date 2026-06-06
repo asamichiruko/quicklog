@@ -9,10 +9,10 @@ export function mergeLogEntryDeletions(...logEntryDeletionGroups: LogEntryDeleti
 
   for (const logEntryDeletions of logEntryDeletionGroups) {
     for (const logEntryDeletion of logEntryDeletions) {
-      const existing = logEntryDeletionsByEntryId.get(logEntryDeletion.entryId)
+      const existing = logEntryDeletionsByEntryId.get(logEntryDeletion.logEntryId)
 
       if (!existing || isNewerLogEntryDeletion(existing, logEntryDeletion)) {
-        logEntryDeletionsByEntryId.set(logEntryDeletion.entryId, logEntryDeletion)
+        logEntryDeletionsByEntryId.set(logEntryDeletion.logEntryId, logEntryDeletion)
       }
     }
   }

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import type { Session } from "@supabase/supabase-js"
 import { signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
-import type { CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
+import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
 import CloudSyncPanel from "./CloudSyncPanel.vue"
 
 function createSession(email = "user@example.com"): Session {
@@ -157,9 +157,10 @@ describe("CloudSyncPanel", () => {
         logEntryDeletions: [],
       },
       addedCount: 2,
+      deletedCount: 3,
       uploadedCount: 1,
-    } satisfies CloudLogEntrySyncResult
-    const syncLogEntries = vi.fn<() => Promise<CloudLogEntrySyncResult>>().mockResolvedValue(result)
+    } satisfies CloudQuicklogDataSyncResult
+    const syncLogEntries = vi.fn<() => Promise<CloudQuicklogDataSyncResult>>().mockResolvedValue(result)
 
     render(CloudSyncPanel, {
       props: {
@@ -171,12 +172,12 @@ describe("CloudSyncPanel", () => {
     await user.click(screen.getByRole("button", { name: "同期" }))
 
     expect(syncLogEntries).toHaveBeenCalledOnce()
-    expect(await screen.findByText("同期しました（追加 2 件、アップロード 1 件）")).toBeInTheDocument()
+    expect(await screen.findByText("同期しました（追加 2 件、削除 3 件、アップロード 1 件）")).toBeInTheDocument()
   })
 
   it("同期時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
-    const syncLogEntries = vi.fn<() => Promise<CloudLogEntrySyncResult>>().mockRejectedValue(new Error("network error"))
+    const syncLogEntries = vi.fn<() => Promise<CloudQuicklogDataSyncResult>>().mockRejectedValue(new Error("network error"))
 
     render(CloudSyncPanel, {
       props: {

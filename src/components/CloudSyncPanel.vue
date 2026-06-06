@@ -6,13 +6,13 @@ import {
   validateEmail,
   validateRequiredPassword,
 } from "@/lib/authFormValidation"
-import type { CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
+import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import type { Session } from "@supabase/supabase-js"
 import { computed, ref } from "vue"
 
 const props = defineProps<{
   session: Session | null
-  syncLogEntries?: () => Promise<CloudLogEntrySyncResult>
+  syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
 }>()
 
 type PanelMode = "signIn" | "signUp"
@@ -158,7 +158,7 @@ async function handleSync(): Promise<void> {
     if (!props.syncLogEntries) throw new Error("Cloud sync handler is not configured.")
 
     const result = await props.syncLogEntries()
-    feedbackMessage.value = `同期しました（追加 ${result.addedCount} 件、アップロード ${result.uploadedCount} 件）`
+    feedbackMessage.value = `同期しました（追加 ${result.addedCount} 件、削除 ${result.deletedCount} 件、アップロード ${result.uploadedCount} 件）`
     feedbackKind.value = "success"
   } catch (error) {
     feedbackMessage.value = "同期に失敗しました"

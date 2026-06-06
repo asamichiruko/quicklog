@@ -66,7 +66,7 @@ function migrateToLatest(data: KnownQuickLogData): QuicklogData {
       version: LATEST_VERSION,
       logEntries: data.logEntries,
       logEntryDeletions: mergeLogEntryDeletions(data.syncOperations.map(({ entryId, createdAt }) => ({
-        entryId,
+        logEntryId: entryId,
         createdAt,
       }))),
     }

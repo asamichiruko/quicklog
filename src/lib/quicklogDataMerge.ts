@@ -35,7 +35,7 @@ export function mergeQuicklogData(existing: QuicklogData, incoming: QuicklogData
 
   // apply logEntryDeletions
   logEntryDeletions.forEach((logEntryDeletion) => {
-    logEntriesById.delete(logEntryDeletion.entryId)
+    logEntriesById.delete(logEntryDeletion.logEntryId)
   })
 
   const result = {

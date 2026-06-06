@@ -6,7 +6,6 @@ import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { getCurrentSession } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
-import { syncLogEntriesWithCloud, type CloudLogEntrySyncResult } from "@/lib/cloudLogEntrySync"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
@@ -18,12 +17,14 @@ import {
   pruneQuicklogDataLogEntryDeletions,
 } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
+import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
 import { supabase } from "@/lib/supabase"
-import type { AppSettings, ExportType, LogEntry, QuicklogData, LogEntryDeletion } from "@/types"
+import type { AppSettings, ExportType, LogEntry, LogEntryDeletion, QuicklogData } from "@/types"
 import { type Session } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
+import { recordLogEntryDeletion } from "./lib/logEntryDeletionRepository"
 
 const session = ref<Session | null>(null)
 
@@ -154,16 +155,17 @@ async function handleOpenCalendar(date: Date) {
   openCalendar()
 }
 
-function handleRemove(id: string) {
+async function handleRemove(id: string) {
   const ok = confirm("メモを削除しますか？")
   if (!ok) return
 
+  const logEntryDeletion: LogEntryDeletion = {
+    createdAt: new Date().toISOString(),
+    logEntryId: id,
+  }
+
   try {
     const nextLogEntries = logEntries.value.filter((logEntry) => logEntry.id !== id)
-    const logEntryDeletion: LogEntryDeletion = {
-      createdAt: new Date().toISOString(),
-      entryId: id,
-    }
     const nextLogEntryDeletions = [...logEntryDeletions.value, logEntryDeletion]
 
     saveQuicklogData({
@@ -181,6 +183,14 @@ function handleRemove(id: string) {
       alert("削除に失敗しました")
     }
     return
+  }
+
+  if (session.value?.user) {
+    try {
+      await recordLogEntryDeletion(logEntryDeletion, session.value.user)
+    } catch (error) {
+      console.warn("Failed to delete log entry from Supabase", error)
+    }
   }
 }
 
@@ -249,7 +259,7 @@ async function handleImport(file: File) {
   }
 }
 
-async function handleCloudSync(): Promise<CloudLogEntrySyncResult> {
+async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
   if (!session.value?.user) {
     throw new Error("User is not signed in.")
   }
@@ -260,7 +270,7 @@ async function handleCloudSync(): Promise<CloudLogEntrySyncResult> {
     logEntryDeletions: logEntryDeletions.value,
   } satisfies QuicklogData
 
-  const result = await syncLogEntriesWithCloud(localData, session.value.user)
+  const result = await syncQuicklogDataWithCloud(localData, session.value.user)
 
   saveQuicklogData(result.data)
   logEntries.value = result.data.logEntries

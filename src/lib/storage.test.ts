@@ -20,7 +20,7 @@ describe("quicklogData", () => {
         { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
       ],
       logEntryDeletions: [
-        { createdAt: "2026-05-22T00:00:00.000Z", entryId: "id2" }
+        { createdAt: "2026-05-22T00:00:00.000Z", logEntryId: "id2" }
       ],
     } satisfies QuicklogData
 
