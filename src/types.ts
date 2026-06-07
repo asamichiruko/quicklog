@@ -21,11 +21,11 @@ export type QuicklogData = {
   logEntryDeletions: LogEntryDeletion[]
 }
 
-export type StoredDataScope =
+export type DataScope =
   | { type: "anonymous" }
   | { type: "user"; userId: string }
 
 export type RuntimeSessionState =
-  | { type: "anonymous" }
-  | { type: "authenticated"; userId: string }
-  | { type: "sessionLost"; userId: string }
+  | { scope: { type: "anonymous" }; syncStatus: "disabled" }
+  | { scope: { type: "user"; userId: string }; syncStatus: "authenticated" }
+  | { scope: { type: "user"; userId: string }; syncStatus: "sessionLost" }

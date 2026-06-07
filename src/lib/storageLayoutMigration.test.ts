@@ -29,7 +29,7 @@ describe("migrateStorageLayout", () => {
   })
 
   it("StoredDataScope が存在するときは既存の値を上書きしない", () => {
-    const existing = JSON.stringify({ type: "authenticated", userId: "user1" })
+    const existing = JSON.stringify({ type: "user", userId: "user1" })
     localStorage.setItem(STORED_DATA_SCOPE_KEY, existing)
 
     migrateStorageLayout()
