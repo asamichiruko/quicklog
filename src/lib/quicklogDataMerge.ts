@@ -64,3 +64,17 @@ export function pruneExpiredLogEntryDeletions(data: LogEntryDeletion[], today: D
 
   return pruned
 }
+
+export function mergeImportedQuicklogData(
+  currentData: QuicklogData,
+  importedData: QuicklogData,
+  now: Date,
+): QuicklogDataMergeResult {
+  return mergeQuicklogData(
+    {
+      ...currentData,
+      logEntryDeletions: pruneExpiredLogEntryDeletions(currentData.logEntryDeletions, now),
+    },
+    pruneQuicklogDataLogEntryDeletions(importedData, now),
+  )
+}

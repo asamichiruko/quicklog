@@ -7,6 +7,7 @@ import {
   validateRequiredPassword,
 } from "@/lib/authFormValidation"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
+import { isAuthenticated, isSessionLost } from "@/lib/runtimeSessionState"
 import type { RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
 import { computed, ref } from "vue"
@@ -76,13 +77,10 @@ function validateSignUpFields(): boolean {
   return !signUpEmailErrorMessage.value && !signUpPasswordErrorMessage.value
 }
 
-const isAuthenticated = computed(() => props.runtimeSessionState.syncStatus === "authenticated")
-const isSessionLost = computed(() => props.runtimeSessionState.syncStatus === "sessionLost")
-
 const sessionStateMessage = computed(() => {
-  if (isAuthenticated.value) {
+  if (isAuthenticated(props.runtimeSessionState)) {
     return "クラウド同期は有効です"
-  } else if (isSessionLost.value) {
+  } else if (isSessionLost(props.runtimeSessionState)) {
     return "クラウド同期が停止しています。現在のユーザデータはこの端末に保存されますが、クラウドには反映されません"
   } else {
     return "クラウド同期を使うにはサインインしてください"
@@ -222,9 +220,11 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
-    <p class="description" :class="{ 'session-lost': isSessionLost }" v-if="sessionStateMessage">
+    <p class="description" :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }">
       <span>{{ sessionStateMessage }}</span>
-      <span v-if="isAuthenticated">サインイン中: {{ props.session?.user.email }}</span>
+      <span v-if="isAuthenticated(props.runtimeSessionState)"
+        >サインイン中: {{ props.session?.user.email }}</span
+      >
     </p>
     <template v-if="props.session">
       <button

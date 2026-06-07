@@ -13,12 +13,24 @@ import { recordLogEntryDeletion } from "@/lib/logEntryDeletionRepository"
 import { upsertCloudLogEntry } from "@/lib/logEntryRepository"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import {
-  mergeQuicklogData,
-  pruneExpiredLogEntryDeletions,
+  appendLogEntry,
+  createLogEntry,
+  createLogEntryDeletion,
+  removeLogEntry,
+} from "@/lib/quicklogDataEditing"
+import {
+  mergeImportedQuicklogData,
   pruneQuicklogDataLogEntryDeletions,
 } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
+import {
+  canUseCloud,
+  getDataUserId,
+  isSessionLost,
+  resolveRuntimeSessionState,
+  syncStatusMessage,
+} from "@/lib/runtimeSessionState"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import {
   loadQuicklogData,
@@ -30,14 +42,7 @@ import {
 } from "@/lib/storage"
 import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import { supabase } from "@/lib/supabase"
-import type {
-  AppSettings,
-  ExportType,
-  LogEntry,
-  LogEntryDeletion,
-  QuicklogData,
-  RuntimeSessionState,
-} from "@/types"
+import type { AppSettings, ExportType, LogEntry, QuicklogData, RuntimeSessionState } from "@/types"
 import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
@@ -45,20 +50,17 @@ const session = ref<Session | null>(null)
 
 let unsubscribeAuth: (() => void) | undefined
 
-const logEntries = ref<LogEntry[]>([])
-const logEntryDeletions = ref<LogEntryDeletion[]>([])
+const quicklogData = ref<QuicklogData>({
+  version: 3,
+  logEntries: [],
+  logEntryDeletions: [],
+})
+const logEntries = computed<LogEntry[]>(() => quicklogData.value.logEntries)
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 const runtimeSessionState = ref<RuntimeSessionState>({
   scope: { type: "anonymous" },
   syncStatus: "disabled",
 })
-const syncStatusMessage = computed(() => {
-  if (isAuthenticated.value) return "クラウド同期中"
-  if (isSessionLost.value) return "同期停止中"
-  return ""
-})
-const isAuthenticated = computed(() => runtimeSessionState.value.syncStatus === "authenticated")
-const isSessionLost = computed(() => runtimeSessionState.value.syncStatus === "sessionLost")
 
 const showNewLogEntryButton = ref(false)
 const newLogEntryButtonShowScrollY = 320
@@ -84,40 +86,21 @@ const logEntryFormArea = ref<HTMLElement | null>(null)
 onMounted(async () => {
   migrateStorageLayout()
 
-  const storedDataScope = loadStoredDataScope()
-  session.value = await getCurrentSession()
-
   const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
     session.value = nextSession
-    if (nextSession) {
-      switchToUser(nextSession.user.id, "authenticated")
-      return
-    }
-
-    const nextStoredDataScope = loadStoredDataScope()
-    if (nextStoredDataScope.type === "anonymous") {
-      switchToAnonymous()
-    } else {
-      switchToUser(nextStoredDataScope.userId, "sessionLost")
-    }
+    const sessionUserId = nextSession ? nextSession.user.id : null
+    const dataScope = loadStoredDataScope()
+    applyRuntimeSessionState(resolveRuntimeSessionState(sessionUserId, dataScope))
   })
   unsubscribeAuth = () => {
     data.subscription.unsubscribe()
   }
 
-  if (session.value) {
-    switchToUser(session.value.user.id, "authenticated")
-  } else if (storedDataScope.type === "user") {
-    switchToUser(storedDataScope.userId, "sessionLost")
-  } else {
-    switchToAnonymous()
-  }
+  await reloadAuthState()
 
-  const quicklogData = loadActiveQuicklogData()
-  const prunedQuicklogData = pruneQuicklogDataLogEntryDeletions(quicklogData, new Date())
-  logEntries.value = prunedQuicklogData.logEntries
-  logEntryDeletions.value = prunedQuicklogData.logEntryDeletions
-  saveActiveQuicklogData(prunedQuicklogData)
+  const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), new Date())
+  quicklogData.value = pruned
+  saveActiveQuicklogData(pruned)
 
   settings.value = loadSettings()
 
@@ -139,50 +122,39 @@ function openCalendar() {
 }
 
 function loadActiveQuicklogData(): QuicklogData {
-  return loadQuicklogData(getActiveDataUserId())
+  return loadQuicklogData(getDataUserId(runtimeSessionState.value))
 }
 
 function saveActiveQuicklogData(data: QuicklogData) {
-  saveQuicklogData(data, getActiveDataUserId())
+  saveQuicklogData(data, getDataUserId(runtimeSessionState.value))
 }
 
 function getActiveCloudUser(): User | null {
-  if (
-    session.value &&
-    runtimeSessionState.value.syncStatus === "authenticated" &&
-    runtimeSessionState.value.scope.userId === session.value.user.id
-  ) {
+  if (session.value && canUseCloud(runtimeSessionState.value, session.value.user.id)) {
     return session.value.user
   } else {
     return null
   }
 }
 
-function getActiveDataUserId(): string | undefined {
-  if (runtimeSessionState.value.scope.type === "anonymous") return undefined
+async function reloadAuthState() {
+  session.value = await getCurrentSession()
 
-  return runtimeSessionState.value.scope.userId
+  const sessionUserId = session.value ? session.value.user.id : null
+  const storedDataScope = loadStoredDataScope()
+  const sessionState = resolveRuntimeSessionState(sessionUserId, storedDataScope)
+
+  applyRuntimeSessionState(sessionState)
 }
 
-function setDisplayedQuicklogData(quicklogData: QuicklogData) {
-  logEntries.value = quicklogData.logEntries
-  logEntryDeletions.value = quicklogData.logEntryDeletions
+function applyRuntimeSessionState(nextState: RuntimeSessionState) {
+  runtimeSessionState.value = nextState
+  saveStoredDataScope(nextState.scope)
+  quicklogData.value = loadActiveQuicklogData()
 }
 
-function loadDisplayedQuicklogData() {
-  setDisplayedQuicklogData(loadActiveQuicklogData())
-}
-
-function switchToAnonymous() {
-  runtimeSessionState.value = { scope: { type: "anonymous" }, syncStatus: "disabled" }
-  saveStoredDataScope({ type: "anonymous" })
-  loadDisplayedQuicklogData()
-}
-
-function switchToUser(userId: string, syncStatus: "authenticated" | "sessionLost") {
-  runtimeSessionState.value = { scope: { type: "user", userId }, syncStatus }
-  saveStoredDataScope({ type: "user", userId })
-  loadDisplayedQuicklogData()
+function activateAnonymousScope() {
+  applyRuntimeSessionState({ scope: { type: "anonymous" }, syncStatus: "disabled" })
 }
 
 async function handleSubmit(text: string) {
@@ -191,23 +163,12 @@ async function handleSubmit(text: string) {
     return
   }
 
-  const logEntry: LogEntry = {
-    id: crypto.randomUUID(),
-    text,
-    createdAt: new Date().toISOString(),
-  }
+  const logEntry = createLogEntry(text, new Date(), crypto.randomUUID())
 
   try {
-    const nextEntries = [...logEntries.value, logEntry]
-    const nextQuicklogData = {
-      version: 3,
-      logEntries: nextEntries,
-      logEntryDeletions: logEntryDeletions.value,
-    } satisfies QuicklogData
-
+    const nextQuicklogData = appendLogEntry(quicklogData.value, logEntry)
     saveActiveQuicklogData(nextQuicklogData)
-
-    logEntries.value = nextEntries
+    quicklogData.value = nextQuicklogData
   } catch (error) {
     if (error instanceof SizeError) {
       alert("メモの記録に失敗しました。記録が多すぎます")
@@ -259,24 +220,12 @@ async function handleRemove(id: string) {
   const ok = confirm("メモを削除しますか？")
   if (!ok) return
 
-  const logEntryDeletion: LogEntryDeletion = {
-    createdAt: new Date().toISOString(),
-    logEntryId: id,
-  }
+  const logEntryDeletion = createLogEntryDeletion(id, new Date())
 
   try {
-    const nextLogEntries = logEntries.value.filter((logEntry) => logEntry.id !== id)
-    const nextLogEntryDeletions = [...logEntryDeletions.value, logEntryDeletion]
-    const nextQuicklogData = {
-      version: 3,
-      logEntries: nextLogEntries,
-      logEntryDeletions: nextLogEntryDeletions,
-    } satisfies QuicklogData
-
+    const nextQuicklogData = removeLogEntry(quicklogData.value, logEntryDeletion)
     saveActiveQuicklogData(nextQuicklogData)
-
-    logEntries.value = nextLogEntries
-    logEntryDeletions.value = nextLogEntryDeletions
+    quicklogData.value = nextQuicklogData
   } catch (error) {
     if (error instanceof SizeError) {
       alert("削除に失敗しました。削除履歴が多すぎます")
@@ -298,14 +247,7 @@ async function handleRemove(id: string) {
 
 function handleExport(exportType: ExportType) {
   try {
-    const exportFile = createQuicklogExportFile(
-      {
-        version: 3,
-        logEntries: logEntries.value,
-        logEntryDeletions: logEntryDeletions.value,
-      },
-      exportType,
-    )
+    const exportFile = createQuicklogExportFile(quicklogData.value, exportType)
     const dateKey = getLocalDateKey(new Date())
 
     downloadTextFile({
@@ -331,22 +273,15 @@ async function handleImport(file: File) {
   }
 
   try {
-    const now = new Date()
     const data = await readQuicklogImportFile(file)
-    const incoming = pruneQuicklogDataLogEntryDeletions(parseAsQuicklogData(data), now)
-    const result = mergeQuicklogData(
-      {
-        version: 3,
-        logEntries: logEntries.value,
-        logEntryDeletions: pruneExpiredLogEntryDeletions(logEntryDeletions.value, now),
-      },
-      incoming,
+    const result = mergeImportedQuicklogData(
+      quicklogData.value,
+      parseAsQuicklogData(data),
+      new Date(),
     )
 
     saveActiveQuicklogData(result.data)
-
-    logEntries.value = result.data.logEntries
-    logEntryDeletions.value = result.data.logEntryDeletions
+    quicklogData.value = result.data
 
     alert(`${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`)
   } catch (error) {
@@ -368,17 +303,9 @@ async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
     throw new Error("User is not signed in.")
   }
 
-  const localData = {
-    version: 3,
-    logEntries: logEntries.value,
-    logEntryDeletions: logEntryDeletions.value,
-  } satisfies QuicklogData
-
-  const result = await syncQuicklogDataWithCloud(localData, user)
-
+  const result = await syncQuicklogDataWithCloud(quicklogData.value, user)
   saveActiveQuicklogData(result.data)
-  logEntries.value = result.data.logEntries
-  logEntryDeletions.value = result.data.logEntryDeletions
+  quicklogData.value = result.data
 
   return result
 }
@@ -394,14 +321,11 @@ function handleSaveSettings(nextSettings: AppSettings) {
 }
 
 async function handleSignIn() {
-  session.value = await getCurrentSession()
-  if (!session.value) return
-
-  switchToUser(session.value.user.id, "authenticated")
+  await reloadAuthState()
 }
 
 function handleSignOut() {
-  switchToAnonymous()
+  activateAnonymousScope()
 }
 </script>
 
@@ -412,15 +336,19 @@ function handleSignOut() {
     </header>
 
     <div class="content">
-      <p v-if="isSessionLost" class="session-lost-warn">
+      <p v-if="isSessionLost(runtimeSessionState)" class="session-lost-warn">
         クラウド同期が停止しています。メモはこの端末に保存されています
       </p>
       <div ref="logEntryFormArea" class="log-entry-form-anchor">
         <LogEntryForm ref="logEntryForm" @submit="handleSubmit" />
       </div>
       <div class="app-actions">
-        <p class="sync-status" :class="{ 'session-lost': isSessionLost }" v-if="syncStatusMessage">
-          {{ syncStatusMessage }}
+        <p
+          class="sync-status"
+          :class="{ 'session-lost': isSessionLost(runtimeSessionState) }"
+          v-if="syncStatusMessage(runtimeSessionState)"
+        >
+          {{ syncStatusMessage(runtimeSessionState) }}
         </p>
         <SettingsButton @click="openSettings" />
       </div>
