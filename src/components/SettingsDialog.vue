@@ -5,7 +5,7 @@ import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import type { AppSettings, ExportType, LogEntry } from "@/types"
+import type { AppSettings, ExportType, LogEntry, RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
 import { ref } from "vue"
 
@@ -26,12 +26,15 @@ const props = defineProps<{
   logEntries: LogEntry[]
   settings: AppSettings
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
+  runtimeSessionState: RuntimeSessionState
 }>()
 
 const emit = defineEmits<{
   save: [nextSettings: AppSettings]
   export: [exportType: ExportType]
   import: [file: File]
+  signIn: []
+  signOut: []
 }>()
 
 function open() {
@@ -109,6 +112,9 @@ defineExpose({ open })
           <CloudSyncPanel
             :session="props.session"
             :sync-log-entries="props.syncLogEntries"
+            :runtime-session-state="props.runtimeSessionState"
+            @sign-in="emit('signIn')"
+            @sign-out="emit('signOut')"
             ref="cloudSyncPanel"
           />
         </div>

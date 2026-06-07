@@ -7,12 +7,19 @@ import {
   validateRequiredPassword,
 } from "@/lib/authFormValidation"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
+import type { RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
 import { computed, ref } from "vue"
 
 const props = defineProps<{
   session: Session | null
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
+  runtimeSessionState: RuntimeSessionState
+}>()
+
+const emit = defineEmits<{
+  signIn: []
+  signOut: []
 }>()
 
 type PanelMode = "signIn" | "signUp"
@@ -69,6 +76,19 @@ function validateSignUpFields(): boolean {
   return !signUpEmailErrorMessage.value && !signUpPasswordErrorMessage.value
 }
 
+const isAuthenticated = computed(() => props.runtimeSessionState.syncStatus === "authenticated")
+const isSessionLost = computed(() => props.runtimeSessionState.syncStatus === "sessionLost")
+
+const sessionStateMessage = computed(() => {
+  if (isAuthenticated.value) {
+    return "クラウド同期は有効です"
+  } else if (isSessionLost.value) {
+    return "クラウド同期が停止しています。現在のユーザデータはこの端末に保存されますが、クラウドには反映されません"
+  } else {
+    return "クラウド同期を使うにはサインインしてください"
+  }
+})
+
 const canSignIn = computed(() => {
   return (
     !isLoading.value &&
@@ -119,6 +139,7 @@ async function handleSignIn(): Promise<void> {
     await signInWithEmail(signInEmail.value.trim(), signInPassword.value)
     feedbackMessage.value = "サインインしました"
     feedbackKind.value = "success"
+    emit("signIn")
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -136,6 +157,7 @@ async function handleSignOut(): Promise<void> {
     await signOut()
     feedbackMessage.value = "サインアウトしました"
     feedbackKind.value = "success"
+    emit("signOut")
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -200,11 +222,11 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
+    <p class="description" :class="{ 'session-lost': isSessionLost }" v-if="sessionStateMessage">
+      <span>{{ sessionStateMessage }}</span>
+      <span v-if="isAuthenticated">サインイン中: {{ props.session?.user.email }}</span>
+    </p>
     <template v-if="props.session">
-      <p class="description">
-        クラウド同期は有効です<br />
-        サインイン中: {{ session?.user.email }}
-      </p>
       <button
         type="button"
         class="button-secondary sync-button"
@@ -223,7 +245,6 @@ defineExpose({ reset })
       </button>
     </template>
     <template v-else-if="mode === 'signIn'">
-      <p class="description">クラウド同期を使うにはサインインしてください</p>
       <div class="account-field">
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
@@ -359,9 +380,19 @@ defineExpose({ reset })
 }
 
 .description {
-  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+
   margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-surface);
+  background: var(--color-page);
+  color: var(--color-text-muted);
   font-size: var(--font-size-small);
+}
+
+.description.session-lost {
+  color: var(--color-error);
 }
 
 .account-field {

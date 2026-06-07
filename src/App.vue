@@ -9,6 +9,7 @@ import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
+import { recordLogEntryDeletion } from "@/lib/logEntryDeletionRepository"
 import { upsertCloudLogEntry } from "@/lib/logEntryRepository"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import {
@@ -19,12 +20,26 @@ import {
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import { loadQuicklogData, loadSettings, saveQuicklogData, saveSettings } from "@/lib/storage"
+import {
+  loadQuicklogData,
+  loadSettings,
+  loadStoredDataScope,
+  saveQuicklogData,
+  saveSettings,
+  saveStoredDataScope,
+} from "@/lib/storage"
+import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import { supabase } from "@/lib/supabase"
-import type { AppSettings, ExportType, LogEntry, LogEntryDeletion, QuicklogData } from "@/types"
-import { type Session } from "@supabase/supabase-js"
+import type {
+  AppSettings,
+  ExportType,
+  LogEntry,
+  LogEntryDeletion,
+  QuicklogData,
+  RuntimeSessionState,
+} from "@/types"
+import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
-import { recordLogEntryDeletion } from "./lib/logEntryDeletionRepository"
 
 const session = ref<Session | null>(null)
 
@@ -33,6 +48,17 @@ let unsubscribeAuth: (() => void) | undefined
 const logEntries = ref<LogEntry[]>([])
 const logEntryDeletions = ref<LogEntryDeletion[]>([])
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
+const runtimeSessionState = ref<RuntimeSessionState>({
+  scope: { type: "anonymous" },
+  syncStatus: "disabled",
+})
+const syncStatusMessage = computed(() => {
+  if (isAuthenticated.value) return "クラウド同期中"
+  if (isSessionLost.value) return "同期停止中"
+  return ""
+})
+const isAuthenticated = computed(() => runtimeSessionState.value.syncStatus === "authenticated")
+const isSessionLost = computed(() => runtimeSessionState.value.syncStatus === "sessionLost")
 
 const showNewLogEntryButton = ref(false)
 const newLogEntryButtonShowScrollY = 320
@@ -56,20 +82,45 @@ const logEntryForm = ref<InstanceType<typeof LogEntryForm> | null>(null)
 const logEntryFormArea = ref<HTMLElement | null>(null)
 
 onMounted(async () => {
+  migrateStorageLayout()
+
+  const storedDataScope = loadStoredDataScope()
   session.value = await getCurrentSession()
+
   const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
     session.value = nextSession
+    if (nextSession) {
+      switchToUser(nextSession.user.id, "authenticated")
+      return
+    }
+
+    const nextStoredDataScope = loadStoredDataScope()
+    if (nextStoredDataScope.type === "anonymous") {
+      switchToAnonymous()
+    } else {
+      switchToUser(nextStoredDataScope.userId, "sessionLost")
+    }
   })
   unsubscribeAuth = () => {
     data.subscription.unsubscribe()
   }
 
-  const quicklogData = pruneQuicklogDataLogEntryDeletions(loadQuicklogData(), new Date())
-  logEntries.value = quicklogData.logEntries
-  logEntryDeletions.value = quicklogData.logEntryDeletions
-  saveQuicklogData(quicklogData)
+  if (session.value) {
+    switchToUser(session.value.user.id, "authenticated")
+  } else if (storedDataScope.type === "user") {
+    switchToUser(storedDataScope.userId, "sessionLost")
+  } else {
+    switchToAnonymous()
+  }
+
+  const quicklogData = loadActiveQuicklogData()
+  const prunedQuicklogData = pruneQuicklogDataLogEntryDeletions(quicklogData, new Date())
+  logEntries.value = prunedQuicklogData.logEntries
+  logEntryDeletions.value = prunedQuicklogData.logEntryDeletions
+  saveActiveQuicklogData(prunedQuicklogData)
 
   settings.value = loadSettings()
+
   updateNewLogEntryButtonVisibility()
   window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
 })
@@ -87,6 +138,53 @@ function openCalendar() {
   calendarDialog.value?.open()
 }
 
+function loadActiveQuicklogData(): QuicklogData {
+  return loadQuicklogData(getActiveDataUserId())
+}
+
+function saveActiveQuicklogData(data: QuicklogData) {
+  saveQuicklogData(data, getActiveDataUserId())
+}
+
+function getActiveCloudUser(): User | null {
+  if (
+    session.value &&
+    runtimeSessionState.value.syncStatus === "authenticated" &&
+    runtimeSessionState.value.scope.userId === session.value.user.id
+  ) {
+    return session.value.user
+  } else {
+    return null
+  }
+}
+
+function getActiveDataUserId(): string | undefined {
+  if (runtimeSessionState.value.scope.type === "anonymous") return undefined
+
+  return runtimeSessionState.value.scope.userId
+}
+
+function setDisplayedQuicklogData(quicklogData: QuicklogData) {
+  logEntries.value = quicklogData.logEntries
+  logEntryDeletions.value = quicklogData.logEntryDeletions
+}
+
+function loadDisplayedQuicklogData() {
+  setDisplayedQuicklogData(loadActiveQuicklogData())
+}
+
+function switchToAnonymous() {
+  runtimeSessionState.value = { scope: { type: "anonymous" }, syncStatus: "disabled" }
+  saveStoredDataScope({ type: "anonymous" })
+  loadDisplayedQuicklogData()
+}
+
+function switchToUser(userId: string, syncStatus: "authenticated" | "sessionLost") {
+  runtimeSessionState.value = { scope: { type: "user", userId }, syncStatus }
+  saveStoredDataScope({ type: "user", userId })
+  loadDisplayedQuicklogData()
+}
+
 async function handleSubmit(text: string) {
   if (!isValidLogEntryText(text)) {
     alert("メモの記録に失敗しました。メモ内容が長すぎます")
@@ -101,12 +199,13 @@ async function handleSubmit(text: string) {
 
   try {
     const nextEntries = [...logEntries.value, logEntry]
-
-    saveQuicklogData({
+    const nextQuicklogData = {
       version: 3,
       logEntries: nextEntries,
       logEntryDeletions: logEntryDeletions.value,
-    } satisfies QuicklogData)
+    } satisfies QuicklogData
+
+    saveActiveQuicklogData(nextQuicklogData)
 
     logEntries.value = nextEntries
   } catch (error) {
@@ -121,9 +220,10 @@ async function handleSubmit(text: string) {
 
   logEntryForm.value?.clear()
 
-  if (session.value?.user) {
+  const user = getActiveCloudUser()
+  if (user) {
     try {
-      await upsertCloudLogEntry(logEntry, session.value.user)
+      await upsertCloudLogEntry(logEntry, user)
     } catch (error) {
       console.warn("Failed to save log entry to Supabase", error)
     }
@@ -167,12 +267,13 @@ async function handleRemove(id: string) {
   try {
     const nextLogEntries = logEntries.value.filter((logEntry) => logEntry.id !== id)
     const nextLogEntryDeletions = [...logEntryDeletions.value, logEntryDeletion]
-
-    saveQuicklogData({
+    const nextQuicklogData = {
       version: 3,
       logEntries: nextLogEntries,
       logEntryDeletions: nextLogEntryDeletions,
-    } satisfies QuicklogData)
+    } satisfies QuicklogData
+
+    saveActiveQuicklogData(nextQuicklogData)
 
     logEntries.value = nextLogEntries
     logEntryDeletions.value = nextLogEntryDeletions
@@ -185,9 +286,10 @@ async function handleRemove(id: string) {
     return
   }
 
-  if (session.value?.user) {
+  const user = getActiveCloudUser()
+  if (user) {
     try {
-      await recordLogEntryDeletion(logEntryDeletion, session.value.user)
+      await recordLogEntryDeletion(logEntryDeletion, user)
     } catch (error) {
       console.warn("Failed to delete log entry from Supabase", error)
     }
@@ -241,7 +343,8 @@ async function handleImport(file: File) {
       incoming,
     )
 
-    saveQuicklogData(result.data)
+    saveActiveQuicklogData(result.data)
+
     logEntries.value = result.data.logEntries
     logEntryDeletions.value = result.data.logEntryDeletions
 
@@ -260,7 +363,8 @@ async function handleImport(file: File) {
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
-  if (!session.value?.user) {
+  const user = getActiveCloudUser()
+  if (!user) {
     throw new Error("User is not signed in.")
   }
 
@@ -270,9 +374,9 @@ async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
     logEntryDeletions: logEntryDeletions.value,
   } satisfies QuicklogData
 
-  const result = await syncQuicklogDataWithCloud(localData, session.value.user)
+  const result = await syncQuicklogDataWithCloud(localData, user)
 
-  saveQuicklogData(result.data)
+  saveActiveQuicklogData(result.data)
   logEntries.value = result.data.logEntries
   logEntryDeletions.value = result.data.logEntryDeletions
 
@@ -288,6 +392,17 @@ function handleSaveSettings(nextSettings: AppSettings) {
   settings.value = nextSettings
   saveSettings(nextSettings)
 }
+
+async function handleSignIn() {
+  session.value = await getCurrentSession()
+  if (!session.value) return
+
+  switchToUser(session.value.user.id, "authenticated")
+}
+
+function handleSignOut() {
+  switchToAnonymous()
+}
 </script>
 
 <template>
@@ -297,10 +412,16 @@ function handleSaveSettings(nextSettings: AppSettings) {
     </header>
 
     <div class="content">
+      <p v-if="isSessionLost" class="session-lost-warn">
+        クラウド同期が停止しています。メモはこの端末に保存されています
+      </p>
       <div ref="logEntryFormArea" class="log-entry-form-anchor">
         <LogEntryForm ref="logEntryForm" @submit="handleSubmit" />
       </div>
       <div class="app-actions">
+        <p class="sync-status" :class="{ 'session-lost': isSessionLost }" v-if="syncStatusMessage">
+          {{ syncStatusMessage }}
+        </p>
         <SettingsButton @click="openSettings" />
       </div>
       <LogEntryList
@@ -342,7 +463,10 @@ function handleSaveSettings(nextSettings: AppSettings) {
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"
+    @sign-in="handleSignIn"
+    @sign-out="handleSignOut"
     :sync-log-entries="handleCloudSync"
+    :runtime-session-state="runtimeSessionState"
   />
 
   <CalendarDialog
@@ -363,7 +487,6 @@ function handleSaveSettings(nextSettings: AppSettings) {
 
 .header {
   margin-bottom: var(--space-3);
-  padding-right: var(--control-min-size);
 }
 
 .title {
@@ -376,11 +499,31 @@ function handleSaveSettings(nextSettings: AppSettings) {
   position: absolute;
   top: var(--space-3);
   right: var(--space-2);
+  display: flex;
+  align-items: center;
+}
+
+.sync-status {
+  padding: 0;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.sync-status.session-lost {
+  color: var(--color-error);
 }
 
 .content {
   display: grid;
   gap: var(--space-3);
+}
+
+.session-lost-warn {
+  padding: 0;
+  margin: 0;
+  color: var(--color-error);
+  font-size: var(--font-size-small);
 }
 
 .log-entry-form-anchor {

@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
 import { defineComponent, ref } from "vue"
-import type { ExportType } from "@/types"
+import type { ExportType, RuntimeSessionState } from "@/types"
 
 const TestHost = defineComponent({
   components: { SettingsDialog },
@@ -18,6 +18,7 @@ const TestHost = defineComponent({
     const savedSettings = ref<unknown>(null)
     const exportType = ref<ExportType | null>(null)
     const importedFile = ref<File | null>(null)
+    const runtimeSessionState = ref<RuntimeSessionState>({ scope: { type: "anonymous" }, syncStatus: "disabled" })
 
     function enableSummary() {
       settings.value = { showDailySummary: true }
@@ -31,6 +32,7 @@ const TestHost = defineComponent({
       savedSettings,
       exportType,
       importedFile,
+      runtimeSessionState,
     }
   },
   template: `
@@ -43,6 +45,7 @@ const TestHost = defineComponent({
     @save="savedSettings = $event"
     @export="exportType = $event"
     @import="importedFile = $event"
+    :runtime-session-state="runtimeSessionState"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>

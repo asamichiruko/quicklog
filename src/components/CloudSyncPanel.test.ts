@@ -32,6 +32,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -54,6 +55,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -75,6 +77,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -98,6 +101,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -122,6 +126,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: createSession("user@example.com"),
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
       },
     })
 
@@ -140,12 +145,24 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: createSession("user@example.com"),
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
       },
     })
 
     await user.click(screen.getByRole("button", { name: "サインアウト" }))
 
     expect(await screen.findByText("タイムアウトしました。通信状況を確認して再度お試しください")).toBeInTheDocument()
+  })
+
+  it("セッションが失われているとき同期停止メッセージを目立たせる", () => {
+    render(CloudSyncPanel, {
+      props: {
+        session: null,
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "sessionLost" },
+      },
+    })
+
+    expect(screen.getByText(/クラウド同期が停止しています/).closest(".description")).toHaveClass("session-lost")
   })
 
   it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
@@ -165,6 +182,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: createSession("user@example.com"),
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
         syncLogEntries,
       },
     })
@@ -182,6 +200,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: createSession("user@example.com"),
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
         syncLogEntries,
       },
     })
@@ -198,6 +217,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -221,6 +241,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -243,6 +264,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -268,6 +290,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
