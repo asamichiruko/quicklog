@@ -23,10 +23,15 @@ const emit = defineEmits<{
   signOut: []
 }>()
 
-type PanelMode = "signIn" | "signUp"
+type PanelView = "signIn" | "signedIn" | "signUp" | "authPending"
 type FeedbackKind = "success" | "error"
 
-const mode = ref<PanelMode>("signIn")
+const mode = ref<PanelView>("signIn")
+const panelView = computed<PanelView>(() => {
+  if (isAuthPending(props.runtimeSessionState)) return "authPending"
+  if (props.session) return "signedIn"
+  return mode.value
+})
 
 const signInEmail = ref("")
 const signInPassword = ref("")
@@ -228,8 +233,8 @@ defineExpose({ reset })
         >サインイン中: {{ props.session?.user.email }}</span
       >
     </p>
-    <template v-if="isAuthPending(props.runtimeSessionState)"></template>
-    <template v-else-if="props.session">
+
+    <template v-if="panelView === 'signedIn'">
       <button
         type="button"
         class="button-secondary sync-button"
@@ -247,7 +252,8 @@ defineExpose({ reset })
         サインアウト
       </button>
     </template>
-    <template v-else-if="mode === 'signIn'">
+
+    <template v-else-if="panelView === 'signIn'">
       <div class="account-field">
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
@@ -305,7 +311,8 @@ defineExpose({ reset })
         </button>
       </div>
     </template>
-    <template v-else>
+
+    <template v-else-if="panelView === 'signUp'">
       <div class="account-field">
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
@@ -364,6 +371,7 @@ defineExpose({ reset })
         </button>
       </div>
     </template>
+
     <output
       v-if="feedbackMessage"
       class="feedback-message"
