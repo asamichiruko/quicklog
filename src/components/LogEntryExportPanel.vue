@@ -22,29 +22,35 @@ defineExpose({ reset })
 <template>
   <div class="container">
     <fieldset class="export-type-selector">
-      <legend class="export-type-selector-legend">ファイル形式</legend>
+      <legend class="export-type-selector-legend">
+        ファイル形式
+      </legend>
       <label class="export-type-option">
         <input
+          v-model="exportType"
           type="radio"
           name="export-type"
           value="json"
           class="export-type-radio"
-          v-model="exportType"
-        />
+        >
         <span class="export-type-label">JSON</span>
       </label>
       <label class="export-type-option">
         <input
+          v-model="exportType"
           type="radio"
           name="export-type"
           value="markdown"
           class="export-type-radio"
-          v-model="exportType"
-        />
+        >
         <span class="export-type-label">Markdown</span>
       </label>
     </fieldset>
-    <button class="button-secondary export-button" type="button" @click="exportData">
+    <button
+      class="button-secondary export-button"
+      type="button"
+      @click="exportData"
+    >
       ファイルをダウンロード
     </button>
   </div>

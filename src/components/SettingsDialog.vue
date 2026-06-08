@@ -79,79 +79,128 @@ defineExpose({ open })
   <dialog
     ref="dialog"
     class="dialog"
-    @click="handleDialogClick"
     aria-labelledby="settings-dialog-heading"
+    @click="handleDialogClick"
   >
-    <form class="dialog-form" @submit.prevent="saveAndClose">
-      <h2 id="settings-dialog-heading" class="dialog-heading">設定</h2>
+    <form
+      class="dialog-form"
+      @submit.prevent="saveAndClose"
+    >
+      <h2
+        id="settings-dialog-heading"
+        class="dialog-heading"
+      >
+        設定
+      </h2>
       <section class="section">
-        <h3 class="section-heading">表示</h3>
+        <h3 class="section-heading">
+          表示
+        </h3>
         <ul class="setting-items">
           <li>
             <label class="setting-item">
               <input
+                v-model="nextSettings.showDailySummary"
                 class="setting-checkbox"
                 type="checkbox"
                 name="show-daily-summary"
-                v-model="nextSettings.showDailySummary"
-              />
+              >
               <span class="setting-label">日別サマリーを表示</span>
             </label>
           </li>
         </ul>
       </section>
       <details
+        ref="cloudSyncPanelDetails"
         class="settings-panel"
         aria-labelledby="settings-panel-cloud-sync"
-        ref="cloudSyncPanelDetails"
       >
-        <summary class="settings-panel-summary" id="settings-panel-cloud-sync">
+        <summary
+          id="settings-panel-cloud-sync"
+          class="settings-panel-summary"
+        >
           クラウド同期
         </summary>
         <div class="settings-panel-body">
           <CloudSyncPanel
+            ref="cloudSyncPanel"
             :session="props.session"
             :sync-log-entries="props.syncLogEntries"
             :runtime-session-state="props.runtimeSessionState"
             @sign-in="emit('signIn')"
             @sign-out="emit('signOut')"
-            ref="cloudSyncPanel"
           />
         </div>
       </details>
-      <details class="settings-panel" aria-labelledby="settings-panel-copy" ref="copyPanelDetails">
-        <summary class="settings-panel-summary" id="settings-panel-copy">記録のコピー</summary>
+      <details
+        ref="copyPanelDetails"
+        class="settings-panel"
+        aria-labelledby="settings-panel-copy"
+      >
+        <summary
+          id="settings-panel-copy"
+          class="settings-panel-summary"
+        >
+          記録のコピー
+        </summary>
         <div class="settings-panel-body">
-          <LogEntryCopyPanel :log-entries="props.logEntries" ref="copyPanel" />
+          <LogEntryCopyPanel
+            ref="copyPanel"
+            :log-entries="props.logEntries"
+          />
         </div>
       </details>
       <details
+        ref="exportPanelDetails"
         class="settings-panel"
         aria-labelledby="settings-panel-export"
-        ref="exportPanelDetails"
       >
-        <summary class="settings-panel-summary" id="settings-panel-export">
+        <summary
+          id="settings-panel-export"
+          class="settings-panel-summary"
+        >
           記録のエクスポート
         </summary>
         <div class="settings-panel-body">
-          <LogEntryExportPanel @export="emit('export', $event)" ref="exportPanel" />
+          <LogEntryExportPanel
+            ref="exportPanel"
+            @export="emit('export', $event)"
+          />
         </div>
       </details>
       <details
+        ref="importPanelDetails"
         class="settings-panel"
         aria-labelledby="settings-panel-import"
-        ref="importPanelDetails"
       >
-        <summary class="settings-panel-summary" id="settings-panel-import">
+        <summary
+          id="settings-panel-import"
+          class="settings-panel-summary"
+        >
           記録のインポート
         </summary>
         <div class="settings-panel-body">
-          <LogEntryImportPanel @import="emit('import', $event)" ref="importPanel" />
+          <LogEntryImportPanel
+            ref="importPanel"
+            @import="emit('import', $event)"
+          />
         </div>
       </details>
       <div class="confirm-actions">
-        <button class="button-primary" type="submit" @click="saveAndClose">設定を保存</button>
-        <button class="button-secondary" type="button" @click="close">キャンセル</button>
+        <button
+          class="button-primary"
+          type="submit"
+          @click="saveAndClose"
+        >
+          設定を保存
+        </button>
+        <button
+          class="button-secondary"
+          type="button"
+          @click="close"
+        >
+          キャンセル
+        </button>
       </div>
     </form>
   </dialog>

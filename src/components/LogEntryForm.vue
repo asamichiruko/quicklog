@@ -37,21 +37,32 @@ defineExpose({ focus, clear })
 </script>
 
 <template>
-  <form class="form" @submit.prevent="onSubmit">
-    <label class="label" for="log-entry-form-text">メモ</label>
+  <form
+    class="form"
+    @submit.prevent="onSubmit"
+  >
+    <label
+      class="label"
+      for="log-entry-form-text"
+    >メモ</label>
     <textarea
-      ref="textarea"
       id="log-entry-form-text"
-      name="text"
+      ref="textarea"
       v-model="text"
+      name="text"
       class="textarea"
       rows="3"
       placeholder="メモを書く"
-      @keydown.enter="onKeydownEnter"
       required
       :maxlength="MAX_LOG_ENTRY_TEXT_BYTES"
-    ></textarea>
-    <button class="button-primary submit-button" type="submit">記録</button>
+      @keydown.enter="onKeydownEnter"
+    />
+    <button
+      class="button-primary submit-button"
+      type="submit"
+    >
+      記録
+    </button>
   </form>
 </template>
 

@@ -39,20 +39,25 @@ function formatDateHeading(date: Date) {
 
 <template>
   <template v-if="logEntries.length === 0">
-    <p class="empty">まだメモがありません</p>
+    <p class="empty">
+      まだメモがありません
+    </p>
   </template>
   <template v-else>
     <div class="date-groups">
       <section
         v-for="group in groupedLogEntries"
+        :id="getDateGroupId(group.date)"
         :key="group.key"
         class="date-group"
-        :id="getDateGroupId(group.date)"
       >
         <header class="date-header">
           <h2 class="date-heading">
             <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
-            <span class="date-heading-count" v-if="props.showDailySummary">
+            <span
+              v-if="props.showDailySummary"
+              class="date-heading-count"
+            >
               {{ group.logEntries.length }} 件
             </span>
           </h2>
@@ -79,14 +84,24 @@ function formatDateHeading(date: Date) {
               </svg>
             </button>
           </div>
-          <div class="time-distribution-strip" v-if="props.showDailySummary">
-            <TimeDistributionStrip :logEntries="group.logEntries" />
+          <div
+            v-if="props.showDailySummary"
+            class="time-distribution-strip"
+          >
+            <TimeDistributionStrip :log-entries="group.logEntries" />
           </div>
         </header>
         <ul class="entries">
-          <li v-for="logEntry in group.logEntries" :key="logEntry.id" class="entry">
+          <li
+            v-for="logEntry in group.logEntries"
+            :key="logEntry.id"
+            class="entry"
+          >
             <div class="entry-header">
-              <time :datetime="logEntry.createdAt" class="entry-time">{{
+              <time
+                :datetime="logEntry.createdAt"
+                class="entry-time"
+              >{{
                 formatDateTime(logEntry.createdAt)
               }}</time>
               <button
@@ -111,7 +126,9 @@ function formatDateHeading(date: Date) {
                 </svg>
               </button>
             </div>
-            <p class="entry-text">{{ logEntry.text }}</p>
+            <p class="entry-text">
+              {{ logEntry.text }}
+            </p>
           </li>
         </ul>
       </section>

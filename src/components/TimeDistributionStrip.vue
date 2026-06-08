@@ -35,16 +35,22 @@ function getPositionPercent(createdAt: string): number {
     role="img"
     :aria-label="`記録時刻分布。${logEntries.length}件の記録があります。`"
   >
-    <div class="time-track-scale" aria-hidden="true">
+    <div
+      class="time-track-scale"
+      aria-hidden="true"
+    >
       <span
         v-for="mark in marks"
         :key="mark.id"
         class="time-mark"
         :style="{ left: `${mark.positionPercent}%` }"
-      ></span>
+      />
     </div>
 
-    <div class="time-label-scale" aria-hidden="true">
+    <div
+      class="time-label-scale"
+      aria-hidden="true"
+    >
       <span
         v-for="label in timeLabels"
         :key="label.label"

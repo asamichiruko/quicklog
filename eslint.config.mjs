@@ -33,6 +33,10 @@ export default defineConfigWithVueTs(
     rules: {
       ...vitest.configs.recommended.rules,
       'vitest/no-focused-tests': 'error',
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_" }
+      ],
     },
   },
 )

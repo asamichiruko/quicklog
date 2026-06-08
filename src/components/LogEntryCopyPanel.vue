@@ -116,49 +116,63 @@ defineExpose({ reset })
         <span class="copy-date-label">開始日</span>
         <input
           id="copy-start-date"
+          v-model="startDate"
           name="copy-start-date"
           class="date-input"
           type="date"
-          v-model="startDate"
           required
-        />
+        >
       </label>
 
       <label class="copy-date-field">
         <span class="copy-date-label">終了日</span>
         <input
           id="copy-end-date"
+          v-model="endDate"
           name="copy-end-date"
           class="date-input"
           type="date"
-          v-model="endDate"
           required
-        />
+        >
       </label>
     </fieldset>
-    <output class="copy-selection-status" for="copy-start-date copy-end-date">
+    <output
+      class="copy-selection-status"
+      for="copy-start-date copy-end-date"
+    >
       {{ selectionStatusMessage }}
     </output>
     <button
       class="button-secondary copy-button"
       type="button"
-      @click="handleCopy"
       :disabled="!canCopy"
+      @click="handleCopy"
     >
       クリップボードにコピー
     </button>
-    <p v-if="feedbackMessage" class="feedback-message" role="status" aria-live="polite">
+    <p
+      v-if="feedbackMessage"
+      class="feedback-message"
+      role="status"
+      aria-live="polite"
+    >
       {{ feedbackMessage }}
     </p>
-    <details v-if="canCopy" class="copy-preview-panel" ref="previewDetails">
-      <summary class="copy-preview-toggle">コピー内容を確認</summary>
+    <details
+      v-if="canCopy"
+      ref="previewDetails"
+      class="copy-preview-panel"
+    >
+      <summary class="copy-preview-toggle">
+        コピー内容を確認
+      </summary>
       <textarea
         class="copy-preview"
         name="copy-preview"
         readonly
         :value="copyText"
         aria-label="コピーする Markdown テキスト"
-      ></textarea>
+      />
     </details>
   </div>
 </template>

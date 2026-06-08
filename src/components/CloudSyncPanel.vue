@@ -187,7 +187,7 @@ async function handleSync(): Promise<void> {
     const result = await props.syncLogEntries()
     feedbackMessage.value = `同期しました（追加 ${result.addedCount} 件、削除 ${result.deletedCount} 件、アップロード ${result.uploadedCount} 件）`
     feedbackKind.value = "success"
-  } catch (error) {
+  } catch {
     feedbackMessage.value = "同期に失敗しました"
     feedbackKind.value = "error"
   } finally {
@@ -227,27 +227,28 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
-    <p class="description" :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }">
+    <p
+      class="description"
+      :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }"
+    >
       <span>{{ sessionStateMessage }}</span>
-      <span v-if="isAuthenticated(props.runtimeSessionState)"
-        >サインイン中: {{ props.session?.user.email }}</span
-      >
+      <span v-if="isAuthenticated(props.runtimeSessionState)">サインイン中: {{ props.session?.user.email }}</span>
     </p>
 
     <template v-if="panelView === 'signedIn'">
       <button
         type="button"
         class="button-secondary sync-button"
-        @click="handleSync"
         :disabled="isLoading"
+        @click="handleSync"
       >
         同期
       </button>
       <button
         type="button"
         class="button-secondary sign-out-button"
-        @click="handleSignOut"
         :disabled="isLoading"
+        @click="handleSignOut"
       >
         サインアウト
       </button>
@@ -258,18 +259,22 @@ defineExpose({ reset })
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
           <input
+            v-model="signInEmail"
             name="sign-in-email"
             type="email"
             class="account-input"
             placeholder="メールアドレスを入力"
-            v-model="signInEmail"
-            @input="clearFeedbackMessage"
-            @blur="validateSignInEmail"
             aria-describedby="sign-in-email-error"
             :aria-invalid="Boolean(signInEmailErrorMessage)"
-          />
+            @input="clearFeedbackMessage"
+            @blur="validateSignInEmail"
+          >
         </label>
-        <p class="field-error" id="sign-in-email-error" v-if="signInEmailErrorMessage">
+        <p
+          v-if="signInEmailErrorMessage"
+          id="sign-in-email-error"
+          class="field-error"
+        >
           {{ signInEmailErrorMessage }}
         </p>
       </div>
@@ -277,18 +282,22 @@ defineExpose({ reset })
         <label class="account-label">
           <span class="account-label-text">パスワード</span>
           <input
+            v-model="signInPassword"
             name="sign-in-password"
             type="password"
             class="account-input"
             placeholder="パスワードを入力"
-            v-model="signInPassword"
-            @input="clearFeedbackMessage"
-            @blur="validateSignInPassword"
             aria-describedby="sign-in-password-error"
             :aria-invalid="Boolean(signInPasswordErrorMessage)"
-          />
+            @input="clearFeedbackMessage"
+            @blur="validateSignInPassword"
+          >
         </label>
-        <p class="field-error" id="sign-in-password-error" v-if="signInPasswordErrorMessage">
+        <p
+          v-if="signInPasswordErrorMessage"
+          id="sign-in-password-error"
+          class="field-error"
+        >
           {{ signInPasswordErrorMessage }}
         </p>
       </div>
@@ -296,16 +305,16 @@ defineExpose({ reset })
         <button
           type="button"
           class="button-secondary sign-in-button"
-          @click="handleSignIn"
           :disabled="!canSignIn"
+          @click="handleSignIn"
         >
           サインイン
         </button>
         <button
           type="button"
           class="button-link toggle-mode-button"
-          @click="handleToggleMode"
           :disabled="isLoading"
+          @click="handleToggleMode"
         >
           アカウントを作成する
         </button>
@@ -317,18 +326,22 @@ defineExpose({ reset })
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
           <input
+            v-model="signUpEmail"
             name="sign-up-email"
             type="email"
             class="account-input"
             placeholder="メールアドレスを入力"
-            v-model="signUpEmail"
-            @input="clearFeedbackMessage"
-            @blur="validateSignUpEmail"
             aria-describedby="sign-up-email-error"
             :aria-invalid="Boolean(signUpEmailErrorMessage)"
-          />
+            @input="clearFeedbackMessage"
+            @blur="validateSignUpEmail"
+          >
         </label>
-        <p class="field-error" id="sign-up-email-error" v-if="signUpEmailErrorMessage">
+        <p
+          v-if="signUpEmailErrorMessage"
+          id="sign-up-email-error"
+          class="field-error"
+        >
           {{ signUpEmailErrorMessage }}
         </p>
       </div>
@@ -336,19 +349,25 @@ defineExpose({ reset })
         <label class="account-label">
           <span class="account-label-text">パスワード</span>
           <input
+            v-model="signUpPassword"
             name="sign-up-password"
             type="password"
             class="account-input"
             placeholder="パスワードを入力"
-            v-model="signUpPassword"
-            @input="clearFeedbackMessage"
-            @blur="validateSignUpPassword"
             aria-describedby="sign-up-password-error"
             :aria-invalid="Boolean(signUpPasswordErrorMessage)"
-          />
+            @input="clearFeedbackMessage"
+            @blur="validateSignUpPassword"
+          >
         </label>
-        <p class="password-rules">英大小文字、数字、記号を含む 8 文字以上</p>
-        <p class="field-error" id="sign-up-password-error" v-if="signUpPasswordErrorMessage">
+        <p class="password-rules">
+          英大小文字、数字、記号を含む 8 文字以上
+        </p>
+        <p
+          v-if="signUpPasswordErrorMessage"
+          id="sign-up-password-error"
+          class="field-error"
+        >
           {{ signUpPasswordErrorMessage }}
         </p>
       </div>
@@ -356,16 +375,16 @@ defineExpose({ reset })
         <button
           type="button"
           class="button-secondary sign-up-button"
-          @click="handleSignUp"
           :disabled="!canSignUp"
+          @click="handleSignUp"
         >
           アカウントを作成
         </button>
         <button
           type="button"
           class="button-link toggle-mode-button"
-          @click="handleToggleMode"
           :disabled="isLoading"
+          @click="handleToggleMode"
         >
           サインインする
         </button>

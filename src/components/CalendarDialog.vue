@@ -60,7 +60,7 @@ function showNextMonth() {
 }
 
 const calendarLabel = computed(() => {
-  return `${displayedMonthLabelYear}${displayedMonthLabelMonth}の記録日カレンダー`
+  return `${displayedMonthLabelYear.value}${displayedMonthLabelMonth.value}の記録日カレンダー`
 })
 
 function formatDayLabel(date: Date, hasRecords: boolean) {
@@ -81,12 +81,17 @@ defineExpose({ open })
   <dialog
     ref="dialog"
     class="dialog"
-    @click="handleDialogClick"
     aria-labelledby="calendar-dialog-heading"
+    @click="handleDialogClick"
   >
     <div class="container">
       <header class="dialog-header">
-        <h2 id="calendar-dialog-heading" class="dialog-heading">日付を選択して移動</h2>
+        <h2
+          id="calendar-dialog-heading"
+          class="dialog-heading"
+        >
+          日付を選択して移動
+        </h2>
         <button
           class="button-icon close-button"
           type="button"
@@ -129,7 +134,10 @@ defineExpose({ open })
             />
           </svg>
         </button>
-        <p class="month-label" aria-live="polite">
+        <p
+          class="month-label"
+          aria-live="polite"
+        >
           <span class="month-label-year">{{ displayedMonthLabelYear }}</span>
           <span class="month-label-month">{{ displayedMonthLabelMonth }}</span>
         </p>
@@ -154,8 +162,16 @@ defineExpose({ open })
         </button>
       </div>
 
-      <div class="calendar" role="group" :aria-label="calendarLabel">
-        <div v-for="weekday in weekdayLabels" :key="weekday" class="weekday">
+      <div
+        class="calendar"
+        role="group"
+        :aria-label="calendarLabel"
+      >
+        <div
+          v-for="weekday in weekdayLabels"
+          :key="weekday"
+          class="weekday"
+        >
           {{ weekday }}
         </div>
         <button
@@ -178,7 +194,11 @@ defineExpose({ open })
           @click="selectAndClose(day.date)"
         >
           <span class="day-number">{{ day.date.getDate() }}</span>
-          <span v-if="day.hasRecords" class="day-count" aria-hidden="true"></span>
+          <span
+            v-if="day.hasRecords"
+            class="day-count"
+            aria-hidden="true"
+          />
         </button>
       </div>
     </div>

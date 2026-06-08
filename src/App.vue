@@ -385,21 +385,32 @@ function handleSignOut() {
 <template>
   <main class="app">
     <header class="header">
-      <h1 class="title">quicklog</h1>
+      <h1 class="title">
+        quicklog
+      </h1>
     </header>
 
     <div class="content">
-      <p v-if="isSessionLost(runtimeSessionState)" class="session-lost-warn">
+      <p
+        v-if="isSessionLost(runtimeSessionState)"
+        class="session-lost-warn"
+      >
         クラウド同期が停止しています。メモはこの端末に保存されています
       </p>
-      <div ref="logEntryFormArea" class="log-entry-form-anchor">
-        <LogEntryForm ref="logEntryForm" @submit="handleSubmit" />
+      <div
+        ref="logEntryFormArea"
+        class="log-entry-form-anchor"
+      >
+        <LogEntryForm
+          ref="logEntryForm"
+          @submit="handleSubmit"
+        />
       </div>
       <div class="app-actions">
         <p
+          v-if="syncStatusMessage(runtimeSessionState)"
           class="sync-status"
           :class="{ 'session-lost': isSessionLost(runtimeSessionState) }"
-          v-if="syncStatusMessage(runtimeSessionState)"
         >
           {{ syncStatusMessage(runtimeSessionState) }}
         </p>
@@ -441,13 +452,13 @@ function handleSignOut() {
     :session="session"
     :settings="settings"
     :log-entries="logEntries"
+    :sync-log-entries="handleCloudSync"
+    :runtime-session-state="runtimeSessionState"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"
     @sign-in="handleSignIn"
     @sign-out="handleSignOut"
-    :sync-log-entries="handleCloudSync"
-    :runtime-session-state="runtimeSessionState"
   />
 
   <CalendarDialog

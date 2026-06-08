@@ -4,9 +4,8 @@ import type { QuicklogData } from "@/types";
 
 describe("mergeQuicklogData", () => {
   it("空のデータ同士を merge できる", () => {
-    const version: 3 = 3
-    const existing = { version, logEntries: [], logEntryDeletions: [] }
-    const incoming = { version, logEntries: [], logEntryDeletions: [] }
+    const existing = { version: 3, logEntries: [], logEntryDeletions: [] } satisfies QuicklogData
+    const incoming = { version: 3, logEntries: [], logEntryDeletions: [] } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data).toEqual({
@@ -19,23 +18,22 @@ describe("mergeQuicklogData", () => {
   })
 
   it("重複のない existing と incoming の logEntries がすべて結合される", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       ],
       logEntryDeletions: [],
-    }
+    } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
         { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
       ],
       logEntryDeletions: [],
-    }
+    } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntries).toEqual([
@@ -49,23 +47,22 @@ describe("mergeQuicklogData", () => {
   })
 
   it("重複のある existing と incoming の logEntries が重複なく merge される", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       ],
       logEntryDeletions: [],
-    }
+    } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
         { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
       ],
       logEntryDeletions: [],
-    }
+    } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntries).toEqual([
@@ -78,23 +75,22 @@ describe("mergeQuicklogData", () => {
   })
 
   it("logEntries が createdAt の昇順となる", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
         { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
       ],
       logEntryDeletions: [],
-    }
+    } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       ],
       logEntryDeletions: [],
-    }
+    } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntries).toEqual([
@@ -108,9 +104,8 @@ describe("mergeQuicklogData", () => {
   })
 
   it("existing の LogEntryDeletion が incoming の entry を取り除く (entry を復活させない)", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
@@ -120,7 +115,7 @@ describe("mergeQuicklogData", () => {
       ],
     } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
         { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
@@ -142,9 +137,8 @@ describe("mergeQuicklogData", () => {
   })
 
   it("incoming の LogEntryDeletion が existing の entry を取り除く (他環境での LogEntryDeletion を取り込む)", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
@@ -152,7 +146,7 @@ describe("mergeQuicklogData", () => {
       logEntryDeletions: [],
     } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
         { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
@@ -176,9 +170,8 @@ describe("mergeQuicklogData", () => {
   })
 
   it("incoming と existing に同一の LogEntryDeletion があっても重複なく merge される", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       ],
@@ -187,7 +180,7 @@ describe("mergeQuicklogData", () => {
       ],
     } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       ],
@@ -205,16 +198,15 @@ describe("mergeQuicklogData", () => {
   })
 
   it("同じ logEntryId の LogEntryDeletion は createdAt が遅いものを残す", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [],
       logEntryDeletions: [
         { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }
       ],
     } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [],
       logEntryDeletions: [
         { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id1" }
@@ -228,16 +220,15 @@ describe("mergeQuicklogData", () => {
   })
 
   it("削除対象の entry が存在しなくても LogEntryDeletion は残ったままである", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [],
       logEntryDeletions: [
         { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }
       ],
     } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [],
       logEntryDeletions: [
         { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id2" }
@@ -254,14 +245,13 @@ describe("mergeQuicklogData", () => {
   })
 
   it("削除対象の entry が incoming に含まれていたら取り除かれる", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [],
       logEntryDeletions: [],
     } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
       ],
@@ -280,9 +270,8 @@ describe("mergeQuicklogData", () => {
   })
 
   it("LogEntryDeletion を適用して残し、同じ merge を繰り返しても結果が変わらない", () => {
-    const version: 3 = 3
     const existing = {
-      version,
+      version: 3,
       logEntries: [
         { id: "existing-active", text: "existing active", createdAt: "2026-06-01T00:00:00.000Z" },
         { id: "incoming-deleted", text: "stale local", createdAt: "2026-06-02T00:00:00.000Z" },
@@ -292,7 +281,7 @@ describe("mergeQuicklogData", () => {
       ],
     } satisfies QuicklogData
     const incoming = {
-      version,
+      version: 3,
       logEntries: [
         { id: "incoming-active", text: "incoming active", createdAt: "2026-06-03T00:00:00.000Z" },
         { id: "existing-deleted", text: "stale remote", createdAt: "2026-06-04T00:00:00.000Z" },
