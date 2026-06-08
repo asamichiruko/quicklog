@@ -74,7 +74,7 @@ describe("createCloudSyncScheduler", () => {
   })
 
   it("requestNow() は scheduled sync を cancel して即 request する", async () => {
-    const result = { oke: true }
+    const result = { ok: true }
     const requestSync = vi.fn().mockResolvedValue(result)
 
     const scheduler = createCloudSyncScheduler({

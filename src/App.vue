@@ -7,6 +7,7 @@ import SettingsDialog from "@/components/SettingsDialog.vue"
 import { getCurrentSession } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
+import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
@@ -67,12 +68,7 @@ const showNewLogEntryButton = ref(false)
 const newLogEntryButtonShowScrollY = 320
 const newLogEntryButtonHideScrollY = 120
 const authPendingTimeoutMs = 10_000
-const autoCloudSyncDelayMs = 1_000
-const opportunisticCloudSyncIntervalMs = 60_000
-
 let authPendingTimeoutId: ReturnType<typeof window.setTimeout> | undefined
-let autoCloudSyncTimeoutId: ReturnType<typeof window.setTimeout> | undefined
-let lastCloudSyncRequestedAt = 0
 
 const initialDate = ref<Date>(new Date())
 const recordCounts = computed(() => {
@@ -109,6 +105,12 @@ const cloudSyncQueue = createCloudSyncQueue({
   },
 })
 
+const cloudSyncScheduler = createCloudSyncScheduler({
+  canSync: () => Boolean(getActiveCloudUser()),
+  requestSync: () => cloudSyncQueue.request(),
+  autoSyncDelayMs: 1_000,
+})
+
 const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
 const calendarDialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
 const logEntryForm = ref<InstanceType<typeof LogEntryForm> | null>(null)
@@ -123,14 +125,14 @@ onMounted(() => {
   updateNewLogEntryButtonVisibility()
   window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
   document.addEventListener("visibilitychange", handleVisibilityChange)
-  window.addEventListener("online", requestCloudSyncIfDue)
+  window.addEventListener("online", handleOnline)
 
   const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
     session.value = nextSession
     const sessionUserId = nextSession ? nextSession.user.id : null
     const dataScope = loadStoredDataScope()
     applyRuntimeSessionState(resolveRuntimeSessionState(sessionUserId, dataScope))
-    requestCloudSyncIfDue()
+    cloudSyncScheduler.requestIfDue()
   })
   unsubscribeAuth = () => {
     data.subscription.unsubscribe()
@@ -142,10 +144,10 @@ onMounted(() => {
 onUnmounted(() => {
   unsubscribeAuth?.()
   clearAuthPendingTimeout()
-  clearScheduledCloudSync()
+  cloudSyncScheduler.cancelScheduled()
   window.removeEventListener("scroll", updateNewLogEntryButtonVisibility)
   document.removeEventListener("visibilitychange", handleVisibilityChange)
-  window.removeEventListener("online", requestCloudSyncIfDue)
+  window.removeEventListener("online", handleOnline)
 })
 
 function openSettings() {
@@ -198,7 +200,7 @@ async function reloadAuthState() {
   const sessionState = resolveRuntimeSessionState(sessionUserId, storedDataScope)
 
   applyRuntimeSessionState(sessionState)
-  requestCloudSyncIfDue()
+  cloudSyncScheduler.requestIfDue()
 }
 
 function applyRuntimeSessionState(nextState: RuntimeSessionState) {
@@ -228,49 +230,17 @@ function clearAuthPendingTimeout() {
 }
 
 function activateAnonymousScope() {
-  clearScheduledCloudSync()
+  cloudSyncScheduler.cancelScheduled()
   applyRuntimeSessionState({ scope: { type: "anonymous" }, syncStatus: "disabled" })
-}
-
-function scheduleCloudSync() {
-  clearScheduledCloudSync()
-  if (!getActiveCloudUser()) return
-
-  autoCloudSyncTimeoutId = window.setTimeout(() => {
-    autoCloudSyncTimeoutId = undefined
-    requestCloudSyncSilently()
-  }, autoCloudSyncDelayMs)
-}
-
-function clearScheduledCloudSync() {
-  if (autoCloudSyncTimeoutId === undefined) return
-
-  window.clearTimeout(autoCloudSyncTimeoutId)
-  autoCloudSyncTimeoutId = undefined
-}
-
-function requestCloudSyncIfDue() {
-  if (!getActiveCloudUser()) return
-
-  const now = Date.now()
-  if (now - lastCloudSyncRequestedAt < opportunisticCloudSyncIntervalMs) return
-
-  requestCloudSyncSilently()
-}
-
-function requestCloudSyncSilently() {
-  if (!getActiveCloudUser()) return
-
-  lastCloudSyncRequestedAt = Date.now()
-  void cloudSyncQueue.request().catch(() => {
-    // Errors are already reported through cloudSyncQueue.onError.
-  })
 }
 
 function handleVisibilityChange() {
   if (document.visibilityState !== "visible") return
+  cloudSyncScheduler.requestIfDue()
+}
 
-  requestCloudSyncIfDue()
+function handleOnline() {
+  cloudSyncScheduler.requestIfDue()
 }
 
 async function handleSubmit(text: string) {
@@ -296,20 +266,17 @@ async function handleSubmit(text: string) {
   }
 
   logEntryForm.value?.clear()
-  scheduleCloudSync()
+  cloudSyncScheduler.scheduleAfterLocalChange()
 }
 
 function updateNewLogEntryButtonVisibility() {
   const scrollY = window.scrollY
 
-  // hide < show とする
-  // shortcut が表示されているとき: hide より下にスクロールしていたら表示（より緩い条件で表示）
   if (showNewLogEntryButton.value) {
     showNewLogEntryButton.value = scrollY > newLogEntryButtonHideScrollY
     return
   }
 
-  //shortcut が表示されていないとき: show より下にスクロールしていたら表示（より厳しい条件で表示）
   showNewLogEntryButton.value = scrollY > newLogEntryButtonShowScrollY
 }
 
@@ -343,7 +310,7 @@ async function handleRemove(id: string) {
     return
   }
 
-  scheduleCloudSync()
+  cloudSyncScheduler.scheduleAfterLocalChange()
 }
 
 function handleExport(exportType: ExportType) {
@@ -383,7 +350,7 @@ async function handleImport(file: File) {
 
     saveActiveQuicklogData(result.data)
     quicklogData.value = result.data
-    scheduleCloudSync()
+    cloudSyncScheduler.scheduleAfterLocalChange()
 
     alert(`${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`)
   } catch (error) {
@@ -400,9 +367,7 @@ async function handleImport(file: File) {
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
-  clearScheduledCloudSync()
-  lastCloudSyncRequestedAt = Date.now()
-  const result = await cloudSyncQueue.request()
+  const result = await cloudSyncScheduler.requestNow()
   if (!result) throw new Error("Cloud sync is not available.")
   return result
 }

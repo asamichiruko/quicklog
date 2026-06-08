@@ -1,9 +1,9 @@
-const DEFAULT_AUTO_SYNC_DELAY_MS = 1_000
+const DEFAULT_AUTO_SYNC_DELAY_MS = 5_000
 const DEFAULT_COOLDOWN_DELAY_MS = 60_000
 
-export type CloudSyncSchedulerOptions = {
+export type CloudSyncSchedulerOptions<T> = {
   canSync: () => boolean
-  requestSync: () => Promise<unknown>
+  requestSync: () => Promise<T>
   onError?: (error: unknown) => void
   now?: () => number
   setTimeout?: typeof window.setTimeout
@@ -12,7 +12,7 @@ export type CloudSyncSchedulerOptions = {
   cooldownMs?: number
 }
 
-export function createCloudSyncScheduler(options: CloudSyncSchedulerOptions) {
+export function createCloudSyncScheduler<T>(options: CloudSyncSchedulerOptions<T>) {
   let timeoutId: ReturnType<typeof window.setTimeout> | undefined
   let lastRequestedAt = 0
 
@@ -36,7 +36,7 @@ export function createCloudSyncScheduler(options: CloudSyncSchedulerOptions) {
     requestSilently()
   }
 
-  function requestNow() {
+  function requestNow(): Promise<T> {
     cancelScheduled()
     lastRequestedAt = options.now?.() ?? Date.now()
     return options.requestSync()
