@@ -10,8 +10,6 @@ import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
-import { recordLogEntryDeletion } from "@/lib/logEntryDeletionRepository"
-import { upsertCloudLogEntry } from "@/lib/logEntryRepository"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import {
   appendLogEntry,
@@ -69,8 +67,12 @@ const showNewLogEntryButton = ref(false)
 const newLogEntryButtonShowScrollY = 320
 const newLogEntryButtonHideScrollY = 120
 const authPendingTimeoutMs = 10_000
+const autoCloudSyncDelayMs = 1_000
+const opportunisticCloudSyncIntervalMs = 60_000
 
 let authPendingTimeoutId: ReturnType<typeof window.setTimeout> | undefined
+let autoCloudSyncTimeoutId: ReturnType<typeof window.setTimeout> | undefined
+let lastCloudSyncRequestedAt = 0
 
 const initialDate = ref<Date>(new Date())
 const recordCounts = computed(() => {
@@ -120,12 +122,15 @@ onMounted(() => {
   settings.value = loadSettings()
   updateNewLogEntryButtonVisibility()
   window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
+  document.addEventListener("visibilitychange", handleVisibilityChange)
+  window.addEventListener("online", requestCloudSyncIfDue)
 
   const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
     session.value = nextSession
     const sessionUserId = nextSession ? nextSession.user.id : null
     const dataScope = loadStoredDataScope()
     applyRuntimeSessionState(resolveRuntimeSessionState(sessionUserId, dataScope))
+    requestCloudSyncIfDue()
   })
   unsubscribeAuth = () => {
     data.subscription.unsubscribe()
@@ -137,7 +142,10 @@ onMounted(() => {
 onUnmounted(() => {
   unsubscribeAuth?.()
   clearAuthPendingTimeout()
+  clearScheduledCloudSync()
   window.removeEventListener("scroll", updateNewLogEntryButtonVisibility)
+  document.removeEventListener("visibilitychange", handleVisibilityChange)
+  window.removeEventListener("online", requestCloudSyncIfDue)
 })
 
 function openSettings() {
@@ -190,6 +198,7 @@ async function reloadAuthState() {
   const sessionState = resolveRuntimeSessionState(sessionUserId, storedDataScope)
 
   applyRuntimeSessionState(sessionState)
+  requestCloudSyncIfDue()
 }
 
 function applyRuntimeSessionState(nextState: RuntimeSessionState) {
@@ -219,7 +228,49 @@ function clearAuthPendingTimeout() {
 }
 
 function activateAnonymousScope() {
+  clearScheduledCloudSync()
   applyRuntimeSessionState({ scope: { type: "anonymous" }, syncStatus: "disabled" })
+}
+
+function scheduleCloudSync() {
+  clearScheduledCloudSync()
+  if (!getActiveCloudUser()) return
+
+  autoCloudSyncTimeoutId = window.setTimeout(() => {
+    autoCloudSyncTimeoutId = undefined
+    requestCloudSyncSilently()
+  }, autoCloudSyncDelayMs)
+}
+
+function clearScheduledCloudSync() {
+  if (autoCloudSyncTimeoutId === undefined) return
+
+  window.clearTimeout(autoCloudSyncTimeoutId)
+  autoCloudSyncTimeoutId = undefined
+}
+
+function requestCloudSyncIfDue() {
+  if (!getActiveCloudUser()) return
+
+  const now = Date.now()
+  if (now - lastCloudSyncRequestedAt < opportunisticCloudSyncIntervalMs) return
+
+  requestCloudSyncSilently()
+}
+
+function requestCloudSyncSilently() {
+  if (!getActiveCloudUser()) return
+
+  lastCloudSyncRequestedAt = Date.now()
+  void cloudSyncQueue.request().catch(() => {
+    // Errors are already reported through cloudSyncQueue.onError.
+  })
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState !== "visible") return
+
+  requestCloudSyncIfDue()
 }
 
 async function handleSubmit(text: string) {
@@ -245,15 +296,7 @@ async function handleSubmit(text: string) {
   }
 
   logEntryForm.value?.clear()
-
-  const user = getActiveCloudUser()
-  if (user) {
-    try {
-      await upsertCloudLogEntry(logEntry, user)
-    } catch (error) {
-      console.warn("Failed to save log entry to Supabase", error)
-    }
-  }
+  scheduleCloudSync()
 }
 
 function updateNewLogEntryButtonVisibility() {
@@ -300,14 +343,7 @@ async function handleRemove(id: string) {
     return
   }
 
-  const user = getActiveCloudUser()
-  if (user) {
-    try {
-      await recordLogEntryDeletion(logEntryDeletion, user)
-    } catch (error) {
-      console.warn("Failed to delete log entry from Supabase", error)
-    }
-  }
+  scheduleCloudSync()
 }
 
 function handleExport(exportType: ExportType) {
@@ -347,6 +383,7 @@ async function handleImport(file: File) {
 
     saveActiveQuicklogData(result.data)
     quicklogData.value = result.data
+    scheduleCloudSync()
 
     alert(`${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`)
   } catch (error) {
@@ -363,6 +400,8 @@ async function handleImport(file: File) {
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
+  clearScheduledCloudSync()
+  lastCloudSyncRequestedAt = Date.now()
   const result = await cloudSyncQueue.request()
   if (!result) throw new Error("Cloud sync is not available.")
   return result
