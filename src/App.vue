@@ -28,6 +28,7 @@ import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/l
 import {
   canUseCloud,
   getDataUserId,
+  isAuthPending,
   isSessionLost,
   resolvePendingRuntimeSessionState,
   resolveRuntimeSessionState,
@@ -67,6 +68,9 @@ const runtimeSessionState = ref<RuntimeSessionState>({
 const showNewLogEntryButton = ref(false)
 const newLogEntryButtonShowScrollY = 320
 const newLogEntryButtonHideScrollY = 120
+const authPendingTimeoutMs = 10_000
+
+let authPendingTimeoutId: ReturnType<typeof window.setTimeout> | undefined
 
 const initialDate = ref<Date>(new Date())
 const recordCounts = computed(() => {
@@ -132,6 +136,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   unsubscribeAuth?.()
+  clearAuthPendingTimeout()
   window.removeEventListener("scroll", updateNewLogEntryButtonVisibility)
 })
 
@@ -161,6 +166,7 @@ function getActiveCloudUser(): User | null {
 
 function applyStoredSessionState() {
   applyRuntimeSessionState(resolvePendingRuntimeSessionState(loadStoredDataScope()))
+  scheduleAuthPendingTimeout()
 }
 
 function pruneActiveQuicklogData() {
@@ -187,9 +193,29 @@ async function reloadAuthState() {
 }
 
 function applyRuntimeSessionState(nextState: RuntimeSessionState) {
+  clearAuthPendingTimeout()
   runtimeSessionState.value = nextState
   saveStoredDataScope(nextState.scope)
   quicklogData.value = loadActiveQuicklogData()
+}
+
+function scheduleAuthPendingTimeout() {
+  clearAuthPendingTimeout()
+  if (!isAuthPending(runtimeSessionState.value)) return
+
+  authPendingTimeoutId = window.setTimeout(() => {
+    if (!isAuthPending(runtimeSessionState.value)) return
+
+    session.value = null
+    applyRuntimeSessionState(resolveRuntimeSessionState(null, loadStoredDataScope()))
+  }, authPendingTimeoutMs)
+}
+
+function clearAuthPendingTimeout() {
+  if (authPendingTimeoutId === undefined) return
+
+  window.clearTimeout(authPendingTimeoutId)
+  authPendingTimeoutId = undefined
 }
 
 function activateAnonymousScope() {

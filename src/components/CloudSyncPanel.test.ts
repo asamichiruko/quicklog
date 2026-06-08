@@ -175,6 +175,9 @@ describe("CloudSyncPanel", () => {
 
     expect(screen.getByText("クラウド同期の認証状態を確認しています").closest(".description")).not.toHaveClass("session-lost")
     expect(screen.queryByText(/クラウド同期が停止しています/)).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "サインイン" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "アカウントを作成する" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "同期" })).not.toBeInTheDocument()
   })
 
   it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {

@@ -228,7 +228,8 @@ defineExpose({ reset })
         >サインイン中: {{ props.session?.user.email }}</span
       >
     </p>
-    <template v-if="props.session">
+    <template v-if="isAuthPending(props.runtimeSessionState)"></template>
+    <template v-else-if="props.session">
       <button
         type="button"
         class="button-secondary sync-button"
