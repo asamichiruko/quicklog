@@ -6,6 +6,7 @@ import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import { getCurrentSession } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
+import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
@@ -76,6 +77,29 @@ const recordCounts = computed(() => {
   }
 
   return counts
+})
+
+const cloudSyncQueue = createCloudSyncQueue({
+  getContext() {
+    return {
+      user: getActiveCloudUser(),
+      data: quicklogData.value,
+    }
+  },
+  sync: syncQuicklogDataWithCloud,
+  applyResult: (result, context) => {
+    const currentUser = getActiveCloudUser()
+
+    if (!currentUser || !context.user || currentUser.id !== context.user.id) {
+      return
+    }
+
+    saveActiveQuicklogData(result.data)
+    quicklogData.value = result.data
+  },
+  onError(error) {
+    console.warn("Failed to sync quicklog data", error)
+  },
 })
 
 const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
@@ -298,15 +322,8 @@ async function handleImport(file: File) {
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
-  const user = getActiveCloudUser()
-  if (!user) {
-    throw new Error("User is not signed in.")
-  }
-
-  const result = await syncQuicklogDataWithCloud(quicklogData.value, user)
-  saveActiveQuicklogData(result.data)
-  quicklogData.value = result.data
-
+  const result = await cloudSyncQueue.request()
+  if (!result) throw new Error("Cloud sync is not available.")
   return result
 }
 
