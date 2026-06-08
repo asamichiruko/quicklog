@@ -119,21 +119,18 @@ const logEntryFormArea = ref<HTMLElement | null>(null)
 onMounted(() => {
   migrateStorageLayout()
 
-  applyStoredSessionState()
+  applyPendingStoredSessionState()
   pruneActiveQuicklogData()
   settings.value = loadSettings()
+
   updateNewLogEntryButtonVisibility()
   window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
   document.addEventListener("visibilitychange", handleVisibilityChange)
   window.addEventListener("online", handleOnline)
 
-  const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-    session.value = nextSession
-    const sessionUserId = nextSession ? nextSession.user.id : null
-    const dataScope = loadStoredDataScope()
-    applyRuntimeSessionState(resolveRuntimeSessionState(sessionUserId, dataScope))
-    cloudSyncScheduler.requestIfDue()
-  })
+  const { data } = supabase.auth.onAuthStateChange((_event, nextSession) =>
+    applyResolvedSession(nextSession),
+  )
   unsubscribeAuth = () => {
     data.subscription.unsubscribe()
   }
@@ -166,6 +163,12 @@ function saveActiveQuicklogData(data: QuicklogData) {
   saveQuicklogData(data, getDataUserId(runtimeSessionState.value))
 }
 
+function applyLocalQuicklogDataChange(nextData: QuicklogData) {
+  saveActiveQuicklogData(nextData)
+  quicklogData.value = nextData
+  cloudSyncScheduler.scheduleAfterLocalChange()
+}
+
 function getActiveCloudUser(): User | null {
   if (session.value && canUseCloud(runtimeSessionState.value, session.value.user.id)) {
     return session.value.user
@@ -174,7 +177,17 @@ function getActiveCloudUser(): User | null {
   }
 }
 
-function applyStoredSessionState() {
+function applyResolvedSession(nextSession: Session | null) {
+  session.value = nextSession
+
+  const sessionUserId = nextSession ? nextSession.user.id : null
+  const storedDataScope = loadStoredDataScope()
+  applyRuntimeSessionState(resolveRuntimeSessionState(sessionUserId, storedDataScope))
+
+  cloudSyncScheduler.requestIfDue()
+}
+
+function applyPendingStoredSessionState() {
   applyRuntimeSessionState(resolvePendingRuntimeSessionState(loadStoredDataScope()))
   scheduleAuthPendingTimeout()
 }
@@ -187,20 +200,11 @@ function pruneActiveQuicklogData() {
 
 async function reloadAuthState() {
   try {
-    session.value = await getCurrentSession()
+    applyResolvedSession(await getCurrentSession())
   } catch (error) {
     console.warn("Failed to reload auth state", error)
-    session.value = null
-    applyRuntimeSessionState(resolveRuntimeSessionState(null, loadStoredDataScope()))
-    return
+    applyResolvedSession(null)
   }
-
-  const sessionUserId = session.value ? session.value.user.id : null
-  const storedDataScope = loadStoredDataScope()
-  const sessionState = resolveRuntimeSessionState(sessionUserId, storedDataScope)
-
-  applyRuntimeSessionState(sessionState)
-  cloudSyncScheduler.requestIfDue()
 }
 
 function applyRuntimeSessionState(nextState: RuntimeSessionState) {
@@ -252,21 +256,15 @@ async function handleSubmit(text: string) {
   const logEntry = createLogEntry(text, new Date(), crypto.randomUUID())
 
   try {
-    const nextQuicklogData = appendLogEntry(quicklogData.value, logEntry)
-    saveActiveQuicklogData(nextQuicklogData)
-    quicklogData.value = nextQuicklogData
+    applyLocalQuicklogDataChange(appendLogEntry(quicklogData.value, logEntry))
+    logEntryForm.value?.clear()
   } catch (error) {
     if (error instanceof SizeError) {
       alert("メモの記録に失敗しました。記録が多すぎます")
     } else {
       alert("メモの記録に失敗しました")
     }
-
-    return
   }
-
-  logEntryForm.value?.clear()
-  cloudSyncScheduler.scheduleAfterLocalChange()
 }
 
 function updateNewLogEntryButtonVisibility() {
@@ -298,19 +296,14 @@ async function handleRemove(id: string) {
   const logEntryDeletion = createLogEntryDeletion(id, new Date())
 
   try {
-    const nextQuicklogData = removeLogEntry(quicklogData.value, logEntryDeletion)
-    saveActiveQuicklogData(nextQuicklogData)
-    quicklogData.value = nextQuicklogData
+    applyLocalQuicklogDataChange(removeLogEntry(quicklogData.value, logEntryDeletion))
   } catch (error) {
     if (error instanceof SizeError) {
       alert("削除に失敗しました。削除履歴が多すぎます")
     } else {
       alert("削除に失敗しました")
     }
-    return
   }
-
-  cloudSyncScheduler.scheduleAfterLocalChange()
 }
 
 function handleExport(exportType: ExportType) {
@@ -348,9 +341,7 @@ async function handleImport(file: File) {
       new Date(),
     )
 
-    saveActiveQuicklogData(result.data)
-    quicklogData.value = result.data
-    cloudSyncScheduler.scheduleAfterLocalChange()
+    applyLocalQuicklogDataChange(result.data)
 
     alert(`${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`)
   } catch (error) {
