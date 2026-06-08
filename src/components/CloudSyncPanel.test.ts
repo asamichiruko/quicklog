@@ -165,6 +165,18 @@ describe("CloudSyncPanel", () => {
     expect(screen.getByText(/クラウド同期が停止しています/).closest(".description")).toHaveClass("session-lost")
   })
 
+  it("認証確認中のときは同期停止メッセージとして目立たせない", () => {
+    render(CloudSyncPanel, {
+      props: {
+        session: null,
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authPending" },
+      },
+    })
+
+    expect(screen.getByText("クラウド同期の認証状態を確認しています").closest(".description")).not.toHaveClass("session-lost")
+    expect(screen.queryByText(/クラウド同期が停止しています/)).not.toBeInTheDocument()
+  })
+
   it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
     const user = userEvent.setup()
     const result = {

@@ -28,4 +28,5 @@ export type DataScope =
 export type RuntimeSessionState =
   | { scope: { type: "anonymous" }; syncStatus: "disabled" }
   | { scope: { type: "user"; userId: string }; syncStatus: "authenticated" }
+  | { scope: { type: "user"; userId: string }; syncStatus: "authPending" }
   | { scope: { type: "user"; userId: string }; syncStatus: "sessionLost" }

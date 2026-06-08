@@ -7,7 +7,7 @@ import {
   validateRequiredPassword,
 } from "@/lib/authFormValidation"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
-import { isAuthenticated, isSessionLost } from "@/lib/runtimeSessionState"
+import { isAuthenticated, isAuthPending, isSessionLost } from "@/lib/runtimeSessionState"
 import type { RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
 import { computed, ref } from "vue"
@@ -80,6 +80,8 @@ function validateSignUpFields(): boolean {
 const sessionStateMessage = computed(() => {
   if (isAuthenticated(props.runtimeSessionState)) {
     return "クラウド同期は有効です"
+  } else if (isAuthPending(props.runtimeSessionState)) {
+    return "クラウド同期の認証状態を確認しています"
   } else if (isSessionLost(props.runtimeSessionState)) {
     return "クラウド同期が停止しています。現在のユーザデータはこの端末に保存されますが、クラウドには反映されません"
   } else {

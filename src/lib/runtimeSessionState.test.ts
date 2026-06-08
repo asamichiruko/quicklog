@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { resolveRuntimeSessionState } from "./runtimeSessionState"
+import {
+  canUseCloud,
+  isAuthPending,
+  resolvePendingRuntimeSessionState,
+  resolveRuntimeSessionState,
+  syncStatusMessage,
+} from "./runtimeSessionState"
 
 describe("resolveRuntimeSessionState", () => {
   it("session があるときは session の user を authenticated として扱う", () => {
@@ -28,5 +34,26 @@ describe("resolveRuntimeSessionState", () => {
       scope: { type: "user", userId: "userA" },
       syncStatus: "sessionLost",
     })
+  })
+})
+
+describe("resolvePendingRuntimeSessionState", () => {
+  it("storedDataScope が anonymous のときは anonymous を扱う", () => {
+    expect(resolvePendingRuntimeSessionState({ type: "anonymous" })).toEqual({
+      scope: { type: "anonymous" },
+      syncStatus: "disabled",
+    })
+  })
+
+  it("storedDataScope が user のときは authPending として user data を扱う", () => {
+    const state = resolvePendingRuntimeSessionState({ type: "user", userId: "userA" })
+
+    expect(state).toEqual({
+      scope: { type: "user", userId: "userA" },
+      syncStatus: "authPending",
+    })
+    expect(isAuthPending(state)).toBe(true)
+    expect(canUseCloud(state, "userA")).toBe(false)
+    expect(syncStatusMessage(state)).toBe("認証確認中")
   })
 })

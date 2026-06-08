@@ -15,8 +15,20 @@ export function resolveRuntimeSessionState(
   return { scope: { type: "user", userId: storedDataScope.userId }, syncStatus: "sessionLost" }
 }
 
+export function resolvePendingRuntimeSessionState(storedDataScope: DataScope): RuntimeSessionState {
+  if (storedDataScope.type === "anonymous") {
+    return { scope: { type: "anonymous" }, syncStatus: "disabled" }
+  }
+
+  return { scope: { type: "user", userId: storedDataScope.userId }, syncStatus: "authPending" }
+}
+
 export function isAuthenticated(runtimeSessionState: RuntimeSessionState) {
   return runtimeSessionState.syncStatus === "authenticated"
+}
+
+export function isAuthPending(runtimeSessionState: RuntimeSessionState) {
+  return runtimeSessionState.syncStatus === "authPending"
 }
 
 export function isSessionLost(runtimeSessionState: RuntimeSessionState) {
@@ -41,6 +53,8 @@ export function canUseCloud(runtimeSessionState: RuntimeSessionState, sessionUse
 export function syncStatusMessage(runtimeSessionState: RuntimeSessionState) {
   if (isAuthenticated(runtimeSessionState)) {
     return "クラウド同期中"
+  } else if (isAuthPending(runtimeSessionState)) {
+    return "認証確認中"
   } else if (isSessionLost(runtimeSessionState)) {
     return "同期停止中"
   } else {

@@ -29,6 +29,7 @@ import {
   canUseCloud,
   getDataUserId,
   isSessionLost,
+  resolvePendingRuntimeSessionState,
   resolveRuntimeSessionState,
   syncStatusMessage,
 } from "@/lib/runtimeSessionState"
@@ -107,8 +108,14 @@ const calendarDialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
 const logEntryForm = ref<InstanceType<typeof LogEntryForm> | null>(null)
 const logEntryFormArea = ref<HTMLElement | null>(null)
 
-onMounted(async () => {
+onMounted(() => {
   migrateStorageLayout()
+
+  applyStoredSessionState()
+  pruneActiveQuicklogData()
+  settings.value = loadSettings()
+  updateNewLogEntryButtonVisibility()
+  window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
 
   const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
     session.value = nextSession
@@ -120,16 +127,7 @@ onMounted(async () => {
     data.subscription.unsubscribe()
   }
 
-  await reloadAuthState()
-
-  const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), new Date())
-  quicklogData.value = pruned
-  saveActiveQuicklogData(pruned)
-
-  settings.value = loadSettings()
-
-  updateNewLogEntryButtonVisibility()
-  window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
+  void reloadAuthState()
 })
 
 onUnmounted(() => {
@@ -161,8 +159,25 @@ function getActiveCloudUser(): User | null {
   }
 }
 
+function applyStoredSessionState() {
+  applyRuntimeSessionState(resolvePendingRuntimeSessionState(loadStoredDataScope()))
+}
+
+function pruneActiveQuicklogData() {
+  const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), new Date())
+  quicklogData.value = pruned
+  saveActiveQuicklogData(pruned)
+}
+
 async function reloadAuthState() {
-  session.value = await getCurrentSession()
+  try {
+    session.value = await getCurrentSession()
+  } catch (error) {
+    console.warn("Failed to reload auth state", error)
+    session.value = null
+    applyRuntimeSessionState(resolveRuntimeSessionState(null, loadStoredDataScope()))
+    return
+  }
 
   const sessionUserId = session.value ? session.value.user.id : null
   const storedDataScope = loadStoredDataScope()
