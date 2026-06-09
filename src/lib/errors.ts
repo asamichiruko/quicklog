@@ -35,3 +35,10 @@ export class InvalidDateError extends RangeError {
     this.name = 'InvalidDateError';
   }
 }
+
+export function isQuotaExceededError(error: unknown) {
+  return (
+    error instanceof DOMException &&
+    (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+  )
+}
