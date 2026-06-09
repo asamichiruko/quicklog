@@ -10,7 +10,7 @@ describe("createCalendarDays", () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 4, 22))
 
-    const recordCounts = new Map<string, number>([
+    const logEntryCountsByDate = new Map<string, number>([
       ["2026-04-25", 1],
       ["2026-04-26", 1],
       ["2026-05-01", 1],
@@ -19,7 +19,7 @@ describe("createCalendarDays", () => {
       ["2026-06-07", 1],
     ])
 
-    const days = createCalendarDays(new Date(2026, 4, 1), new Date(2026, 4, 15), recordCounts)
+    const days = createCalendarDays(new Date(2026, 4, 1), new Date(2026, 4, 15), logEntryCountsByDate)
 
     expect(days).toHaveLength(42)
     expect(days[0].dateKey).toBe("2026-04-26")
@@ -39,7 +39,7 @@ describe("createCalendarDays", () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 4, 22))
 
-    const recordCounts = new Map<string, number>([
+    const logEntryCounts = new Map<string, number>([
       ["2026-05-01", 1],
       ["2026-05-02", 5],
       ["2026-05-03", 6],
@@ -49,12 +49,12 @@ describe("createCalendarDays", () => {
       ["2026-05-07", 21],
     ])
 
-    const days = createCalendarDays(new Date(2026, 4, 1), new Date(2026, 4, 15), recordCounts)
+    const days = createCalendarDays(new Date(2026, 4, 1), new Date(2026, 4, 15), logEntryCounts)
 
     expect(findDay(days, "2026-05-01")).toMatchObject({
       count: 1,
       countLevel: "low",
-      hasRecords: true,
+      hasLogEntries: true,
     })
     expect(findDay(days, "2026-05-02")).toMatchObject({ countLevel: "low" })
     expect(findDay(days, "2026-05-03")).toMatchObject({ countLevel: "medium" })
@@ -65,7 +65,7 @@ describe("createCalendarDays", () => {
     expect(findDay(days, "2026-05-08")).toMatchObject({
       count: 0,
       countLevel: "none",
-      hasRecords: false,
+      hasLogEntries: false,
     })
   })
 

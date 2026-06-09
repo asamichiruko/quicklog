@@ -17,13 +17,13 @@ const TestHost = defineComponent({
       { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000+09:00" },
       { id: "id3", text: "text3", createdAt: "2026-04-30T12:00:00.000+09:00" },
     ])
-    const recordCounts = computed(() => {
+    const logEntryCountsByDate = computed(() => {
       const counts = new Map<string, number>()
 
-      for (const logEntry of logEntries.value) {
+      logEntries.value.forEach((logEntry) => {
         const key = getLocalDateKey(new Date(logEntry.createdAt))
         counts.set(key, (counts.get(key) ?? 0) + 1)
-      }
+      })
 
       return counts
     })
@@ -32,7 +32,7 @@ const TestHost = defineComponent({
       dialog,
       selectedDate,
       initialDate,
-      recordCounts,
+      logEntryCountsByDate,
     }
   },
   template: `
@@ -40,7 +40,7 @@ const TestHost = defineComponent({
   <CalendarDialog
     ref="dialog"
     :initialDate="initialDate"
-    :recordCounts="recordCounts"
+    :log-entry-counts-by-date="logEntryCountsByDate"
     @select="selectedDate = $event"
   />
   <output data-testid="selected-date">{{ selectedDate?.toISOString() ?? "" }}</output>

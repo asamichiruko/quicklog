@@ -96,18 +96,18 @@ function appendDateGroupAsMarkdown(
 ) {
   builder.appendSeparated(`${groupsHeading} ${formatLongJapaneseDate(group.date)}`)
 
-  for (const logEntry of group.logEntries) {
+  group.logEntries.forEach((logEntry) => {
     builder.appendSeparated(formatLogEntryAsMarkdown(logEntry))
-  }
+  })
 }
 
 export function formatLogEntriesAsMarkdown(logEntries: LogEntry[]): string {
   const groupedLogEntries = groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)))
   const builder = createSizeLimitedTextBuilder(MAX_EXPORT_FILE_BYTES)
 
-  for (const group of groupedLogEntries) {
+  groupedLogEntries.forEach((group) => {
     appendDateGroupAsMarkdown(builder, group)
-  }
+  })
 
   return builder.toString()
 }

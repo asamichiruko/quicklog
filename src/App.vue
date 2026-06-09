@@ -71,13 +71,13 @@ const authPendingTimeoutMs = 10_000
 let authPendingTimeoutId: ReturnType<typeof window.setTimeout> | undefined
 
 const initialDate = ref<Date>(new Date())
-const recordCounts = computed(() => {
+const logEntryCountsByDate = computed(() => {
   const counts = new Map<string, number>()
 
-  for (const logEntry of logEntries.value) {
+  logEntries.value.forEach((logEntry) => {
     const key = getLocalDateKey(new Date(logEntry.createdAt))
     counts.set(key, (counts.get(key) ?? 0) + 1)
-  }
+  })
 
   return counts
 })
@@ -464,7 +464,7 @@ function handleSignOut() {
   <CalendarDialog
     ref="calendarDialog"
     :initial-date="initialDate"
-    :record-counts="recordCounts"
+    :log-entry-counts-by-date="logEntryCountsByDate"
     @select="handleSelectDate"
   />
 </template>

@@ -20,7 +20,7 @@ export function createCalendarDays(
       isCurrentMonth: date.getMonth() === displayedMonth.getMonth(),
       isToday: dateKey === getLocalDateKey(new Date()),
       countLevel: getCountLevel(count),
-      hasRecords: count > 0,
+      hasLogEntries: count > 0,
       isInitialDay: dateKey === getLocalDateKey(initialDate),
     }
   })

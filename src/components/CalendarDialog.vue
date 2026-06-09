@@ -8,7 +8,7 @@ const displayedMonth = ref(startOfMonth(new Date()))
 
 const props = defineProps<{
   initialDate: Date
-  recordCounts: Map<string, number>
+  logEntryCountsByDate: Map<string, number>
 }>()
 
 const emit = defineEmits<{
@@ -18,7 +18,7 @@ const emit = defineEmits<{
 const weekdayLabels = ["日", "月", "火", "水", "木", "金", "土"]
 
 const calendarDays = computed(() => {
-  return createCalendarDays(displayedMonth.value, props.initialDate, props.recordCounts)
+  return createCalendarDays(displayedMonth.value, props.initialDate, props.logEntryCountsByDate)
 })
 
 const displayedMonthLabelMonth = computed(() => {
@@ -63,7 +63,7 @@ const calendarLabel = computed(() => {
   return `${displayedMonthLabelYear.value}${displayedMonthLabelMonth.value}の記録日カレンダー`
 })
 
-function formatDayLabel(date: Date, hasRecords: boolean) {
+function formatDayLabel(date: Date, hasLogEntries: boolean) {
   const dateLabel = new Intl.DateTimeFormat("ja-JP", {
     month: "long",
     day: "numeric",
@@ -71,7 +71,7 @@ function formatDayLabel(date: Date, hasRecords: boolean) {
     timeZone: "Asia/Tokyo",
   }).format(date)
 
-  return hasRecords ? `${dateLabel}、記録あり、移動` : `${dateLabel}、記録なし`
+  return hasLogEntries ? `${dateLabel}、記録あり、移動` : `${dateLabel}、記録なし`
 }
 
 defineExpose({ open })
@@ -184,18 +184,18 @@ defineExpose({ open })
             {
               'is-outside-month': !day.isCurrentMonth,
               'is-today': day.isToday && day.isCurrentMonth,
-              'has-records': day.hasRecords,
+              'has-log-entries': day.hasLogEntries,
               'is-initial-day': day.isInitialDay,
             },
           ]"
-          :disabled="!day.hasRecords"
-          :aria-label="formatDayLabel(day.date, day.hasRecords)"
+          :disabled="!day.hasLogEntries"
+          :aria-label="formatDayLabel(day.date, day.hasLogEntries)"
           :data-count="day.count"
           @click="selectAndClose(day.date)"
         >
           <span class="day-number">{{ day.date.getDate() }}</span>
           <span
-            v-if="day.hasRecords"
+            v-if="day.hasLogEntries"
             class="day-count"
             aria-hidden="true"
           />
@@ -293,18 +293,18 @@ defineExpose({ open })
   color: var(--color-text);
 }
 
-.day-button.has-records {
+.day-button.has-log-entries {
   background: var(--color-inside-month-enabled);
 }
 
 @media (hover: hover) {
-  .day-button.has-records:hover {
+  .day-button.has-log-entries:hover {
     background: var(--color-inside-month-active);
   }
 }
 
 @media (hover: none) {
-  .day-button.has-records:active {
+  .day-button.has-log-entries:active {
     background: var(--color-inside-month-active);
   }
 }
@@ -315,19 +315,19 @@ defineExpose({ open })
   background: var(--color-inside-month-disabled);
 }
 
-.day-button.is-outside-month.has-records {
+.day-button.is-outside-month.has-log-entries {
   color: var(--color-text-subtle);
   background: var(--color-outside-month-enabled);
 }
 
 @media (hover: hover) {
-  .day-button.is-outside-month.has-records:hover {
+  .day-button.is-outside-month.has-log-entries:hover {
     background: var(--color-outside-month-active);
   }
 }
 
 @media (hover: none) {
-  .day-button.is-outside-month.has-records:active {
+  .day-button.is-outside-month.has-log-entries:active {
     background: var(--color-outside-month-active);
   }
 }
