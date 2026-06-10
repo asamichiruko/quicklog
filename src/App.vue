@@ -411,6 +411,7 @@ async function handleSignInWithEmail(email: string, password: string) {
 }
 
 async function handleSignOut() {
+  await signOut()
   activateAnonymousScope()
 }
 </script>
