@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
 import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
 import {
   validateCreatedPassword,
@@ -15,12 +14,10 @@ import { computed, ref } from "vue"
 const props = defineProps<{
   session: Session | null
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
+  signInWithEmail: (email: string, password: string) => Promise<void>
+  signUpWithEmail: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
   runtimeSessionState: RuntimeSessionState
-}>()
-
-const emit = defineEmits<{
-  signIn: []
-  signOut: []
 }>()
 
 type PanelView = "signIn" | "signedIn" | "signUp" | "authPending"
@@ -122,7 +119,7 @@ async function handleSignUp(): Promise<void> {
   isLoading.value = true
 
   try {
-    await signUpWithEmail(signUpEmail.value.trim(), signUpPassword.value)
+    await props.signUpWithEmail(signUpEmail.value.trim(), signUpPassword.value)
     feedbackMessage.value = "アカウントを作成しました"
     feedbackKind.value = "success"
   } catch (error) {
@@ -141,10 +138,9 @@ async function handleSignIn(): Promise<void> {
   isLoading.value = true
 
   try {
-    await signInWithEmail(signInEmail.value.trim(), signInPassword.value)
-    feedbackMessage.value = "サインインしました"
+    await props.signInWithEmail(signInEmail.value.trim(), signInPassword.value)
+    feedbackMessage.value = "クラウド同期を開始しました"
     feedbackKind.value = "success"
-    emit("signIn")
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -159,10 +155,9 @@ async function handleSignOut(): Promise<void> {
   isLoading.value = true
 
   try {
-    await signOut()
-    feedbackMessage.value = "サインアウトしました"
+    await props.signOut()
+    feedbackMessage.value = "クラウド同期を停止しました"
     feedbackKind.value = "success"
-    emit("signOut")
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"

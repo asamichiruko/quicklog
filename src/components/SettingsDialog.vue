@@ -26,6 +26,9 @@ const props = defineProps<{
   logEntries: LogEntry[]
   settings: AppSettings
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
+  signInWithEmail: (email: string, password: string) => Promise<void>
+  signUpWithEmail: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
   runtimeSessionState: RuntimeSessionState
 }>()
 
@@ -33,8 +36,6 @@ const emit = defineEmits<{
   save: [nextSettings: AppSettings]
   export: [exportType: ExportType]
   import: [file: File]
-  signIn: []
-  signOut: []
 }>()
 
 function open() {
@@ -126,9 +127,10 @@ defineExpose({ open })
             ref="cloudSyncPanel"
             :session="props.session"
             :sync-log-entries="props.syncLogEntries"
+            :sign-in-with-email="props.signInWithEmail"
+            :sign-up-with-email="props.signUpWithEmail"
+            :sign-out="props.signOut"
             :runtime-session-state="props.runtimeSessionState"
-            @sign-in="emit('signIn')"
-            @sign-out="emit('signOut')"
           />
         </div>
       </details>

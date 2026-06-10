@@ -4,10 +4,11 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
-import { getCurrentSession } from "@/lib/auth"
+import { getCurrentSession, signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
 import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
+import { startCloudSync } from "@/lib/cloudSyncStart"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
@@ -23,6 +24,7 @@ import {
   pruneQuicklogDataLogEntryDeletions,
 } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
+import { moveAnonymousQuicklogDataToUser } from "@/lib/quicklogDataScopeMigration"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import {
   canUseCloud,
@@ -373,11 +375,42 @@ function handleSaveSettings(nextSettings: AppSettings) {
   saveSettings(nextSettings)
 }
 
-async function handleSignIn() {
-  await reloadAuthState()
+function moveAnonymousDataToUser(user: User) {
+  const result = moveAnonymousQuicklogDataToUser(user.id, new Date())
+
+  quicklogData.value = result.data
+
+  if (result.moved) {
+    cloudSyncScheduler.scheduleAfterLocalChange()
+  }
 }
 
-function handleSignOut() {
+async function rollbackCloudSyncStart() {
+  await signOut()
+  activateAnonymousScope()
+}
+
+async function handleSignUpWithEmail(email: string, password: string) {
+  await startCloudSync({
+    authenticate: () => signUpWithEmail(email, password),
+    reloadAuthState,
+    getActiveUser: getActiveCloudUser,
+    moveAnonymousDataToUser,
+    rollback: rollbackCloudSyncStart,
+  })
+}
+
+async function handleSignInWithEmail(email: string, password: string) {
+  await startCloudSync({
+    authenticate: () => signInWithEmail(email, password),
+    reloadAuthState,
+    getActiveUser: getActiveCloudUser,
+    moveAnonymousDataToUser,
+    rollback: rollbackCloudSyncStart,
+  })
+}
+
+async function handleSignOut() {
   activateAnonymousScope()
 }
 </script>
@@ -453,12 +486,13 @@ function handleSignOut() {
     :settings="settings"
     :log-entries="logEntries"
     :sync-log-entries="handleCloudSync"
+    :sign-in-with-email="handleSignInWithEmail"
+    :sign-up-with-email="handleSignUpWithEmail"
+    :sign-out="handleSignOut"
     :runtime-session-state="runtimeSessionState"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"
-    @sign-in="handleSignIn"
-    @sign-out="handleSignOut"
   />
 
   <CalendarDialog

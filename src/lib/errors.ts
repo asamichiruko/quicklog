@@ -9,7 +9,7 @@ export class SizeError extends Error {
 
   constructor(message: string, options?: SizeErrorOptions) {
     super(message);
-    this.name = 'SizeError';
+    this.name = "SizeError"
     this.options = options
   }
 }
@@ -23,16 +23,23 @@ export class SchemaValidationError extends Error {
   readonly options?: SchemaValidationErrorOptions
 
   constructor(message: string, options?: SchemaValidationErrorOptions) {
-    super(message);
-    this.name = 'SchemaValidationError';
+    super(message)
+    this.name = "SchemaValidationError"
     this.options = options
   }
 }
 
 export class InvalidDateError extends RangeError {
   constructor(message: string) {
-    super(message);
-    this.name = 'InvalidDateError';
+    super(message)
+    this.name = "InvalidDateError"
+  }
+}
+
+export class CloudSyncStartError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "CloudSyncStartError"
   }
 }
 

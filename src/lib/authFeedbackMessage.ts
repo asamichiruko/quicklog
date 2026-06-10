@@ -1,3 +1,4 @@
+import { CloudSyncStartError } from "@/lib/errors"
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   invalid_credentials: "メールアドレスまたはパスワードが正しくありません",
@@ -24,6 +25,8 @@ function getAuthErrorCode(error: unknown): string | undefined {
 }
 
 export function getAuthFeedbackMessage(error: unknown): string {
+  if (error instanceof CloudSyncStartError) return error.message
+
   const code = getAuthErrorCode(error)
 
   if (code !== undefined && AUTH_ERROR_MESSAGES[code] !== undefined) {
