@@ -17,6 +17,10 @@
   --color-on-control: #222222;
   --color-control-disabled: #f7f7f7;
 
+  --color-danger: #f20d0d;
+  --color-danger-hover: hsl(0, 90%, 40%);
+  --color-on-danger: #ffffff;
+
   --color-ghost-hover: #e8e8e8;
 
   --space-1: 8px;
@@ -114,6 +118,21 @@ button:disabled {
   }
 }
 
+.button-danger {
+  background: var(--color-danger);
+  color: var(--color-on-danger);
+}
+@media (hover: hover) {
+  .button-danger:not(:disabled):hover {
+    background: var(--color-danger-hover);
+  }
+}
+@media (hover: none) {
+  .button-danger:not(:disabled):active {
+    background: var(--color-danger-hover);
+  }
+}
+
 .button-icon {
   display: inline-grid;
   place-items: center;
@@ -161,7 +180,8 @@ button:disabled {
 }
 
 .button-primary:disabled,
-.button-secondary:disabled {
+.button-secondary:disabled,
+.button-danger:disabled {
   border-color: var(--color-border);
   background: var(--color-control-disabled);
   color: var(--color-text-subtle);

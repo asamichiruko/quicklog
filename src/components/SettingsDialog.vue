@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CloudSyncPanel from "@/components/CloudSyncPanel.vue"
+import LocalDataManagementPanel from "@/components/LocalDataManagementPanel.vue"
 import LogEntryCopyPanel from "@/components/LogEntryCopyPanel.vue"
 import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
@@ -20,6 +21,8 @@ const importPanel = ref<InstanceType<typeof LogEntryImportPanel> | null>(null)
 const importPanelDetails = ref<HTMLDetailsElement | null>(null)
 const exportPanel = ref<InstanceType<typeof LogEntryExportPanel> | null>(null)
 const exportPanelDetails = ref<HTMLDetailsElement | null>(null)
+const localDataManagementPanel = ref<InstanceType<typeof LocalDataManagementPanel> | null>(null)
+const localDataManagementPanelDetails = ref<HTMLDetailsElement | null>(null)
 
 const props = defineProps<{
   session: Session | null
@@ -54,6 +57,9 @@ function open() {
 
   importPanel.value?.reset()
   if (importPanelDetails.value) importPanelDetails.value.open = false
+
+  localDataManagementPanel.value?.reset()
+  if (localDataManagementPanelDetails.value) localDataManagementPanelDetails.value.open = false
 
   dialog.value.showModal()
 }
@@ -185,6 +191,23 @@ defineExpose({ open })
           <LogEntryImportPanel
             ref="importPanel"
             @import="emit('import', $event)"
+          />
+        </div>
+      </details>
+      <details
+        ref="localDataManagementPanelDetails"
+        class="settings-panel"
+        aria-labelledby="settings-panel-local-data-management"
+      >
+        <summary
+          id="settings-panel-local-data-management"
+          class="settings-panel-summary"
+        >
+          ローカルデータの管理
+        </summary>
+        <div class="settings-panel-body">
+          <LocalDataManagementPanel
+            ref="localDataManagementPanel"
           />
         </div>
       </details>
