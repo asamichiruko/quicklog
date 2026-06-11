@@ -29,6 +29,7 @@ const panelView = computed<PanelView>(() => {
   if (props.session) return "signedIn"
   return mode.value
 })
+const isConfirmingCloudSyncDeletion = ref(false)
 
 const signInEmail = ref("")
 const signInPassword = ref("")
@@ -200,8 +201,21 @@ function handleToggleMode() {
   }
 }
 
+function showCloudSyncDeletionConfirmation() {
+  isConfirmingCloudSyncDeletion.value = true
+}
+
+function hideCloudSyncDeletionConfirmation() {
+  isConfirmingCloudSyncDeletion.value = false
+}
+
+function handleConfirmDeleteCloudSync() {
+  // クラウドデータを削除して匿名データに移行
+}
+
 function reset() {
   mode.value = "signIn"
+  isConfirmingCloudSyncDeletion.value = false
 
   signInEmail.value = ""
   signInPassword.value = ""
@@ -247,6 +261,38 @@ defineExpose({ reset })
       >
         サインアウト
       </button>
+      <button
+        type="button"
+        class="button-link show-delete-cloud-data-button"
+        :disabled="isLoading || isConfirmingCloudSyncDeletion"
+        @click="showCloudSyncDeletionConfirmation"
+      >
+        クラウド同期アカウントとデータを削除
+      </button>
+      <template v-if="isConfirmingCloudSyncDeletion">
+        <p class="delete-cloud-sync-description">
+          現在サインインしているクラウド同期アカウントと、クラウド上の同期データを削除します。この端末に保存されている記録は、サインインしていない状態のデータとして残ります。
+        </p>
+        <p class="confirm-message">
+          クラウド同期アカウントおよびクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？
+        </p>
+        <div class="confirm-actions">
+          <button
+            type="button"
+            class="button-secondary hide-delete-cloud-sync-button"
+            @click="hideCloudSyncDeletionConfirmation"
+          >
+            キャンセル
+          </button>
+          <button
+            type="button"
+            class="button-danger delete-cloud-sync-button"
+            @click="handleConfirmDeleteCloudSync"
+          >
+            削除する
+          </button>
+        </div>
+      </template>
     </template>
 
     <template v-else-if="panelView === 'signIn'">
@@ -461,11 +507,29 @@ defineExpose({ reset })
   gap: var(--space-1);
 }
 
+.delete-cloud-sync-description {
+  margin: 0;
+  font-size: var(--font-size-small);
+}
+
+.confirm-message {
+  margin: 0;
+  color: var(--color-error);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
 .sign-in-button,
 .sign-up-button,
 .sign-out-button,
 .toggle-mode-button,
-.sync-button {
+.sync-button,
+.delete-cloud-sync-button,
+.show-delete-cloud-data-button,
+.hide-delete-cloud-sync-button {
   width: fit-content;
 }
 
