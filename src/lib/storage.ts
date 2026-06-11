@@ -71,6 +71,13 @@ export function saveQuicklogData(quicklogData: QuicklogData, userId?: string) {
   localStorage.setItem(key, serialized)
 }
 
+export function clearQuicklogData(userId?: string) {
+  let key = ANONYMOUS_DATA_KEY
+  if (userId) key = getUserDataKey(userId)
+
+  localStorage.removeItem(key)
+}
+
 export function loadSettings(): AppSettings {
   const defaultValue = { ...DEFAULT_SETTINGS }
   const raw = localStorage.getItem(SETTINGS_KEY)

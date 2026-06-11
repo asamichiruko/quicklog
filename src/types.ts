@@ -30,3 +30,8 @@ export type RuntimeSessionState =
   | { scope: { type: "user"; userId: string }; syncStatus: "authenticated" }
   | { scope: { type: "user"; userId: string }; syncStatus: "authPending" }
   | { scope: { type: "user"; userId: string }; syncStatus: "sessionLost" }
+
+export type AnonymousDataState = {
+  logEntryCount: number,
+  logEntryDeletionCount: number,
+}

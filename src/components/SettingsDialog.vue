@@ -6,7 +6,7 @@ import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import type { AppSettings, ExportType, LogEntry, RuntimeSessionState } from "@/types"
+import type { AnonymousDataState, AppSettings, ExportType, LogEntry, RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
 import { ref } from "vue"
 
@@ -33,6 +33,8 @@ const props = defineProps<{
   signUpWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   runtimeSessionState: RuntimeSessionState
+  anonymousDataState: AnonymousDataState
+  deleteAnonymousData: () => void
 }>()
 
 const emit = defineEmits<{
@@ -208,6 +210,8 @@ defineExpose({ open })
         <div class="settings-panel-body">
           <LocalDataManagementPanel
             ref="localDataManagementPanel"
+            :anonymous-data-state="props.anonymousDataState"
+            :delete-anonymous-data="props.deleteAnonymousData"
           />
         </div>
       </details>

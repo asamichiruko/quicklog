@@ -1,14 +1,28 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import type { AnonymousDataState } from "@/types"
+import { computed, ref } from "vue"
+const props = defineProps<{
+  anonymousDataState: AnonymousDataState
+  deleteAnonymousData: () => void
+}>()
 
+const feedbackMessage = ref("")
 const isConfirmingAnonymousDataDeletion = ref(false)
 
+const canShowAnonymousDataDeletionConfirmation = computed(() => {
+  return !isConfirmingAnonymousDataDeletion.value
+    && (props.anonymousDataState.logEntryCount > 0 || props.anonymousDataState.logEntryDeletionCount > 0)
+})
+
 function reset() {
+  feedbackMessage.value = ""
   isConfirmingAnonymousDataDeletion.value = false
 }
 
 function showAnonymousDataDeletionConfirmation() {
-  isConfirmingAnonymousDataDeletion.value = true
+  if (canShowAnonymousDataDeletionConfirmation.value) {
+    isConfirmingAnonymousDataDeletion.value = true
+  }
 }
 
 function hideAnonymousDataDeletionConfirmation() {
@@ -16,7 +30,8 @@ function hideAnonymousDataDeletionConfirmation() {
 }
 
 function handleConfirmDeleteAnonymousData() {
-  // 削除処理を呼び出す
+  props.deleteAnonymousData()
+  feedbackMessage.value = "この端末の匿名データを削除しました"
   isConfirmingAnonymousDataDeletion.value = false
 }
 
@@ -31,13 +46,16 @@ defineExpose({ reset })
     <button
       type="button"
       class="button-secondary show-button"
-      :disabled="isConfirmingAnonymousDataDeletion"
+      :disabled="!canShowAnonymousDataDeletionConfirmation"
       @click="showAnonymousDataDeletionConfirmation"
     >
       この端末の匿名データを削除
     </button>
     <template v-if="isConfirmingAnonymousDataDeletion">
       <p class="confirm-message">
+        <template v-if="props.anonymousDataState.logEntryCount > 0">
+          {{ props.anonymousDataState.logEntryCount }} 件の記録を含む、
+        </template>
         この端末の匿名データを削除します。この操作は元に戻せません。本当に削除しますか？
       </p>
       <div class="confirm-actions">
@@ -57,6 +75,12 @@ defineExpose({ reset })
         </button>
       </div>
     </template>
+    <p
+      v-if="feedbackMessage"
+      class="feedback-message"
+    >
+      {{ feedbackMessage }}
+    </p>
   </div>
 </template>
 
@@ -64,6 +88,17 @@ defineExpose({ reset })
 .container {
   display: grid;
   gap: var(--space-2);
+}
+
+.feedback-message {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-surface);
+  background: var(--color-page);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
 }
 
 .delete-anonymous-data-description {

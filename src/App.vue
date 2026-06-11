@@ -29,6 +29,7 @@ import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/l
 import {
   canUseCloud,
   getDataUserId,
+  isAnonymous,
   isAuthPending,
   isSessionLost,
   resolvePendingRuntimeSessionState,
@@ -37,6 +38,7 @@ import {
 } from "@/lib/runtimeSessionState"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import {
+  clearQuicklogData,
   loadQuicklogData,
   loadSettings,
   loadStoredDataScope,
@@ -46,7 +48,7 @@ import {
 } from "@/lib/storage"
 import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import { supabase } from "@/lib/supabase"
-import type { AppSettings, ExportType, LogEntry, QuicklogData, RuntimeSessionState } from "@/types"
+import type { AnonymousDataState, AppSettings, ExportType, LogEntry, QuicklogData, RuntimeSessionState } from "@/types"
 import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
@@ -69,6 +71,7 @@ const runtimeSessionState = ref<RuntimeSessionState>({
 const showNewLogEntryButton = ref(false)
 const newLogEntryButtonShowScrollY = 320
 const newLogEntryButtonHideScrollY = 120
+
 const authPendingTimeoutMs = 10_000
 let authPendingTimeoutId: ReturnType<typeof window.setTimeout> | undefined
 
@@ -82,6 +85,11 @@ const logEntryCountsByDate = computed(() => {
   })
 
   return counts
+})
+
+const anonymousQuicklogDataState = ref<AnonymousDataState>({
+  logEntryCount: 0,
+  logEntryDeletionCount: 0,
 })
 
 const cloudSyncQueue = createCloudSyncQueue({
@@ -150,11 +158,32 @@ onUnmounted(() => {
 })
 
 function openSettings() {
+  refreshAnonymousQuicklogDataState()
   settingsDialog.value?.open()
 }
 
 function openCalendar() {
   calendarDialog.value?.open()
+}
+
+function refreshAnonymousQuicklogDataState() {
+  const data = loadQuicklogData()
+  anonymousQuicklogDataState.value = {
+    logEntryCount: data.logEntries.length,
+    logEntryDeletionCount: data.logEntryDeletions.length,
+  }
+}
+
+function deleteAnonymousQuicklogData() {
+  clearQuicklogData()
+  if (isAnonymous(runtimeSessionState.value)) {
+    quicklogData.value = {
+      version: 3,
+      logEntries: [],
+      logEntryDeletions: [],
+    } satisfies QuicklogData
+  }
+  refreshAnonymousQuicklogDataState()
 }
 
 function loadActiveQuicklogData(): QuicklogData {
@@ -491,6 +520,8 @@ async function handleSignOut() {
     :sign-up-with-email="handleSignUpWithEmail"
     :sign-out="handleSignOut"
     :runtime-session-state="runtimeSessionState"
+    :anonymous-data-state="anonymousQuicklogDataState"
+    :delete-anonymous-data="deleteAnonymousQuicklogData"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"
