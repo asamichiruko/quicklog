@@ -50,3 +50,18 @@ export async function signOut(): Promise<void> {
     throw error
   }
 }
+
+export async function deleteCurrentAccount(): Promise<void> {
+  const { data, error } = await supabase.functions.invoke(
+    "delete-account",
+    {
+      method: "POST",
+    },
+  )
+
+  if (error !== null) throw error
+
+  if (typeof data !== "object" || data === null || data.success !== true) {
+    throw new Error("アカウントを削除できませんでした")
+  }
+}
