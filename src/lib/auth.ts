@@ -51,6 +51,14 @@ export async function signOut(): Promise<void> {
   }
 }
 
+export async function clearLocalAuthSession(): Promise<void> {
+  const { error } = await supabase.auth.signOut({ scope: "local" })
+
+  if (error) {
+    throw error
+  }
+}
+
 export async function deleteCurrentAccount(): Promise<void> {
   const { data, error } = await supabase.functions.invoke(
     "delete-account",

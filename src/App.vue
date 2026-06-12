@@ -4,7 +4,14 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
-import { deleteCurrentAccount, getCurrentSession, signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
+import {
+  clearLocalAuthSession,
+  deleteCurrentAccount,
+  getCurrentSession,
+  signInWithEmail,
+  signOut,
+  signUpWithEmail,
+} from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
 import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
@@ -55,6 +62,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 const session = ref<Session | null>(null)
 
 let unsubscribeAuth: (() => void) | undefined
+const deletedCloudUserIds = new Set<string>()
 
 const quicklogData = ref<QuicklogData>({
   version: 3,
@@ -209,6 +217,11 @@ function getActiveCloudUser(): User | null {
 }
 
 function applyResolvedSession(nextSession: Session | null) {
+  if (nextSession && deletedCloudUserIds.has(nextSession.user.id)) {
+    activateAnonymousScope()
+    return
+  }
+
   session.value = nextSession
 
   const sessionUserId = nextSession ? nextSession.user.id : null
@@ -446,9 +459,15 @@ async function deleteCloudSync() {
     throw new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした")
   }
 
+  deletedCloudUserIds.add(userId)
   activateAnonymousScope()
-  refreshAnonymousQuicklogDataState()
   clearQuicklogData(userId)
+  try {
+    await clearLocalAuthSession()
+  } catch (error) {
+    console.warn("Failed to clear local auth session after account deletion", error)
+  }
+  refreshAnonymousQuicklogDataState()
 }
 
 async function handleSignUpWithEmail(email: string, password: string) {
