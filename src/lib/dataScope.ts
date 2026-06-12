@@ -19,7 +19,9 @@ export function parseAsDataScope(dataScope: unknown): DataScope {
   }
   if (dataScope.type === "user") {
     if (!isValidUserId(dataScope.userId)) {
-      throw new SchemaValidationError(`DataScope "${dataScope.type}" must have a property "userId".`)
+      throw new SchemaValidationError(
+        `DataScope "${dataScope.type}" must have a property "userId".`,
+      )
     }
     return { type: dataScope.type, userId: dataScope.userId }
   }

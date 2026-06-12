@@ -1,11 +1,7 @@
 import { MAX_IMPORT_FILE_BYTES } from "@/lib/sizeLimits"
 import { SizeError } from "@/lib/errors"
 
-export function downloadTextFile(file: {
-  content: string
-  mimeType: string
-  filename: string
-}) {
+export function downloadTextFile(file: { content: string; mimeType: string; filename: string }) {
   const blob = new Blob([file.content], { type: file.mimeType })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")

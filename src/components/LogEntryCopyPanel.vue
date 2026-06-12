@@ -121,7 +121,7 @@ defineExpose({ reset })
           class="date-input"
           type="date"
           required
-        >
+        />
       </label>
 
       <label class="copy-date-field">
@@ -133,13 +133,10 @@ defineExpose({ reset })
           class="date-input"
           type="date"
           required
-        >
+        />
       </label>
     </fieldset>
-    <output
-      class="copy-selection-status"
-      for="copy-start-date copy-end-date"
-    >
+    <output class="copy-selection-status" for="copy-start-date copy-end-date">
       {{ selectionStatusMessage }}
     </output>
     <button
@@ -150,22 +147,11 @@ defineExpose({ reset })
     >
       クリップボードにコピー
     </button>
-    <p
-      v-if="feedbackMessage"
-      class="feedback-message"
-      role="status"
-      aria-live="polite"
-    >
+    <p v-if="feedbackMessage" class="feedback-message" role="status" aria-live="polite">
       {{ feedbackMessage }}
     </p>
-    <details
-      v-if="canCopy"
-      ref="previewDetails"
-      class="copy-preview-panel"
-    >
-      <summary class="copy-preview-toggle">
-        コピー内容を確認
-      </summary>
+    <details v-if="canCopy" ref="previewDetails" class="copy-preview-panel">
+      <summary class="copy-preview-toggle">コピー内容を確認</summary>
       <textarea
         class="copy-preview"
         name="copy-preview"

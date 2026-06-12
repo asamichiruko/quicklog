@@ -18,7 +18,10 @@ const TestHost = defineComponent({
     const savedSettings = ref<unknown>(null)
     const exportType = ref<ExportType | null>(null)
     const importedFile = ref<File | null>(null)
-    const runtimeSessionState = ref<RuntimeSessionState>({ scope: { type: "anonymous" }, syncStatus: "disabled" })
+    const runtimeSessionState = ref<RuntimeSessionState>({
+      scope: { type: "anonymous" },
+      syncStatus: "disabled",
+    })
     const anonymousDataState = ref({ logEntryCount: 0, logEntryDeletionCount: 0 })
     const signedInEmail = ref("")
     const signedInPassword = ref("")
@@ -76,7 +79,7 @@ const TestHost = defineComponent({
   <output data-testid="import-file-name">{{ importedFile?.name ?? "" }}</output>
   <output data-testid="signed-in-email">{{ signedInEmail }}</output>
   <output data-testid="signed-in-password">{{ signedInPassword }}</output>
-  `
+  `,
 })
 
 describe("SettingsDialog", () => {

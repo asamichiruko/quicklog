@@ -17,7 +17,10 @@ export function createLogEntryDeletion(logEntryId: string, now: Date): LogEntryD
   return { logEntryId, createdAt: now.toISOString() }
 }
 
-export function removeLogEntry(data: QuicklogData, logEntryDeletion: LogEntryDeletion): QuicklogData {
+export function removeLogEntry(
+  data: QuicklogData,
+  logEntryDeletion: LogEntryDeletion,
+): QuicklogData {
   const nextLogEntries = data.logEntries.filter(
     (logEntry) => logEntry.id !== logEntryDeletion.logEntryId,
   )

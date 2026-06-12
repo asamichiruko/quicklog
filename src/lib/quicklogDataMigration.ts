@@ -1,8 +1,8 @@
-import type { LogEntry, QuicklogData } from "@/types";
-import { mergeLogEntryDeletions } from "@/lib/logEntryDeletionCollection";
-import { parseAsLogEntries } from "@/lib/logEntrySchema";
-import { SchemaValidationError } from "@/lib/errors";
-import { parseAsLogEntryDeletions } from "@/lib/logEntryDeletionSchema";
+import type { LogEntry, QuicklogData } from "@/types"
+import { mergeLogEntryDeletions } from "@/lib/logEntryDeletionCollection"
+import { parseAsLogEntries } from "@/lib/logEntrySchema"
+import { SchemaValidationError } from "@/lib/errors"
+import { parseAsLogEntryDeletions } from "@/lib/logEntryDeletionSchema"
 
 const LATEST_VERSION = 3
 
@@ -28,7 +28,7 @@ type QuicklogDataV3 = QuicklogData
 
 type KnownQuickLogData = QuicklogDataV1 | QuicklogDataV2 | QuicklogDataV3
 
-function isRecord(value: unknown): value is Record < string, unknown > {
+function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
@@ -65,10 +65,12 @@ function migrateToLatest(data: KnownQuickLogData): QuicklogData {
     return {
       version: LATEST_VERSION,
       logEntries: data.logEntries,
-      logEntryDeletions: mergeLogEntryDeletions(data.syncOperations.map(({ entryId, createdAt }) => ({
-        logEntryId: entryId,
-        createdAt,
-      }))),
+      logEntryDeletions: mergeLogEntryDeletions(
+        data.syncOperations.map(({ entryId, createdAt }) => ({
+          logEntryId: entryId,
+          createdAt,
+        })),
+      ),
     }
   }
 
@@ -78,7 +80,7 @@ function migrateToLatest(data: KnownQuickLogData): QuicklogData {
 function parseAsQuicklogDataV1(data: unknown): QuicklogDataV1 {
   return {
     version: 1,
-    logEntries: parseAsLogEntries(data)
+    logEntries: parseAsLogEntries(data),
   }
 }
 
@@ -105,7 +107,10 @@ function parseAsQuicklogDataV2Deletions(data: unknown): QuicklogDataV2Deletion[]
 
   return data.map((item, index) => {
     if (!isValidQuicklogDataV2Deletion(item)) {
-      throw new SchemaValidationError(`Cannot parse object as QuicklogDataV2Deletion at index ${index}.`, { index: index })
+      throw new SchemaValidationError(
+        `Cannot parse object as QuicklogDataV2Deletion at index ${index}.`,
+        { index: index },
+      )
     }
     return item
   })

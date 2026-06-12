@@ -19,7 +19,10 @@ function toLogEntry(row: LogEntryRow): LogEntry {
   }
 }
 
-function toLogEntryRow(entry: LogEntry, user: User): Omit<LogEntryRow, "created_at" | "updated_at"> {
+function toLogEntryRow(
+  entry: LogEntry,
+  user: User,
+): Omit<LogEntryRow, "created_at" | "updated_at"> {
   return {
     id: entry.id,
     user_id: user.id,
@@ -43,9 +46,7 @@ export async function fetchCloudLogEntries(user: User): Promise<LogEntry[]> {
 export async function upsertCloudLogEntry(entry: LogEntry, user: User): Promise<void> {
   const row = toLogEntryRow(entry, user)
 
-  const { error } = await supabase
-    .from("log_entries")
-    .upsert(row, { onConflict: "id" })
+  const { error } = await supabase.from("log_entries").upsert(row, { onConflict: "id" })
 
   if (error) throw error
 }
@@ -65,9 +66,7 @@ export async function upsertCloudLogEntries(entries: LogEntry[], user: User): Pr
 
   const rows = entries.map((entry) => toLogEntryRow(entry, user))
 
-  const { error } = await supabase
-    .from("log_entries")
-    .upsert(rows, { onConflict: "id" })
+  const { error } = await supabase.from("log_entries").upsert(rows, { onConflict: "id" })
 
   if (error) throw error
 }

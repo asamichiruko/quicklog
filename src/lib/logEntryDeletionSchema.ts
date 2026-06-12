@@ -16,7 +16,10 @@ export function parseAsLogEntryDeletions(data: unknown): LogEntryDeletion[] {
 
   return data.map((item, index) => {
     if (!isValidLogEntryDeletion(item)) {
-      throw new SchemaValidationError(`Cannot parse object as LogEntryDeletion at index ${index}.`, { index: index })
+      throw new SchemaValidationError(
+        `Cannot parse object as LogEntryDeletion at index ${index}.`,
+        { index: index },
+      )
     }
     return item
   })
@@ -27,7 +30,11 @@ export function isValidLogEntryDeletion(obj: unknown): obj is LogEntryDeletion {
     return false
   }
 
-  if (!("logEntryId" in obj) || typeof obj.logEntryId !== "string" || !isValidIdString(obj.logEntryId)) {
+  if (
+    !("logEntryId" in obj) ||
+    typeof obj.logEntryId !== "string" ||
+    !isValidIdString(obj.logEntryId)
+  ) {
     return false
   }
 

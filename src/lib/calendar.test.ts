@@ -19,7 +19,11 @@ describe("createCalendarDays", () => {
       ["2026-06-07", 1],
     ])
 
-    const days = createCalendarDays(new Date(2026, 4, 1), new Date(2026, 4, 15), logEntryCountsByDate)
+    const days = createCalendarDays(
+      new Date(2026, 4, 1),
+      new Date(2026, 4, 15),
+      logEntryCountsByDate,
+    )
 
     expect(days).toHaveLength(42)
     expect(days[0].dateKey).toBe("2026-04-26")

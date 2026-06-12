@@ -39,9 +39,7 @@ function formatDateHeading(date: Date) {
 
 <template>
   <template v-if="logEntries.length === 0">
-    <p class="empty">
-      まだメモがありません
-    </p>
+    <p class="empty">まだメモがありません</p>
   </template>
   <template v-else>
     <div class="date-groups">
@@ -54,10 +52,7 @@ function formatDateHeading(date: Date) {
         <header class="date-header">
           <h2 class="date-heading">
             <span class="date-heading-date">{{ formatDateHeading(group.date) }}</span>
-            <span
-              v-if="props.showDailySummary"
-              class="date-heading-count"
-            >
+            <span v-if="props.showDailySummary" class="date-heading-count">
               {{ group.logEntries.length }} 件
             </span>
           </h2>
@@ -84,24 +79,14 @@ function formatDateHeading(date: Date) {
               </svg>
             </button>
           </div>
-          <div
-            v-if="props.showDailySummary"
-            class="time-distribution-strip"
-          >
+          <div v-if="props.showDailySummary" class="time-distribution-strip">
             <TimeDistributionStrip :log-entries="group.logEntries" />
           </div>
         </header>
         <ul class="entries">
-          <li
-            v-for="logEntry in group.logEntries"
-            :key="logEntry.id"
-            class="entry"
-          >
+          <li v-for="logEntry in group.logEntries" :key="logEntry.id" class="entry">
             <div class="entry-header">
-              <time
-                :datetime="logEntry.createdAt"
-                class="entry-time"
-              >{{
+              <time :datetime="logEntry.createdAt" class="entry-time">{{
                 formatDateTime(logEntry.createdAt)
               }}</time>
               <button

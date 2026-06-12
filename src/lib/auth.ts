@@ -1,5 +1,5 @@
-import type { Session, User } from '@supabase/supabase-js'
-import { supabase } from './supabase'
+import type { Session, User } from "@supabase/supabase-js"
+import { supabase } from "./supabase"
 
 export async function getCurrentSession(): Promise<Session | null> {
   const { data, error } = await supabase.auth.getSession()
@@ -60,12 +60,9 @@ export async function clearLocalAuthSession(): Promise<void> {
 }
 
 export async function deleteCurrentAccount(): Promise<void> {
-  const { data, error } = await supabase.functions.invoke(
-    "delete-account",
-    {
-      method: "POST",
-    },
-  )
+  const { data, error } = await supabase.functions.invoke("delete-account", {
+    method: "POST",
+  })
 
   if (error !== null) throw error
 

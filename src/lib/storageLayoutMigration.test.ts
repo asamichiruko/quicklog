@@ -1,7 +1,13 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { ANONYMOUS_DATA_KEY, getUserDataKey, migrateStorageLayout, SETTINGS_KEY, STORED_DATA_SCOPE_KEY } from "./storageLayoutMigration";
-import type { AppSettings, QuicklogData } from "@/types";
-import { DEFAULT_SETTINGS } from "./settings";
+import { beforeEach, describe, expect, it } from "vitest"
+import {
+  ANONYMOUS_DATA_KEY,
+  getUserDataKey,
+  migrateStorageLayout,
+  SETTINGS_KEY,
+  STORED_DATA_SCOPE_KEY,
+} from "./storageLayoutMigration"
+import type { AppSettings, QuicklogData } from "@/types"
+import { DEFAULT_SETTINGS } from "./settings"
 
 const LEGACY_QUICKLOG_DATA_KEY = "quicklog.data"
 const LEGACY_LOG_ENTRIES_KEY = "quicklog.items"

@@ -11,7 +11,9 @@ describe("formatTimeWithSeconds", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { formatTimeWithSeconds(invalidDate) }).toThrow(InvalidDateError)
+    expect(() => {
+      formatTimeWithSeconds(invalidDate)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -23,7 +25,9 @@ describe("formatLongJapaneseDate", () => {
 
   it("不正な date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { formatLongJapaneseDate(invalidDate) }).toThrow(InvalidDateError)
+    expect(() => {
+      formatLongJapaneseDate(invalidDate)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -53,6 +57,8 @@ describe("formatRelativeDate", () => {
 
   it("不正な date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { formatRelativeDate(invalidDate) }).toThrow(InvalidDateError)
+    expect(() => {
+      formatRelativeDate(invalidDate)
+    }).toThrow(InvalidDateError)
   })
 })

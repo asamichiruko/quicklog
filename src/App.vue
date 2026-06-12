@@ -55,7 +55,15 @@ import {
 } from "@/lib/storage"
 import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import { supabase } from "@/lib/supabase"
-import type { AnonymousDataState, AppSettings, DataScope, ExportType, LogEntry, QuicklogData, RuntimeSessionState } from "@/types"
+import type {
+  AnonymousDataState,
+  AppSettings,
+  DataScope,
+  ExportType,
+  LogEntry,
+  QuicklogData,
+  RuntimeSessionState,
+} from "@/types"
 import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
@@ -261,7 +269,8 @@ function getActiveCloudUser(): User | null {
 
 function applyResolvedSession(nextSession: Session | null) {
   const sessionUserId = nextSession?.user.id ?? null
-  const acceptedSession = sessionUserId && deletedCloudUserIds.has(sessionUserId) ? null : nextSession
+  const acceptedSession =
+    sessionUserId && deletedCloudUserIds.has(sessionUserId) ? null : nextSession
 
   applySessionTransition({ type: "authResolved", sessionUserId }, acceptedSession)
 }
@@ -516,26 +525,15 @@ async function handleSignOut() {
 <template>
   <main class="app">
     <header class="header">
-      <h1 class="title">
-        quicklog
-      </h1>
+      <h1 class="title">quicklog</h1>
     </header>
 
     <div class="content">
-      <p
-        v-if="isSessionLost(runtimeSessionState)"
-        class="session-lost-warn"
-      >
+      <p v-if="isSessionLost(runtimeSessionState)" class="session-lost-warn">
         クラウド同期が停止しています。メモはこの端末に保存されています
       </p>
-      <div
-        ref="logEntryFormArea"
-        class="log-entry-form-anchor"
-      >
-        <LogEntryForm
-          ref="logEntryForm"
-          @submit="handleSubmit"
-        />
+      <div ref="logEntryFormArea" class="log-entry-form-anchor">
+        <LogEntryForm ref="logEntryForm" @submit="handleSubmit" />
       </div>
       <div class="app-actions">
         <p

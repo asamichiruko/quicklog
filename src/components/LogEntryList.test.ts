@@ -13,24 +13,22 @@ describe("LogEntryList", () => {
       props: {
         logEntries: [],
         showDailySummary: false,
-      }
+      },
     })
 
-    expect(screen.getByText("まだメモがありません")).toBeInTheDocument();
+    expect(screen.getByText("まだメモがありません")).toBeInTheDocument()
   })
 
   it("logEntries の text と記録時刻が表示される", () => {
     render(LogEntryList, {
       props: {
-        logEntries: [
-          { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
-        ],
+        logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
         showDailySummary: false,
-      }
+      },
     })
 
-    expect(screen.getByText("text1")).toBeInTheDocument();
-    expect(screen.getByText("09:00:00")).toBeInTheDocument();
+    expect(screen.getByText("text1")).toBeInTheDocument()
+    expect(screen.getByText("09:00:00")).toBeInTheDocument()
   })
 
   it("logEntries が日付ごとにグループ化される", () => {
@@ -47,27 +45,25 @@ describe("LogEntryList", () => {
           { id: "id3", text: "text3", createdAt: "2026-05-21T12:00:00.000Z" },
         ],
         showDailySummary: true,
-      }
+      },
     })
 
     const headings = screen.getAllByRole("heading", { level: 2 })
 
     expect(headings).toHaveLength(2)
-    expect(headings[0]).toHaveTextContent("今日 - 2026年5月22日(金)");
-    expect(headings[0]).toHaveTextContent("2 件");
-    expect(headings[1]).toHaveTextContent("昨日 - 2026年5月21日(木)");
-    expect(headings[1]).toHaveTextContent("1 件");
+    expect(headings[0]).toHaveTextContent("今日 - 2026年5月22日(金)")
+    expect(headings[0]).toHaveTextContent("2 件")
+    expect(headings[1]).toHaveTextContent("昨日 - 2026年5月21日(木)")
+    expect(headings[1]).toHaveTextContent("1 件")
   })
 
   it("削除ボタンを押すと remove が emit される", async () => {
     const user = userEvent.setup()
     const { emitted } = render(LogEntryList, {
       props: {
-        logEntries: [
-          { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
-        ],
+        logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
         showDailySummary: false,
-      }
+      },
     })
 
     await user.click(screen.getByRole("button", { name: "削除" }))
@@ -83,19 +79,19 @@ describe("LogEntryList", () => {
 
     const { container } = render(LogEntryList, {
       props: {
-        logEntries: [
-          { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
-        ],
+        logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
         showDailySummary: false,
-      }
+      },
     })
 
     const heading = container.querySelector(".date-heading")
 
-    expect(heading).toHaveTextContent("今日 - 2026年5月22日(金)");
-    expect(heading).not.toHaveTextContent("1 件");
+    expect(heading).toHaveTextContent("今日 - 2026年5月22日(金)")
+    expect(heading).not.toHaveTextContent("1 件")
 
-    expect(screen.queryByRole("img", { name: "記録時刻分布。1件の記録があります。" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("img", { name: "記録時刻分布。1件の記録があります。" }),
+    ).not.toBeInTheDocument()
   })
 
   it("showDailySummary が true のとき TimeDistributionStrip と件数が表示される", () => {
@@ -106,18 +102,18 @@ describe("LogEntryList", () => {
 
     render(LogEntryList, {
       props: {
-        logEntries: [
-          { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
-        ],
+        logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
         showDailySummary: true,
-      }
+      },
     })
 
     const heading = screen.getByRole("heading", { level: 2 })
 
-    expect(heading).toHaveTextContent("今日 - 2026年5月22日(金)");
-    expect(heading).toHaveTextContent("1 件");
+    expect(heading).toHaveTextContent("今日 - 2026年5月22日(金)")
+    expect(heading).toHaveTextContent("1 件")
 
-    expect(screen.queryByRole("img", { name: "記録時刻分布。1件の記録があります。" })).toBeInTheDocument()
+    expect(
+      screen.queryByRole("img", { name: "記録時刻分布。1件の記録があります。" }),
+    ).toBeInTheDocument()
   })
 })

@@ -16,9 +16,13 @@ describe("parseAsDataScope", () => {
 
   it("不正な値に対して例外を出す", () => {
     expect(() => parseAsDataScope(null)).toThrow(SchemaValidationError)
-    expect(() => parseAsDataScope({ type: "authenticated", userId: "user-id" })).toThrow(SchemaValidationError)
+    expect(() => parseAsDataScope({ type: "authenticated", userId: "user-id" })).toThrow(
+      SchemaValidationError,
+    )
     expect(() => parseAsDataScope({ type: "user" })).toThrow(SchemaValidationError)
     expect(() => parseAsDataScope({ type: "user", userId: "" })).toThrow(SchemaValidationError)
-    expect(() => parseAsDataScope({ type: "user", userId: "a".repeat(129) })).toThrow(SchemaValidationError)
+    expect(() => parseAsDataScope({ type: "user", userId: "a".repeat(129) })).toThrow(
+      SchemaValidationError,
+    )
   })
 })

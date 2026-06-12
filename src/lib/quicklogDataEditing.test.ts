@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 import type { QuicklogData } from "@/types"
-import { appendLogEntry, createLogEntry, createLogEntryDeletion, removeLogEntry } from "./quicklogDataEditing"
+import {
+  appendLogEntry,
+  createLogEntry,
+  createLogEntryDeletion,
+  removeLogEntry,
+} from "./quicklogDataEditing"
 
 describe("quicklogDataEditing", () => {
   const entry1 = {

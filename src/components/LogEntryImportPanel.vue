@@ -45,14 +45,8 @@ defineExpose({ reset })
     <label class="import-file-field">
       <span class="import-file-label">インポートする JSON ファイルを選択</span>
       <span class="import-file-control">
-        <span
-          class="import-file-button"
-          aria-hidden="true"
-        >ファイルを選択</span>
-        <span
-          id="import-file-name"
-          class="import-file-name"
-        >
+        <span class="import-file-button" aria-hidden="true">ファイルを選択</span>
+        <span id="import-file-name" class="import-file-name">
           {{ importFile?.name ?? "選択されていません" }}
         </span>
       </span>
@@ -65,7 +59,7 @@ defineExpose({ reset })
         aria-label="インポートする JSON ファイル"
         aria-describedby="import-file-name"
         @change="handleImportFileChange"
-      >
+      />
     </label>
     <button
       class="button-secondary import-button"

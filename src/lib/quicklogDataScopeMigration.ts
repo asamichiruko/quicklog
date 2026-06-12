@@ -7,7 +7,10 @@ export type MoveAnonymousQuicklogDataToUserResult = {
   moved: boolean
 }
 
-export function moveAnonymousQuicklogDataToUser(userId: string, now: Date): MoveAnonymousQuicklogDataToUserResult {
+export function moveAnonymousQuicklogDataToUser(
+  userId: string,
+  now: Date,
+): MoveAnonymousQuicklogDataToUserResult {
   const anonymousData = loadQuicklogData()
   const userData = loadQuicklogData(userId)
 

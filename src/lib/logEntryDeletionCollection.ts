@@ -4,7 +4,9 @@ function isNewerLogEntryDeletion(existing: LogEntryDeletion, incoming: LogEntryD
   return new Date(incoming.createdAt).getTime() > new Date(existing.createdAt).getTime()
 }
 
-export function mergeLogEntryDeletions(...logEntryDeletionGroups: LogEntryDeletion[][]): LogEntryDeletion[] {
+export function mergeLogEntryDeletions(
+  ...logEntryDeletionGroups: LogEntryDeletion[][]
+): LogEntryDeletion[] {
   const logEntryDeletionsByEntryId = new Map<string, LogEntryDeletion>()
 
   logEntryDeletionGroups.forEach((logEntryDeletions) => {

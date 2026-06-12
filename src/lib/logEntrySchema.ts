@@ -9,7 +9,9 @@ export function parseAsLogEntries(data: unknown): LogEntry[] {
 
   return data.map((item, index) => {
     if (!isValidLogEntry(item)) {
-      throw new SchemaValidationError(`Cannot parse object as LogEntry at index ${index}.`, { index: index })
+      throw new SchemaValidationError(`Cannot parse object as LogEntry at index ${index}.`, {
+        index: index,
+      })
     }
     return item
   })

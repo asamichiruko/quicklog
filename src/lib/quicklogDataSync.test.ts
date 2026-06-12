@@ -2,7 +2,10 @@ import type { LogEntry, QuicklogData } from "@/types"
 import type { User } from "@supabase/supabase-js"
 import { describe, expect, it, vi } from "vitest"
 import { fetchCloudLogEntries, upsertCloudLogEntries } from "@/lib/logEntryRepository"
-import { fetchCloudLogEntryDeletions, recordLogEntryDeletions } from "@/lib/logEntryDeletionRepository"
+import {
+  fetchCloudLogEntryDeletions,
+  recordLogEntryDeletions,
+} from "@/lib/logEntryDeletionRepository"
 import { mergeQuicklogDataWithCloud, syncQuicklogDataWithCloud } from "./quicklogDataSync"
 
 vi.mock("@/lib/logEntryRepository", () => ({
@@ -84,7 +87,7 @@ function createCloudData(): QuicklogData {
   return {
     version: 3,
     logEntries: [cloudOnlyEntry, cloudDeletedEntry, sharedEntry, sharedDeletedEntry],
-    logEntryDeletions: [localLogEntryDeletion]
+    logEntryDeletions: [localLogEntryDeletion],
   }
 }
 
@@ -139,10 +142,7 @@ describe("syncQuicklogDataWithCloud", () => {
       [localOnlyEntry, cloudOnlyEntry, sharedEntry],
       user,
     )
-    expect(recordLogEntryDeletions).toHaveBeenCalledWith(
-      expectedLogEntryDeletions,
-      user
-    )
+    expect(recordLogEntryDeletions).toHaveBeenCalledWith(expectedLogEntryDeletions, user)
     expect(result.data.logEntries).toEqual([localOnlyEntry, cloudOnlyEntry, sharedEntry])
     expectLogEntryDeletionsToBeRetained(result.data)
     expectDeletedLogEntriesToBeRemoved(result.data)

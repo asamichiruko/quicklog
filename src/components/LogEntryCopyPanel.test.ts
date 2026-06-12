@@ -19,7 +19,7 @@ describe("LogEntryCopyPanel", () => {
           { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" },
           { id: "id3", text: "text3", createdAt: "2026-05-22T12:00:00.000Z" },
         ],
-      }
+      },
     })
 
     await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
@@ -50,7 +50,7 @@ describe("LogEntryCopyPanel", () => {
     render(LogEntryCopyPanel, {
       props: {
         logEntries: [],
-      }
+      },
     })
 
     const startDateInput = screen.getByLabelText("開始日") as HTMLInputElement
@@ -67,7 +67,7 @@ describe("LogEntryCopyPanel", () => {
           { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" },
           { id: "id3", text: "text3", createdAt: "2026-05-22T12:00:00.000Z" },
         ],
-      }
+      },
     })
 
     await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-23")
@@ -83,7 +83,7 @@ describe("LogEntryCopyPanel", () => {
     render(LogEntryCopyPanel, {
       props: {
         logEntries: [],
-      }
+      },
     })
 
     await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
@@ -99,7 +99,7 @@ describe("LogEntryCopyPanel", () => {
     render(LogEntryCopyPanel, {
       props: {
         logEntries: [],
-      }
+      },
     })
 
     await fireEvent.update(screen.getByLabelText("開始日"), "")
@@ -114,9 +114,9 @@ describe("LogEntryCopyPanel", () => {
     render(LogEntryCopyPanel, {
       props: {
         logEntries: [
-          { name: "invalid data", createdAt: "2026-05-21T12:00:00.000Z" }
+          { name: "invalid data", createdAt: "2026-05-21T12:00:00.000Z" },
         ] as unknown as LogEntry[],
-      }
+      },
     })
 
     await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-21")

@@ -34,7 +34,10 @@ function createResult(data: QuicklogData): CloudQuicklogDataSyncResult {
 
 const user = { id: "user1" } as User
 
-function createContext(data: QuicklogData, overrides: Partial<CloudSyncContext> = {}): CloudSyncContext {
+function createContext(
+  data: QuicklogData,
+  overrides: Partial<CloudSyncContext> = {},
+): CloudSyncContext {
   return {
     user,
     data,
@@ -66,7 +69,8 @@ describe("createCloudSyncQueue", () => {
     const firstResult = createResult(firstData)
     const secondResult = createResult(secondData)
     let currentContext = createContext(firstData, { dataRevision: 1 })
-    const sync = vi.fn()
+    const sync = vi
+      .fn()
       .mockImplementationOnce(() => {
         currentContext = createContext(secondData, { dataRevision: 2 })
         return firstDeferred.promise
@@ -92,8 +96,14 @@ describe("createCloudSyncQueue", () => {
     await expect(firstRequest).resolves.toBe(secondResult)
     await expect(secondRequest).resolves.toBe(secondResult)
     expect(sync).toHaveBeenCalledTimes(2)
-    expect(applyResult).toHaveBeenCalledWith(firstResult, createContext(firstData, { dataRevision: 1 }))
-    expect(applyResult).toHaveBeenCalledWith(secondResult, createContext(secondData, { dataRevision: 2 }))
+    expect(applyResult).toHaveBeenCalledWith(
+      firstResult,
+      createContext(firstData, { dataRevision: 1 }),
+    )
+    expect(applyResult).toHaveBeenCalledWith(
+      secondResult,
+      createContext(secondData, { dataRevision: 2 }),
+    )
   })
 
   it("result 適用時に同期開始時点の context を渡す", async () => {
@@ -117,9 +127,7 @@ describe("createCloudSyncQueue", () => {
     const result = createResult(createQuicklogData("merged"))
     const error = new Error("network error")
     const onError = vi.fn()
-    const sync = vi.fn()
-      .mockRejectedValueOnce(error)
-      .mockResolvedValueOnce(result)
+    const sync = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce(result)
     const queue = createCloudSyncQueue({
       getContext: () => createContext(data),
       sync,

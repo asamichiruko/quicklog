@@ -1,9 +1,18 @@
 import type { AppSettings, QuicklogData, DataScope } from "@/types"
 import { DEFAULT_SETTINGS, normalizeSettings } from "@/lib/settings"
-import { getUtf8ByteLength, MAX_QUICKLOG_DATA_STORAGE_BYTES, MAX_SETTINGS_STORAGE_BYTES } from "@/lib/sizeLimits"
+import {
+  getUtf8ByteLength,
+  MAX_QUICKLOG_DATA_STORAGE_BYTES,
+  MAX_SETTINGS_STORAGE_BYTES,
+} from "@/lib/sizeLimits"
 import { SizeError } from "@/lib/errors"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
-import { ANONYMOUS_DATA_KEY, getUserDataKey, SETTINGS_KEY, STORED_DATA_SCOPE_KEY } from "@/lib/storageLayoutMigration"
+import {
+  ANONYMOUS_DATA_KEY,
+  getUserDataKey,
+  SETTINGS_KEY,
+  STORED_DATA_SCOPE_KEY,
+} from "@/lib/storageLayoutMigration"
 import { parseAsDataScope } from "@/lib/dataScope"
 
 export function loadStoredDataScope(): DataScope {
@@ -61,7 +70,7 @@ export function saveQuicklogData(quicklogData: QuicklogData, userId?: string) {
     throw new SizeError("Quicklog data is too large.", {
       target: "storage",
       limitBytes: MAX_QUICKLOG_DATA_STORAGE_BYTES,
-      actualBytes: getUtf8ByteLength(serialized)
+      actualBytes: getUtf8ByteLength(serialized),
     })
   }
 
@@ -102,7 +111,7 @@ export function saveSettings(settings: AppSettings) {
       target: "storage",
       limitBytes: MAX_SETTINGS_STORAGE_BYTES,
       actualBytes: getUtf8ByteLength(serialized),
-     })
+    })
   }
 
   localStorage.setItem(SETTINGS_KEY, serialized)

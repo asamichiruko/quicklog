@@ -14,7 +14,9 @@ describe("TimeDistributionStrip", () => {
       },
     })
 
-    expect(screen.getByRole("img", { name: "記録時刻分布。3件の記録があります。" })).toBeInTheDocument()
+    expect(
+      screen.getByRole("img", { name: "記録時刻分布。3件の記録があります。" }),
+    ).toBeInTheDocument()
 
     const marks = container.querySelectorAll(".time-mark")
     expect(marks).toHaveLength(3)

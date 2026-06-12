@@ -10,8 +10,11 @@ const feedbackMessage = ref("")
 const isConfirmingAnonymousDataDeletion = ref(false)
 
 const canShowAnonymousDataDeletionConfirmation = computed(() => {
-  return !isConfirmingAnonymousDataDeletion.value
-    && (props.anonymousDataState.logEntryCount > 0 || props.anonymousDataState.logEntryDeletionCount > 0)
+  return (
+    !isConfirmingAnonymousDataDeletion.value &&
+    (props.anonymousDataState.logEntryCount > 0 ||
+      props.anonymousDataState.logEntryDeletionCount > 0)
+  )
 })
 
 function reset() {
@@ -75,10 +78,7 @@ defineExpose({ reset })
         </button>
       </div>
     </template>
-    <p
-      v-if="feedbackMessage"
-      class="feedback-message"
-    >
+    <p v-if="feedbackMessage" class="feedback-message">
       {{ feedbackMessage }}
     </p>
   </div>

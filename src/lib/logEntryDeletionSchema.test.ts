@@ -4,10 +4,12 @@ import { SchemaValidationError } from "@/lib/errors"
 
 describe("isValidLogEntryDeletion", () => {
   it("valid な LogEntryDeletion を true と判定する", () => {
-    expect(isValidLogEntryDeletion({
-      createdAt: "2026-05-31T00:00:00.000Z",
-      logEntryId: "id1",
-    })).toBe(true)
+    expect(
+      isValidLogEntryDeletion({
+        createdAt: "2026-05-31T00:00:00.000Z",
+        logEntryId: "id1",
+      }),
+    ).toBe(true)
   })
 
   it("object 型でないものを false と判定する", () => {
@@ -28,24 +30,32 @@ describe("isValidLogEntryDeletion", () => {
   })
 
   it("createdAt が存在しない、または invalid な date string であるとき false と判定する", () => {
-    expect(isValidLogEntryDeletion({
-      createdAt: "invalid date",
-      logEntryId: "entryId1",
-    })).toBe(false)
+    expect(
+      isValidLogEntryDeletion({
+        createdAt: "invalid date",
+        logEntryId: "entryId1",
+      }),
+    ).toBe(false)
 
-    expect(isValidLogEntryDeletion({
-      createdAt: new Date("2026-05-31T00:00:00.000Z"),
-      logEntryId: "entryId1",
-    })).toBe(false)
+    expect(
+      isValidLogEntryDeletion({
+        createdAt: new Date("2026-05-31T00:00:00.000Z"),
+        logEntryId: "entryId1",
+      }),
+    ).toBe(false)
 
-    expect(isValidLogEntryDeletion({
-      createdAt: "",
-      logEntryId: "entryId1",
-    })).toBe(false)
+    expect(
+      isValidLogEntryDeletion({
+        createdAt: "",
+        logEntryId: "entryId1",
+      }),
+    ).toBe(false)
 
-    expect(isValidLogEntryDeletion({
-      logEntryId: "entryId1",
-    })).toBe(false)
+    expect(
+      isValidLogEntryDeletion({
+        logEntryId: "entryId1",
+      }),
+    ).toBe(false)
   })
 
   it("object が余分なプロパティを持っているとき true と判定する", () => {
@@ -58,14 +68,18 @@ describe("isValidLogEntryDeletion", () => {
   })
 
   it("entryId が存在しない、または型が異なるとき false を返す", () => {
-    expect(isValidLogEntryDeletion({
-      createdAt: "2026-05-31T00:00:00.000Z",
-      logEntryId: 42,
-    })).toBe(false)
+    expect(
+      isValidLogEntryDeletion({
+        createdAt: "2026-05-31T00:00:00.000Z",
+        logEntryId: 42,
+      }),
+    ).toBe(false)
 
-    expect(isValidLogEntryDeletion({
-      createdAt: "2026-05-31T00:00:00.000Z",
-    })).toBe(false)
+    expect(
+      isValidLogEntryDeletion({
+        createdAt: "2026-05-31T00:00:00.000Z",
+      }),
+    ).toBe(false)
   })
 })
 
@@ -83,13 +97,21 @@ describe("parseAsLogEntryDeletions", () => {
   })
 
   it("配列でない object に対して例外を出す", () => {
-    expect(() => { parseAsLogEntryDeletions({ name: "invalid object" }) }).toThrow(SchemaValidationError)
-    expect(() => { parseAsLogEntryDeletions(undefined) }).toThrow(SchemaValidationError)
-    expect(() => { parseAsLogEntryDeletions(null) }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsLogEntryDeletions({ name: "invalid object" })
+    }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsLogEntryDeletions(undefined)
+    }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsLogEntryDeletions(null)
+    }).toThrow(SchemaValidationError)
   })
 
   it("invalid な LogEntryDeletion を含む配列に対して例外を出す", () => {
-    expect(() => { parseAsLogEntryDeletions([{ name: "invalid data" }]) }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsLogEntryDeletions([{ name: "invalid data" }])
+    }).toThrow(SchemaValidationError)
   })
 
   it("空の配列をそのまま返す", () => {

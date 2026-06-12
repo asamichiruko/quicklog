@@ -1,4 +1,7 @@
-import { resolvePendingRuntimeSessionState, resolveRuntimeSessionState } from "@/lib/runtimeSessionState"
+import {
+  resolvePendingRuntimeSessionState,
+  resolveRuntimeSessionState,
+} from "@/lib/runtimeSessionState"
 import type { DataScope, RuntimeSessionState } from "@/types"
 
 export type SessionTransitionEvent =

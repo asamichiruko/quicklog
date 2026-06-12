@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { validateEmail, validateRequiredPassword, validateCreatedPassword } from "./authFormValidation"
+import {
+  validateEmail,
+  validateRequiredPassword,
+  validateCreatedPassword,
+} from "./authFormValidation"
 
 describe("validateEmail", () => {
   it("正しい形式のメールアドレスに対して空文字を返す", () => {
@@ -15,7 +19,9 @@ describe("validateEmail", () => {
   })
 
   it("長すぎるメールアドレスに対してエラーメッセージを返す", () => {
-    expect(validateEmail(`${"a".repeat(64)}@${"a".repeat(64)}.com`)).toBe("正しい形式のメールアドレスを入力してください")
+    expect(validateEmail(`${"a".repeat(64)}@${"a".repeat(64)}.com`)).toBe(
+      "正しい形式のメールアドレスを入力してください",
+    )
   })
 })
 
@@ -44,18 +50,26 @@ describe("validateCreatedPassword", () => {
   })
 
   it("英大文字を含まないパスワードに対してエラーメッセージを返す", () => {
-    expect(validateCreatedPassword("passw0rd!")).toBe("パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください")
+    expect(validateCreatedPassword("passw0rd!")).toBe(
+      "パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください",
+    )
   })
 
   it("英小文字を含まないパスワードに対してエラーメッセージを返す", () => {
-    expect(validateCreatedPassword("PASSW0RD!")).toBe("パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください")
+    expect(validateCreatedPassword("PASSW0RD!")).toBe(
+      "パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください",
+    )
   })
 
   it("数字を含まないパスワードに対してエラーメッセージを返す", () => {
-    expect(validateCreatedPassword("Password!")).toBe("パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください")
+    expect(validateCreatedPassword("Password!")).toBe(
+      "パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください",
+    )
   })
 
   it("記号を含まないパスワードに対してエラーメッセージを返す", () => {
-    expect(validateCreatedPassword("Passw0rd")).toBe("パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください")
+    expect(validateCreatedPassword("Passw0rd")).toBe(
+      "パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください",
+    )
   })
 })

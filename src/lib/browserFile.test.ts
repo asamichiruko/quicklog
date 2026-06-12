@@ -69,7 +69,7 @@ describe("readQuicklogImportFile", () => {
 
   it("ファイルサイズが大きすぎる場合は reject する", async () => {
     const file = new File(["a".repeat(20 * 1024 * 1024)], "data.json", {
-      type: "application/json"
+      type: "application/json",
     })
 
     await expect(readQuicklogImportFile(file)).rejects.toThrow(SizeError)

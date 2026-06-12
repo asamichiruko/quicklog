@@ -21,9 +21,7 @@ export type QuicklogData = {
   logEntryDeletions: LogEntryDeletion[]
 }
 
-export type DataScope =
-  | { type: "anonymous" }
-  | { type: "user"; userId: string }
+export type DataScope = { type: "anonymous" } | { type: "user"; userId: string }
 
 export type RuntimeSessionState =
   | { scope: { type: "anonymous" }; syncStatus: "disabled" }
@@ -32,6 +30,6 @@ export type RuntimeSessionState =
   | { scope: { type: "user"; userId: string }; syncStatus: "sessionLost" }
 
 export type AnonymousDataState = {
-  logEntryCount: number,
-  logEntryDeletionCount: number,
+  logEntryCount: number
+  logEntryDeletionCount: number
 }

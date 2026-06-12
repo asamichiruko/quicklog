@@ -112,10 +112,7 @@ describe("recordLogEntryDeletions", () => {
       ],
       { onConflict: "log_entry_id" },
     )
-    expect(deleteCloudLogEntries).toHaveBeenCalledWith(
-      ["log-entry-id", "other-log-entry-id"],
-      user,
-    )
+    expect(deleteCloudLogEntries).toHaveBeenCalledWith(["log-entry-id", "other-log-entry-id"], user)
     expect(calls).toEqual(["upsert", "delete"])
   })
 

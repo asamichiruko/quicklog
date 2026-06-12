@@ -1,9 +1,11 @@
 import type { QuicklogData } from "@/types"
 import type { User } from "@supabase/supabase-js"
 import { fetchCloudLogEntries, upsertCloudLogEntries } from "@/lib/logEntryRepository"
-import { fetchCloudLogEntryDeletions, recordLogEntryDeletions } from "@/lib/logEntryDeletionRepository"
+import {
+  fetchCloudLogEntryDeletions,
+  recordLogEntryDeletions,
+} from "@/lib/logEntryDeletionRepository"
 import { mergeQuicklogData } from "@/lib/quicklogDataMerge"
-
 
 export type CloudQuicklogDataSyncResult = {
   data: QuicklogData
@@ -18,13 +20,17 @@ export function mergeQuicklogDataWithCloud(
 ): CloudQuicklogDataSyncResult {
   const cloudLogEntryIds = new Set(cloudData.logEntries.map((entry) => entry.id))
   const result = mergeQuicklogData(localData, cloudData)
-  const deletedLogEntryIds = new Set(result.data.logEntryDeletions.map((deletion) => deletion.logEntryId))
+  const deletedLogEntryIds = new Set(
+    result.data.logEntryDeletions.map((deletion) => deletion.logEntryId),
+  )
 
   return {
     data: result.data,
     addedCount: result.addedCount,
     deletedCount: result.deletedCount,
-    uploadedCount: localData.logEntries.filter((entry) => !cloudLogEntryIds.has(entry.id) && !deletedLogEntryIds.has(entry.id)).length,
+    uploadedCount: localData.logEntries.filter(
+      (entry) => !cloudLogEntryIds.has(entry.id) && !deletedLogEntryIds.has(entry.id),
+    ).length,
   }
 }
 

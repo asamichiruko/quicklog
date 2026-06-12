@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { formatLogEntriesAsMarkdown, formatQuicklogDataAsJson, createQuicklogExportFile } from "./createQuicklogExportFile"
+import {
+  formatLogEntriesAsMarkdown,
+  formatQuicklogDataAsJson,
+  createQuicklogExportFile,
+} from "./createQuicklogExportFile"
 import type { QuicklogData } from "@/types"
 
 describe("formatLogEntriesAsMarkdown", () => {
@@ -90,7 +94,11 @@ text2
 
   it("本文中に backtick fence があるときは、より長い backtick fence で囲む", () => {
     const logEntries = [
-      { id: "id1", text: "before\n```js\nalert(1)\n```\nafter", createdAt: "2026-05-22T00:00:00.000Z" },
+      {
+        id: "id1",
+        text: "before\n```js\nalert(1)\n```\nafter",
+        createdAt: "2026-05-22T00:00:00.000Z",
+      },
     ]
 
     const actual = formatLogEntriesAsMarkdown(logEntries)
@@ -109,7 +117,11 @@ after
 
   it("本文中の backtick fence が長すぎるときは tilde fence で囲む", () => {
     const logEntries = [
-      { id: "id1", text: `before\n${"`".repeat(16)}\nafter`, createdAt: "2026-05-22T00:00:00.000Z" },
+      {
+        id: "id1",
+        text: `before\n${"`".repeat(16)}\nafter`,
+        createdAt: "2026-05-22T00:00:00.000Z",
+      },
     ]
 
     const actual = formatLogEntriesAsMarkdown(logEntries)
@@ -171,9 +183,7 @@ describe("formatQuicklogDataAsJson", () => {
         { id: "id2", text: "text2", createdAt: "2026-05-22T12:00:00.000Z" },
         { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-23T00:00:00.000Z" },
       ],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id4" },
-      ]
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id4" }],
     } satisfies QuicklogData
 
     const actual = formatQuicklogDataAsJson(quicklogData)
@@ -213,9 +223,7 @@ describe("formatQuicklogDataAsJson", () => {
         { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
         { id: "id3", text: "text3a\ntext3b", createdAt: "2026-05-22T00:00:00.000Z" },
       ],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id4" },
-      ]
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id4" }],
     } satisfies QuicklogData
 
     const actual = formatQuicklogDataAsJson(quicklogData)
@@ -250,7 +258,10 @@ describe("formatQuicklogDataAsJson", () => {
 
 describe("createQuicklogExportFile", () => {
   it("ExportType に 'json' を指定したときの mimeType と extension が正しい", () => {
-    const exportFile = createQuicklogExportFile({ version: 3, logEntries: [], logEntryDeletions: [] }, "json")
+    const exportFile = createQuicklogExportFile(
+      { version: 3, logEntries: [], logEntryDeletions: [] },
+      "json",
+    )
 
     expect(exportFile.content).toBe(`{
   "version": 3,
@@ -262,7 +273,10 @@ describe("createQuicklogExportFile", () => {
   })
 
   it("ExportType に 'markdown' を指定したときの mimeType と extension が正しい", () => {
-    const exportFile = createQuicklogExportFile({ version: 3, logEntries: [], logEntryDeletions: [] }, "markdown")
+    const exportFile = createQuicklogExportFile(
+      { version: 3, logEntries: [], logEntryDeletions: [] },
+      "markdown",
+    )
 
     expect(exportFile.content).toBe("")
     expect(exportFile.mimeType).toBe("text/markdown")

@@ -1,5 +1,9 @@
 import type { ExportType, LogEntry, QuicklogData } from "@/types"
-import { groupLogEntriesByDate, sortLogEntriesByCreatedAtAsc, type DateGroup } from "@/lib/logEntryCollection"
+import {
+  groupLogEntriesByDate,
+  sortLogEntriesByCreatedAtAsc,
+  type DateGroup,
+} from "@/lib/logEntryCollection"
 import { formatLongJapaneseDate, formatTimeWithSeconds } from "@/lib/dateFormat"
 import { getUtf8ByteLength, MAX_EXPORT_FILE_BYTES } from "@/lib/sizeLimits"
 import { SchemaValidationError, SizeError } from "@/lib/errors"
@@ -24,7 +28,11 @@ function createSizeLimitedTextBuilder(maxBytes: number) {
     bytes += getUtf8ByteLength(text)
 
     if (bytes > maxBytes) {
-      throw new SizeError("Export file is too large.", { target: "export", limitBytes: maxBytes, actualBytes: bytes })
+      throw new SizeError("Export file is too large.", {
+        target: "export",
+        limitBytes: maxBytes,
+        actualBytes: bytes,
+      })
     }
 
     parts.push(text)
@@ -102,7 +110,9 @@ function appendDateGroupAsMarkdown(
 }
 
 export function formatLogEntriesAsMarkdown(logEntries: LogEntry[]): string {
-  const groupedLogEntries = groupLogEntriesByDate(sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)))
+  const groupedLogEntries = groupLogEntriesByDate(
+    sortLogEntriesByCreatedAtAsc(validateLogEntries(logEntries)),
+  )
   const builder = createSizeLimitedTextBuilder(MAX_EXPORT_FILE_BYTES)
 
   groupedLogEntries.forEach((group) => {
@@ -114,10 +124,14 @@ export function formatLogEntriesAsMarkdown(logEntries: LogEntry[]): string {
 
 export function formatQuicklogDataAsJson(quicklogData: QuicklogData): string {
   const normalized = parseAsQuicklogData(quicklogData)
-  const formatted = JSON.stringify({
-    ...normalized,
-    logEntries: sortLogEntriesByCreatedAtAsc(normalized.logEntries),
-  }, null, 2)
+  const formatted = JSON.stringify(
+    {
+      ...normalized,
+      logEntries: sortLogEntriesByCreatedAtAsc(normalized.logEntries),
+    },
+    null,
+    2,
+  )
 
   if (getUtf8ByteLength(formatted) > MAX_EXPORT_FILE_BYTES) {
     throw new SizeError("Export file is too large.", {
@@ -150,7 +164,10 @@ const exportFormats: Record<
   },
 }
 
-export function createQuicklogExportFile(quicklogData: QuicklogData, exportType: ExportType): ExportFile {
+export function createQuicklogExportFile(
+  quicklogData: QuicklogData,
+  exportType: ExportType,
+): ExportFile {
   const exportFormat = exportFormats[exportType]
 
   return {

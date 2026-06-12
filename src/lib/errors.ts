@@ -8,7 +8,7 @@ export class SizeError extends Error {
   readonly options?: SizeErrorOptions
 
   constructor(message: string, options?: SizeErrorOptions) {
-    super(message);
+    super(message)
     this.name = "SizeError"
     this.options = options
   }

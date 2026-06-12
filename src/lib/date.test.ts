@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest"
-import { addDays, addMonths, getDateGroupId, getLocalDateKey, parseLocalDateKey, startOfLocalDay, startOfMonth } from "./date"
+import {
+  addDays,
+  addMonths,
+  getDateGroupId,
+  getLocalDateKey,
+  parseLocalDateKey,
+  startOfLocalDay,
+  startOfMonth,
+} from "./date"
 import { InvalidDateError } from "@/lib/errors"
 
 describe("getLocalDateKey", () => {
@@ -9,7 +17,9 @@ describe("getLocalDateKey", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { getLocalDateKey(invalidDate) }).toThrow(InvalidDateError)
+    expect(() => {
+      getLocalDateKey(invalidDate)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -21,7 +31,9 @@ describe("startOfLocalDay", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { startOfLocalDay(invalidDate) }).toThrow(InvalidDateError)
+    expect(() => {
+      startOfLocalDay(invalidDate)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -33,7 +45,9 @@ describe("getDateGroupId", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { getDateGroupId(invalidDate) }).toThrow(InvalidDateError)
+    expect(() => {
+      getDateGroupId(invalidDate)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -45,7 +59,9 @@ describe("startOfMonth", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { startOfMonth(invalidDate) }).toThrow(InvalidDateError)
+    expect(() => {
+      startOfMonth(invalidDate)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -72,7 +88,9 @@ describe("addMonths", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { addMonths(invalidDate, 0) }).toThrow(InvalidDateError)
+    expect(() => {
+      addMonths(invalidDate, 0)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -105,7 +123,9 @@ describe("addDays", () => {
 
   it("不正な Date オブジェクトを与えると例外を出す", () => {
     const invalidDate = new Date(Number.NaN)
-    expect(() => { addDays(invalidDate, 0) }).toThrow(InvalidDateError)
+    expect(() => {
+      addDays(invalidDate, 0)
+    }).toThrow(InvalidDateError)
   })
 })
 
@@ -115,10 +135,14 @@ describe("parseLocalDateKey", () => {
   })
 
   it("不正な形式のキーを与えると例外を出す", () => {
-    expect(() => { parseLocalDateKey("2026/5/22") }).toThrow(SyntaxError)
+    expect(() => {
+      parseLocalDateKey("2026/5/22")
+    }).toThrow(SyntaxError)
   })
 
   it("存在しない日付のキーを与えると例外を出す", () => {
-    expect(() => { parseLocalDateKey("2020-02-30") }).toThrow(SyntaxError)
+    expect(() => {
+      parseLocalDateKey("2020-02-30")
+    }).toThrow(SyntaxError)
   })
 })

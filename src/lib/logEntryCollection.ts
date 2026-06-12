@@ -32,14 +32,14 @@ export function groupLogEntriesByDate(logEntries: LogEntry[]): DateGroup[] {
 
 export function sortLogEntriesByCreatedAtDesc(logEntries: LogEntry[]): LogEntry[] {
   return logEntries.toSorted(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
 }
 
 export function sortLogEntriesByCreatedAtAsc(logEntries: LogEntry[]): LogEntry[] {
   return logEntries.toSorted(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-    )
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+  )
 }
 
 export function mergeLogEntries(existing: LogEntry[], incoming: LogEntry[]) {

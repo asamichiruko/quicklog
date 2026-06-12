@@ -6,7 +6,13 @@ import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
-import type { AnonymousDataState, AppSettings, ExportType, LogEntry, RuntimeSessionState } from "@/types"
+import type {
+  AnonymousDataState,
+  AppSettings,
+  ExportType,
+  LogEntry,
+  RuntimeSessionState,
+} from "@/types"
 import type { Session } from "@supabase/supabase-js"
 import { ref } from "vue"
 
@@ -93,16 +99,9 @@ defineExpose({ open })
     @click="handleDialogClick"
   >
     <div class="dialog-form">
-      <h2
-        id="settings-dialog-heading"
-        class="dialog-heading"
-      >
-        設定
-      </h2>
+      <h2 id="settings-dialog-heading" class="dialog-heading">設定</h2>
       <section class="section">
-        <h3 class="section-heading">
-          表示
-        </h3>
+        <h3 class="section-heading">表示</h3>
         <ul class="setting-items">
           <li>
             <label class="setting-item">
@@ -111,7 +110,7 @@ defineExpose({ open })
                 class="setting-checkbox"
                 type="checkbox"
                 name="show-daily-summary"
-              >
+              />
               <span class="setting-label">日別サマリーを表示</span>
             </label>
           </li>
@@ -122,10 +121,7 @@ defineExpose({ open })
         class="settings-panel"
         aria-labelledby="settings-panel-cloud-sync"
       >
-        <summary
-          id="settings-panel-cloud-sync"
-          class="settings-panel-summary"
-        >
+        <summary id="settings-panel-cloud-sync" class="settings-panel-summary">
           クラウド同期
         </summary>
         <div class="settings-panel-body">
@@ -141,22 +137,10 @@ defineExpose({ open })
           />
         </div>
       </details>
-      <details
-        ref="copyPanelDetails"
-        class="settings-panel"
-        aria-labelledby="settings-panel-copy"
-      >
-        <summary
-          id="settings-panel-copy"
-          class="settings-panel-summary"
-        >
-          記録のコピー
-        </summary>
+      <details ref="copyPanelDetails" class="settings-panel" aria-labelledby="settings-panel-copy">
+        <summary id="settings-panel-copy" class="settings-panel-summary">記録のコピー</summary>
         <div class="settings-panel-body">
-          <LogEntryCopyPanel
-            ref="copyPanel"
-            :log-entries="props.logEntries"
-          />
+          <LogEntryCopyPanel ref="copyPanel" :log-entries="props.logEntries" />
         </div>
       </details>
       <details
@@ -164,17 +148,11 @@ defineExpose({ open })
         class="settings-panel"
         aria-labelledby="settings-panel-export"
       >
-        <summary
-          id="settings-panel-export"
-          class="settings-panel-summary"
-        >
+        <summary id="settings-panel-export" class="settings-panel-summary">
           記録のエクスポート
         </summary>
         <div class="settings-panel-body">
-          <LogEntryExportPanel
-            ref="exportPanel"
-            @export="emit('export', $event)"
-          />
+          <LogEntryExportPanel ref="exportPanel" @export="emit('export', $event)" />
         </div>
       </details>
       <details
@@ -182,17 +160,11 @@ defineExpose({ open })
         class="settings-panel"
         aria-labelledby="settings-panel-import"
       >
-        <summary
-          id="settings-panel-import"
-          class="settings-panel-summary"
-        >
+        <summary id="settings-panel-import" class="settings-panel-summary">
           記録のインポート
         </summary>
         <div class="settings-panel-body">
-          <LogEntryImportPanel
-            ref="importPanel"
-            @import="emit('import', $event)"
-          />
+          <LogEntryImportPanel ref="importPanel" @import="emit('import', $event)" />
         </div>
       </details>
       <details
@@ -200,10 +172,7 @@ defineExpose({ open })
         class="settings-panel"
         aria-labelledby="settings-panel-local-data-management"
       >
-        <summary
-          id="settings-panel-local-data-management"
-          class="settings-panel-summary"
-        >
+        <summary id="settings-panel-local-data-management" class="settings-panel-summary">
           ローカルデータの管理
         </summary>
         <div class="settings-panel-body">
@@ -215,20 +184,8 @@ defineExpose({ open })
         </div>
       </details>
       <div class="confirm-actions">
-        <button
-          class="button-primary"
-          type="button"
-          @click="saveAndClose"
-        >
-          設定を保存
-        </button>
-        <button
-          class="button-secondary"
-          type="button"
-          @click="close"
-        >
-          キャンセル
-        </button>
+        <button class="button-primary" type="button" @click="saveAndClose">設定を保存</button>
+        <button class="button-secondary" type="button" @click="close">キャンセル</button>
       </div>
     </div>
   </dialog>

@@ -16,7 +16,6 @@ const userData = {
       id: "log1",
       text: "hello",
       createdAt: "2026-06-12T00:00:00.000Z",
-      updatedAt: "2026-06-12T00:00:00.000Z",
     },
   ],
   logEntryDeletions: [],
@@ -53,7 +52,7 @@ describe("deleteCloudSyncData", () => {
     const options = createOptions({
       loadAnonymousData: vi.fn(() => ({
         ...emptyData,
-        logEntryDeletions: [{ id: "log1", deletedAt: "2026-06-12T00:00:00.000Z" }],
+        logEntryDeletions: [{ logEntryId: "log1", createdAt: "2026-06-12T00:00:00.000Z" }],
       })),
     })
 

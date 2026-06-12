@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest"
-import { loadSettings, saveSettings, loadQuicklogData, saveQuicklogData, saveStoredDataScope, loadStoredDataScope } from "./storage"
+import {
+  loadSettings,
+  saveSettings,
+  loadQuicklogData,
+  saveQuicklogData,
+  saveStoredDataScope,
+  loadStoredDataScope,
+} from "./storage"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type { AppSettings, DataScope, QuicklogData } from "@/types"
 import { SchemaValidationError } from "@/lib/errors"
@@ -37,22 +44,14 @@ describe("storedDataScope", () => {
 describe("quicklogData", () => {
   const quicklogData1 = {
     version: 3,
-    logEntries: [
-      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
-    ],
-    logEntryDeletions: [
-      { createdAt: "2026-05-22T00:00:00.000Z", logEntryId: "id2" }
-    ],
+    logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
+    logEntryDeletions: [{ createdAt: "2026-05-22T00:00:00.000Z", logEntryId: "id2" }],
   } satisfies QuicklogData
 
   const quicklogData2 = {
     version: 3,
-    logEntries: [
-      { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" }
-    ],
-    logEntryDeletions: [
-      { createdAt: "2026-05-22T00:00:00.000Z", logEntryId: "id3" }
-    ],
+    logEntries: [{ id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" }],
+    logEntryDeletions: [{ createdAt: "2026-05-22T00:00:00.000Z", logEntryId: "id3" }],
   } satisfies QuicklogData
 
   beforeEach(() => {

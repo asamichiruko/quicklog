@@ -12,7 +12,9 @@ export async function deleteCloudSyncData(options: {
 }): Promise<void> {
   const anonymousData = options.loadAnonymousData()
   if (anonymousData.logEntries.length > 0 || anonymousData.logEntryDeletions.length > 0) {
-    throw new CloudSyncDeletionError("この端末に匿名データが残っているため、クラウド同期アカウントを削除できません。先にローカルデータの管理から匿名データを削除してください")
+    throw new CloudSyncDeletionError(
+      "この端末に匿名データが残っているため、クラウド同期アカウントを削除できません。先にローカルデータの管理から匿名データを削除してください",
+    )
   }
 
   const userData = options.loadUserData()

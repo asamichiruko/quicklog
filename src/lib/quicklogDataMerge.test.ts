@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { mergeQuicklogData, pruneExpiredLogEntryDeletions } from "./quicklogDataMerge";
-import type { QuicklogData } from "@/types";
+import { describe, expect, it } from "vitest"
+import { mergeQuicklogData, pruneExpiredLogEntryDeletions } from "./quicklogDataMerge"
+import type { QuicklogData } from "@/types"
 
 describe("mergeQuicklogData", () => {
   it("空のデータ同士を merge できる", () => {
@@ -110,9 +110,7 @@ describe("mergeQuicklogData", () => {
         { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
         { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
       ],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }
-      ],
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }],
     } satisfies QuicklogData
     const incoming = {
       version: 3,
@@ -130,7 +128,7 @@ describe("mergeQuicklogData", () => {
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
     expect(result.data.logEntryDeletions).toEqual([
-      { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }
+      { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" },
     ])
     expect(result.addedCount).toBe(1)
     expect(result.deletedCount).toBe(0)
@@ -151,9 +149,7 @@ describe("mergeQuicklogData", () => {
         { id: "id3", text: "text3", createdAt: "2026-06-03T00:00:00.000Z" },
         { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
       ],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }
-      ],
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }],
     } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
@@ -163,7 +159,7 @@ describe("mergeQuicklogData", () => {
       { id: "id4", text: "text4", createdAt: "2026-06-04T00:00:00.000Z" },
     ])
     expect(result.data.logEntryDeletions).toEqual([
-      { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }
+      { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" },
     ])
     expect(result.addedCount).toBe(2)
     expect(result.deletedCount).toBe(1)
@@ -172,26 +168,18 @@ describe("mergeQuicklogData", () => {
   it("incoming と existing に同一の LogEntryDeletion があっても重複なく merge される", () => {
     const existing = {
       version: 3,
-      logEntries: [
-        { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
-      ],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }
-      ],
+      logEntries: [{ id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" }],
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }],
     } satisfies QuicklogData
     const incoming = {
       version: 3,
-      logEntries: [
-        { id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" },
-      ],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }
-      ],
+      logEntries: [{ id: "id2", text: "text2", createdAt: "2026-06-02T00:00:00.000Z" }],
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }],
     } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntryDeletions).toEqual([
-      { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" }
+      { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id3" },
     ])
     expect(result.addedCount).toBe(1)
     expect(result.deletedCount).toBe(0)
@@ -201,21 +189,17 @@ describe("mergeQuicklogData", () => {
     const existing = {
       version: 3,
       logEntries: [],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }
-      ],
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }],
     } satisfies QuicklogData
     const incoming = {
       version: 3,
       logEntries: [],
-      logEntryDeletions: [
-        { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id1" }
-      ],
+      logEntryDeletions: [{ createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id1" }],
     } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntryDeletions).toEqual([
-      { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id1" }
+      { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id1" },
     ])
   })
 
@@ -223,22 +207,18 @@ describe("mergeQuicklogData", () => {
     const existing = {
       version: 3,
       logEntries: [],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }
-      ],
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }],
     } satisfies QuicklogData
     const incoming = {
       version: 3,
       logEntries: [],
-      logEntryDeletions: [
-        { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id2" }
-      ],
+      logEntryDeletions: [{ createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id2" }],
     } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
     expect(result.data.logEntryDeletions).toEqual([
       { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" },
-      { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id2" }
+      { createdAt: "2026-06-02T12:00:00.000Z", logEntryId: "id2" },
     ])
     expect(result.addedCount).toBe(0)
     expect(result.deletedCount).toBe(0)
@@ -252,12 +232,8 @@ describe("mergeQuicklogData", () => {
     } satisfies QuicklogData
     const incoming = {
       version: 3,
-      logEntries: [
-        { id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" },
-      ],
-      logEntryDeletions: [
-        { createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }
-      ],
+      logEntries: [{ id: "id1", text: "text1", createdAt: "2026-06-01T00:00:00.000Z" }],
+      logEntryDeletions: [{ createdAt: "2026-06-01T12:00:00.000Z", logEntryId: "id1" }],
     } satisfies QuicklogData
     const result = mergeQuicklogData(existing, incoming)
 
@@ -301,9 +277,11 @@ describe("mergeQuicklogData", () => {
       { createdAt: "2026-06-04T00:00:00.000Z", logEntryId: "incoming-deleted" },
       { createdAt: "2026-06-05T00:00:00.000Z", logEntryId: "existing-deleted" },
     ])
-    expect(result.data.logEntries.some((entry) => {
-      return result.data.logEntryDeletions.some((deletion) => deletion.logEntryId === entry.id)
-    })).toBe(false)
+    expect(
+      result.data.logEntries.some((entry) => {
+        return result.data.logEntryDeletions.some((deletion) => deletion.logEntryId === entry.id)
+      }),
+    ).toBe(false)
 
     const repeatedResult = mergeQuicklogData(result.data, result.data)
     expect(repeatedResult.data).toEqual(result.data)
@@ -314,17 +292,13 @@ describe("mergeQuicklogData", () => {
 
 describe("pruneExpiredLogEntryDeletions", () => {
   it("期限が切れた LogEntryDeletion が prune される", () => {
-    const logEntryDeletions = [
-      { createdAt: new Date(2026, 4, 1).toISOString(), logEntryId: "id1" },
-    ]
+    const logEntryDeletions = [{ createdAt: new Date(2026, 4, 1).toISOString(), logEntryId: "id1" }]
     const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 5, 1), 3)
     expect(result).toEqual([])
   })
 
   it("期限が切れていない LogEntryDeletion は prune されない", () => {
-    const logEntryDeletions = [
-      { createdAt: new Date(2026, 4, 1).toISOString(), logEntryId: "id1" },
-    ]
+    const logEntryDeletions = [{ createdAt: new Date(2026, 4, 1).toISOString(), logEntryId: "id1" }]
     const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 5, 1), 60)
     expect(result).toEqual(logEntryDeletions)
   })
@@ -353,7 +327,11 @@ describe("pruneExpiredLogEntryDeletions", () => {
       { createdAt: new Date(2026, 4, 14, 12, 0, 0, 0).toISOString(), logEntryId: "id1" },
       { createdAt: new Date(2026, 4, 14, 8, 0, 0, 0).toISOString(), logEntryId: "id2" },
     ]
-    const result = pruneExpiredLogEntryDeletions(logEntryDeletions, new Date(2026, 4, 15, 10, 0, 0, 0), 1)
+    const result = pruneExpiredLogEntryDeletions(
+      logEntryDeletions,
+      new Date(2026, 4, 15, 10, 0, 0, 0),
+      1,
+    )
     expect(result).toEqual(logEntryDeletions)
   })
 

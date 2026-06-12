@@ -37,14 +37,8 @@ defineExpose({ focus, clear })
 </script>
 
 <template>
-  <form
-    class="form"
-    @submit.prevent="onSubmit"
-  >
-    <label
-      class="label"
-      for="log-entry-form-text"
-    >メモ</label>
+  <form class="form" @submit.prevent="onSubmit">
+    <label class="label" for="log-entry-form-text">メモ</label>
     <textarea
       id="log-entry-form-text"
       ref="textarea"
@@ -57,12 +51,7 @@ defineExpose({ focus, clear })
       :maxlength="MAX_LOG_ENTRY_TEXT_BYTES"
       @keydown.enter="onKeydownEnter"
     />
-    <button
-      class="button-primary submit-button"
-      type="submit"
-    >
-      記録
-    </button>
+    <button class="button-primary submit-button" type="submit">記録</button>
   </form>
 </template>
 

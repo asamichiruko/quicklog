@@ -36,7 +36,10 @@ export async function fetchCloudLogEntryDeletions(user: User): Promise<LogEntryD
   return data.map(toLogEntryDeletion)
 }
 
-export async function upsertCloudLogEntryDeletion(deletion: LogEntryDeletion, user: User): Promise<void> {
+export async function upsertCloudLogEntryDeletion(
+  deletion: LogEntryDeletion,
+  user: User,
+): Promise<void> {
   const row = toLogEntryDeletionRow(deletion, user)
 
   const { error } = await supabase
@@ -46,7 +49,10 @@ export async function upsertCloudLogEntryDeletion(deletion: LogEntryDeletion, us
   if (error) throw error
 }
 
-export async function upsertCloudLogEntryDeletions(deletions: LogEntryDeletion[], user: User): Promise<void> {
+export async function upsertCloudLogEntryDeletions(
+  deletions: LogEntryDeletion[],
+  user: User,
+): Promise<void> {
   if (deletions.length === 0) return
 
   const rows = deletions.map((deletion) => toLogEntryDeletionRow(deletion, user))
@@ -58,12 +64,21 @@ export async function upsertCloudLogEntryDeletions(deletions: LogEntryDeletion[]
   if (error) throw error
 }
 
-export async function recordLogEntryDeletion(deletion: LogEntryDeletion, user: User): Promise<void> {
+export async function recordLogEntryDeletion(
+  deletion: LogEntryDeletion,
+  user: User,
+): Promise<void> {
   await upsertCloudLogEntryDeletion(deletion, user)
   await deleteCloudLogEntry(deletion.logEntryId, user)
 }
 
-export async function recordLogEntryDeletions(deletions: LogEntryDeletion[], user: User): Promise<void> {
+export async function recordLogEntryDeletions(
+  deletions: LogEntryDeletion[],
+  user: User,
+): Promise<void> {
   await upsertCloudLogEntryDeletions(deletions, user)
-  await deleteCloudLogEntries(deletions.map((deletion) => deletion.logEntryId), user)
+  await deleteCloudLogEntries(
+    deletions.map((deletion) => deletion.logEntryId),
+    user,
+  )
 }

@@ -15,7 +15,9 @@ export async function startCloudSync(options: {
 
     const user = options.getActiveUser()
     if (!user) {
-      throw new CloudSyncStartError("サインイン状態を確認できませんでした。時間をおいて再度お試しください")
+      throw new CloudSyncStartError(
+        "サインイン状態を確認できませんでした。時間をおいて再度お試しください",
+      )
     }
 
     await options.moveAnonymousDataToUser(user)
@@ -36,7 +38,9 @@ function createCloudSyncStartError(error: unknown) {
   }
 
   if (isQuotaExceededError(error)) {
-    return new CloudSyncStartError("ブラウザの保存領域が不足しているため、クラウド同期を開始できませんでした")
+    return new CloudSyncStartError(
+      "ブラウザの保存領域が不足しているため、クラウド同期を開始できませんでした",
+    )
   }
 
   return new CloudSyncStartError("クラウド同期を開始できませんでした")

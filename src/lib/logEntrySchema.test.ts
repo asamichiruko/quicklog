@@ -25,7 +25,7 @@ describe("isValidLogEntry", () => {
     const item = {
       id: 42,
       text: "text1",
-      createdAt: "2026-05-22T00:00:00.000Z"
+      createdAt: "2026-05-22T00:00:00.000Z",
     }
 
     expect(isValidLogEntry(item)).toBe(false)
@@ -35,7 +35,7 @@ describe("isValidLogEntry", () => {
     const item = {
       id: "id1",
       text: 42,
-      createdAt: "2026-05-22T00:00:00.000Z"
+      createdAt: "2026-05-22T00:00:00.000Z",
     }
 
     expect(isValidLogEntry(item)).toBe(false)
@@ -45,7 +45,7 @@ describe("isValidLogEntry", () => {
     const item = {
       id: "id1",
       text: "",
-      createdAt: "2026-05-22T00:00:00.000Z"
+      createdAt: "2026-05-22T00:00:00.000Z",
     }
 
     expect(isValidLogEntry(item)).toBe(false)
@@ -55,7 +55,7 @@ describe("isValidLogEntry", () => {
     const item = {
       id: "id1",
       text: "text1",
-      createdAt: new Date("2026-05-22T00:00:00.000Z")
+      createdAt: new Date("2026-05-22T00:00:00.000Z"),
     }
 
     expect(isValidLogEntry(item)).toBe(false)
@@ -65,7 +65,7 @@ describe("isValidLogEntry", () => {
     const item = {
       id: "id1",
       text: "text1",
-      createdAt: "invalid date string"
+      createdAt: "invalid date string",
     }
 
     expect(isValidLogEntry(item)).toBe(false)
@@ -134,18 +134,22 @@ describe("parseAsLogEntries", () => {
   })
 
   it("配列でない object に対して例外を出す", () => {
-    const data = { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z", }
+    const data = { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }
 
-    expect(() => { parseAsLogEntries(data) }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsLogEntries(data)
+    }).toThrow(SchemaValidationError)
   })
 
   it("invalid な LogEntry を含む data に対して例外を出す", () => {
     const data = [
-      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z", },
+      { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
       { name: "invalid data" },
     ]
 
-    expect(() => { parseAsLogEntries(data) }).toThrow(SchemaValidationError)
+    expect(() => {
+      parseAsLogEntries(data)
+    }).toThrow(SchemaValidationError)
   })
 
   it("空の配列をそのまま返す", () => {

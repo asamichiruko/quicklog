@@ -29,16 +29,12 @@ describe("quicklogData size limit", () => {
 
     const existing = {
       version: 3 as const,
-      logEntries: [
-        { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
-      ],
+      logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
       logEntryDeletions: [],
     }
     const tooLargeData = {
       version: 3 as const,
-      logEntries: [
-        { id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" },
-      ],
+      logEntries: [{ id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" }],
       logEntryDeletions: [],
     }
 
@@ -64,9 +60,7 @@ describe("quicklogData size limit", () => {
 
     const tooLargeData = {
       version: 3,
-      logEntries: [
-        { id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" },
-      ],
+      logEntries: [{ id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" }],
       logEntryDeletions: [],
     }
 
@@ -106,7 +100,9 @@ describe("settings size limit", () => {
     }
 
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(existing))
-    expect(() => { saveSettings(tooLargeData) }).toThrow(SizeError)
+    expect(() => {
+      saveSettings(tooLargeData)
+    }).toThrow(SizeError)
     const raw = localStorage.getItem(SETTINGS_KEY)
     expect(raw).not.toBeNull()
     expect(JSON.parse(raw as string)).toEqual(existing)

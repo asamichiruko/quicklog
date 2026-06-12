@@ -28,7 +28,7 @@ export function formatLongJapaneseDate(date: Date) {
 }
 
 export function formatRelativeDate(date: Date) {
-    if (isNaN(date.getTime())) {
+  if (isNaN(date.getTime())) {
     throw new InvalidDateError("Invalid date.")
   }
 

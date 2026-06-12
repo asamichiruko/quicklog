@@ -253,12 +253,11 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
-    <p
-      class="description"
-      :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }"
-    >
+    <p class="description" :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }">
       <span>{{ sessionStateMessage }}</span>
-      <span v-if="isAuthenticated(props.runtimeSessionState)">サインイン中: {{ props.session?.user.email }}</span>
+      <span v-if="isAuthenticated(props.runtimeSessionState)"
+        >サインイン中: {{ props.session?.user.email }}</span
+      >
     </p>
 
     <template v-if="panelView === 'signedIn'">
@@ -314,11 +313,7 @@ defineExpose({ reset })
       </template>
     </template>
 
-    <form
-      v-else-if="panelView === 'signIn'"
-      class="account-form"
-      @submit.prevent="handleSignIn"
-    >
+    <form v-else-if="panelView === 'signIn'" class="account-form" @submit.prevent="handleSignIn">
       <div class="account-field">
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
@@ -332,13 +327,9 @@ defineExpose({ reset })
             :aria-invalid="Boolean(signInEmailErrorMessage)"
             @input="clearFeedbackMessage"
             @blur="validateSignInEmail"
-          >
+          />
         </label>
-        <p
-          v-if="signInEmailErrorMessage"
-          id="sign-in-email-error"
-          class="field-error"
-        >
+        <p v-if="signInEmailErrorMessage" id="sign-in-email-error" class="field-error">
           {{ signInEmailErrorMessage }}
         </p>
       </div>
@@ -355,22 +346,14 @@ defineExpose({ reset })
             :aria-invalid="Boolean(signInPasswordErrorMessage)"
             @input="clearFeedbackMessage"
             @blur="validateSignInPassword"
-          >
+          />
         </label>
-        <p
-          v-if="signInPasswordErrorMessage"
-          id="sign-in-password-error"
-          class="field-error"
-        >
+        <p v-if="signInPasswordErrorMessage" id="sign-in-password-error" class="field-error">
           {{ signInPasswordErrorMessage }}
         </p>
       </div>
       <div class="account-actions">
-        <button
-          type="submit"
-          class="button-secondary sign-in-button"
-          :disabled="!canSignIn"
-        >
+        <button type="submit" class="button-secondary sign-in-button" :disabled="!canSignIn">
           サインイン
         </button>
         <button
@@ -384,11 +367,7 @@ defineExpose({ reset })
       </div>
     </form>
 
-    <form
-      v-else-if="panelView === 'signUp'"
-      class="account-form"
-      @submit.prevent="handleSignUp"
-    >
+    <form v-else-if="panelView === 'signUp'" class="account-form" @submit.prevent="handleSignUp">
       <div class="account-field">
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
@@ -402,13 +381,9 @@ defineExpose({ reset })
             :aria-invalid="Boolean(signUpEmailErrorMessage)"
             @input="clearFeedbackMessage"
             @blur="validateSignUpEmail"
-          >
+          />
         </label>
-        <p
-          v-if="signUpEmailErrorMessage"
-          id="sign-up-email-error"
-          class="field-error"
-        >
+        <p v-if="signUpEmailErrorMessage" id="sign-up-email-error" class="field-error">
           {{ signUpEmailErrorMessage }}
         </p>
       </div>
@@ -425,25 +400,15 @@ defineExpose({ reset })
             :aria-invalid="Boolean(signUpPasswordErrorMessage)"
             @input="clearFeedbackMessage"
             @blur="validateSignUpPassword"
-          >
+          />
         </label>
-        <p class="password-rules">
-          英大小文字、数字、記号を含む 8 文字以上
-        </p>
-        <p
-          v-if="signUpPasswordErrorMessage"
-          id="sign-up-password-error"
-          class="field-error"
-        >
+        <p class="password-rules">英大小文字、数字、記号を含む 8 文字以上</p>
+        <p v-if="signUpPasswordErrorMessage" id="sign-up-password-error" class="field-error">
           {{ signUpPasswordErrorMessage }}
         </p>
       </div>
       <div class="account-actions">
-        <button
-          type="submit"
-          class="button-secondary sign-up-button"
-          :disabled="!canSignUp"
-        >
+        <button type="submit" class="button-secondary sign-up-button" :disabled="!canSignUp">
           アカウントを作成
         </button>
         <button
