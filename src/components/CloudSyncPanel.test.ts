@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event"
 import type { Session } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
 import CloudSyncPanel from "./CloudSyncPanel.vue"
+import type { RuntimeSessionState } from "@/types.ts"
+import { CloudSyncDeletionError } from "@/lib/errors.ts"
 
 function createSession(email = "user@example.com"): Session {
   return {
@@ -11,6 +13,24 @@ function createSession(email = "user@example.com"): Session {
       email,
     },
   } as unknown as Session
+}
+
+function createDefaultProps() {
+  const session = null
+  const signInWithEmail = vi.fn()
+  const signUpWithEmail = vi.fn()
+  const signOut = vi.fn()
+  const deleteCloudSync = vi.fn()
+  const runtimeSessionState = { scope: { type: "anonymous" }, syncStatus: "disabled" } satisfies RuntimeSessionState
+
+  return {
+    session,
+    signInWithEmail,
+    signUpWithEmail,
+    signOut,
+    deleteCloudSync,
+    runtimeSessionState,
+  }
 }
 
 vi.mock("@/lib/auth", () => ({
@@ -26,17 +46,13 @@ describe("CloudSyncPanel", () => {
 
   it("メールアドレスとパスワードを入力してサインインできる", async () => {
     const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
     const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
 
     render(CloudSyncPanel, {
       props: {
-        session: null,
+        ...defaultProps,
         signInWithEmail,
-        signUpWithEmail,
-        signOut,
-        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -55,16 +71,12 @@ describe("CloudSyncPanel", () => {
   it("サインイン時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
     const signInWithEmail = vi.fn().mockRejectedValue({ code: "invalid_credentials" })
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
-        session: null,
+        ...defaultProps,
         signInWithEmail,
-        signUpWithEmail,
-        signOut,
-        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -82,16 +94,11 @@ describe("CloudSyncPanel", () => {
 
   it("サインインのメールアドレスを不正な値にして離れるとエラーを表示してボタンを無効にする", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
-        session: null,
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
+        ...defaultProps,
         runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
@@ -112,16 +119,11 @@ describe("CloudSyncPanel", () => {
 
   it("サインインのパスワードを空にして離れるとエラーを表示してボタンを無効にする", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
-        session: null,
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
+        ...defaultProps,
         runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
@@ -142,15 +144,13 @@ describe("CloudSyncPanel", () => {
 
   it("サインイン中にメールアドレスが表示されてサインアウトできる", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
     const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: createSession("user@example.com"),
-        signInWithEmail,
-        signUpWithEmail,
         signOut,
         runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
       },
@@ -166,17 +166,15 @@ describe("CloudSyncPanel", () => {
 
   it("サインアウト時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
+    const defaultProps = createDefaultProps()
     const signOut = vi.fn().mockRejectedValue({ code: "request_timeout" })
 
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: createSession("user@example.com"),
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
         runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
+        signOut,
       },
     })
 
@@ -186,16 +184,11 @@ describe("CloudSyncPanel", () => {
   })
 
   it("セッションが失われているとき同期停止メッセージを目立たせる", () => {
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
-
+    const defaultProps = createDefaultProps()
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: null,
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
         runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "sessionLost" },
       },
     })
@@ -204,16 +197,12 @@ describe("CloudSyncPanel", () => {
   })
 
   it("認証確認中のときは同期停止メッセージとして目立たせない", () => {
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: null,
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
         runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authPending" },
       },
     })
@@ -223,10 +212,12 @@ describe("CloudSyncPanel", () => {
     expect(screen.queryByRole("button", { name: "サインイン" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "アカウントを作成する" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "同期" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "クラウド同期アカウントとデータを削除" })).not.toBeInTheDocument()
   })
 
   it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
     const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
     const result = {
       data: {
         version: 3,
@@ -238,16 +229,11 @@ describe("CloudSyncPanel", () => {
       uploadedCount: 1,
     } satisfies CloudQuicklogDataSyncResult
     const syncLogEntries = vi.fn<() => Promise<CloudQuicklogDataSyncResult>>().mockResolvedValue(result)
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
 
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: createSession("user@example.com"),
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
         runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
         syncLogEntries,
       },
@@ -262,16 +248,12 @@ describe("CloudSyncPanel", () => {
   it("同期時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
     const syncLogEntries = vi.fn<() => Promise<CloudQuicklogDataSyncResult>>().mockRejectedValue(new Error("network error"))
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: createSession("user@example.com"),
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
         runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
         syncLogEntries,
       },
@@ -284,17 +266,14 @@ describe("CloudSyncPanel", () => {
 
   it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
     const signUpWithEmail = vi.fn().mockRejectedValue({ code: "email_exists" })
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: null,
-        signInWithEmail,
         signUpWithEmail,
-        signOut,
-        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -313,17 +292,14 @@ describe("CloudSyncPanel", () => {
 
   it("メールアドレスとパスワードを入力してアカウントを作成できる", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
     const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
+        ...defaultProps,
         session: null,
-        signInWithEmail,
         signUpWithEmail,
-        signOut,
-        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
       },
     })
 
@@ -342,17 +318,11 @@ describe("CloudSyncPanel", () => {
 
   it("アカウント作成のメールアドレスを不正な値にして離れるとエラーを表示してボタンを無効にする", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
-        session: null,
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
-        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
+        ...defaultProps,
       },
     })
 
@@ -374,17 +344,11 @@ describe("CloudSyncPanel", () => {
 
   it("アカウント作成のパスワードを不正な値にして離れるとエラーを表示してボタンを無効にする", async () => {
     const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
-    const signUpWithEmail = vi.fn()
-    const signOut = vi.fn()
+    const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
       props: {
-        session: null,
-        signInWithEmail,
-        signUpWithEmail,
-        signOut,
-        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
+        ...defaultProps,
       },
     })
 
@@ -402,5 +366,71 @@ describe("CloudSyncPanel", () => {
 
     expect(signUpButton).toBeDisabled()
     expect(screen.getByText("パスワードは 8 文字以上で作成してください")).toBeInTheDocument()
+  })
+
+  it("アカウントを削除できる", async () => {
+    const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
+    const deleteCloudSync = vi.fn().mockResolvedValue(null)
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: createSession("user@example.com"),
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
+        deleteCloudSync,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "クラウド同期アカウントとデータを削除" }))
+    await user.click(screen.getByRole("button", { name: "削除する" }))
+
+    expect(deleteCloudSync).toHaveBeenCalledOnce()
+    expect(await screen.findByText("クラウド同期アカウントを削除しました")).toBeInTheDocument()
+  })
+
+  it("アカウントの削除確認でキャンセルできる", async () => {
+    const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
+    const deleteCloudSync = vi.fn().mockResolvedValue(null)
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: createSession("user@example.com"),
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
+        deleteCloudSync,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "クラウド同期アカウントとデータを削除" }))
+    expect(await screen.findByText("クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+
+    expect(deleteCloudSync).not.toHaveBeenCalled()
+    expect(screen.queryByText("クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "削除する" })).not.toBeInTheDocument()
+  })
+
+  it("アカウントの削除に失敗したらエラーを表示する", async () => {
+    const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
+    const deleteCloudSync = vi.fn().mockRejectedValue(new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした"))
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: createSession("user@example.com"),
+        runtimeSessionState: { scope: { type: "user", userId: "user1" }, syncStatus: "authenticated" },
+        deleteCloudSync,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "クラウド同期アカウントとデータを削除" }))
+    await user.click(screen.getByRole("button", { name: "削除する" }))
+
+    expect(deleteCloudSync).toHaveBeenCalledOnce()
+    expect(await screen.findByText("クラウド同期アカウントを削除できませんでした")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "削除する" })).toBeInTheDocument()
   })
 })

@@ -43,6 +43,13 @@ export class CloudSyncStartError extends Error {
   }
 }
 
+export class CloudSyncDeletionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = "CloudSyncDeletionError"
+  }
+}
+
 export function isQuotaExceededError(error: unknown) {
   return (
     error instanceof DOMException &&

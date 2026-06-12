@@ -4,14 +4,14 @@ import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
-import { getCurrentSession, signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
+import { deleteCurrentAccount, getCurrentSession, signInWithEmail, signOut, signUpWithEmail } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
 import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
 import { startCloudSync } from "@/lib/cloudSyncStart"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
-import { SchemaValidationError, SizeError } from "@/lib/errors"
+import { CloudSyncDeletionError, SchemaValidationError, SizeError } from "@/lib/errors"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import {
   appendLogEntry,
@@ -266,6 +266,7 @@ function clearAuthPendingTimeout() {
 
 function activateAnonymousScope() {
   cloudSyncScheduler.cancelScheduled()
+  session.value = null
   applyRuntimeSessionState({ scope: { type: "anonymous" }, syncStatus: "disabled" })
 }
 
@@ -419,6 +420,37 @@ async function rollbackCloudSyncStart() {
   activateAnonymousScope()
 }
 
+async function deleteCloudSync() {
+  const user = getActiveCloudUser()
+  if (!user) {
+    throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
+  }
+  const userId = user.id
+
+  const anonymousData = loadQuicklogData()
+  if (anonymousData.logEntries.length > 0 || anonymousData.logEntryDeletions.length > 0) {
+    throw new CloudSyncDeletionError("この端末に匿名データが残っているため、クラウド同期アカウントを削除できません。先にローカルデータの管理から匿名データを削除してください")
+  }
+
+  const userData = loadQuicklogData(userId)
+  try {
+    saveQuicklogData(userData)
+  } catch {
+    throw new CloudSyncDeletionError("この端末に記録を保存できないため、削除を開始できませんでした")
+  }
+
+  try {
+    await deleteCurrentAccount()
+  } catch {
+    saveQuicklogData(anonymousData)
+    throw new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした")
+  }
+
+  activateAnonymousScope()
+  refreshAnonymousQuicklogDataState()
+  clearQuicklogData(userId)
+}
+
 async function handleSignUpWithEmail(email: string, password: string) {
   await startCloudSync({
     authenticate: () => signUpWithEmail(email, password),
@@ -522,6 +554,7 @@ async function handleSignOut() {
     :runtime-session-state="runtimeSessionState"
     :anonymous-data-state="anonymousQuicklogDataState"
     :delete-anonymous-data="deleteAnonymousQuicklogData"
+    :delete-cloud-sync="deleteCloudSync"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"

@@ -18,6 +18,7 @@ const props = defineProps<{
   signUpWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   runtimeSessionState: RuntimeSessionState
+  deleteCloudSync: () => Promise<void>
 }>()
 
 type PanelView = "signIn" | "signedIn" | "signUp" | "authPending"
@@ -209,8 +210,24 @@ function hideCloudSyncDeletionConfirmation() {
   isConfirmingCloudSyncDeletion.value = false
 }
 
-function handleConfirmDeleteCloudSync() {
-  // クラウドデータを削除して匿名データに移行
+async function handleConfirmDeleteCloudSync() {
+  if (isLoading.value || !isConfirmingCloudSyncDeletion.value) return
+
+  feedbackMessage.value = ""
+  isLoading.value = true
+
+  try {
+    await props.deleteCloudSync()
+    reset()
+    feedbackMessage.value = "クラウド同期アカウントを削除しました"
+    feedbackKind.value = "success"
+    isConfirmingCloudSyncDeletion.value = false
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
+    feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
+  }
 }
 
 function reset() {
@@ -274,12 +291,13 @@ defineExpose({ reset })
           現在サインインしているクラウド同期アカウントと、クラウド上の同期データを削除します。この端末に保存されている記録は、サインインしていない状態のデータとして残ります。
         </p>
         <p class="confirm-message">
-          クラウド同期アカウントおよびクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？
+          クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？
         </p>
         <div class="confirm-actions">
           <button
             type="button"
             class="button-secondary hide-delete-cloud-sync-button"
+            :disabled="isLoading"
             @click="hideCloudSyncDeletionConfirmation"
           >
             キャンセル
@@ -287,6 +305,7 @@ defineExpose({ reset })
           <button
             type="button"
             class="button-danger delete-cloud-sync-button"
+            :disabled="isLoading"
             @click="handleConfirmDeleteCloudSync"
           >
             削除する
@@ -295,7 +314,11 @@ defineExpose({ reset })
       </template>
     </template>
 
-    <template v-else-if="panelView === 'signIn'">
+    <form
+      v-else-if="panelView === 'signIn'"
+      class="account-form"
+      @submit.prevent="handleSignIn"
+    >
       <div class="account-field">
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
@@ -344,10 +367,9 @@ defineExpose({ reset })
       </div>
       <div class="account-actions">
         <button
-          type="button"
+          type="submit"
           class="button-secondary sign-in-button"
           :disabled="!canSignIn"
-          @click="handleSignIn"
         >
           サインイン
         </button>
@@ -360,9 +382,13 @@ defineExpose({ reset })
           アカウントを作成する
         </button>
       </div>
-    </template>
+    </form>
 
-    <template v-else-if="panelView === 'signUp'">
+    <form
+      v-else-if="panelView === 'signUp'"
+      class="account-form"
+      @submit.prevent="handleSignUp"
+    >
       <div class="account-field">
         <label class="account-label">
           <span class="account-label-text">メールアドレス</span>
@@ -414,10 +440,9 @@ defineExpose({ reset })
       </div>
       <div class="account-actions">
         <button
-          type="button"
+          type="submit"
           class="button-secondary sign-up-button"
           :disabled="!canSignUp"
-          @click="handleSignUp"
         >
           アカウントを作成
         </button>
@@ -430,7 +455,7 @@ defineExpose({ reset })
           サインインする
         </button>
       </div>
-    </template>
+    </form>
 
     <output
       v-if="feedbackMessage"
@@ -469,6 +494,11 @@ defineExpose({ reset })
 .account-field {
   display: grid;
   gap: 4px;
+}
+
+.account-form {
+  display: grid;
+  gap: var(--space-2);
 }
 
 .account-label {

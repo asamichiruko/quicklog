@@ -19,9 +19,17 @@ const TestHost = defineComponent({
     const exportType = ref<ExportType | null>(null)
     const importedFile = ref<File | null>(null)
     const runtimeSessionState = ref<RuntimeSessionState>({ scope: { type: "anonymous" }, syncStatus: "disabled" })
+    const anonymousDataState = ref({ logEntryCount: 0, logEntryDeletionCount: 0 })
+    const signedInEmail = ref("")
+    const signedInPassword = ref("")
 
     function enableSummary() {
       settings.value = { showDailySummary: true }
+    }
+
+    async function signInWithEmail(email: string, password: string) {
+      signedInEmail.value = email
+      signedInPassword.value = password
     }
 
     return {
@@ -33,6 +41,14 @@ const TestHost = defineComponent({
       exportType,
       importedFile,
       runtimeSessionState,
+      anonymousDataState,
+      signedInEmail,
+      signedInPassword,
+      signInWithEmail,
+      signUpWithEmail: vi.fn(),
+      signOut: vi.fn(),
+      deleteAnonymousData: vi.fn(),
+      deleteCloudSync: vi.fn(),
     }
   },
   template: `
@@ -45,12 +61,21 @@ const TestHost = defineComponent({
     @save="savedSettings = $event"
     @export="exportType = $event"
     @import="importedFile = $event"
+    :session="null"
+    :sign-in-with-email="signInWithEmail"
+    :sign-up-with-email="signUpWithEmail"
+    :sign-out="signOut"
     :runtime-session-state="runtimeSessionState"
+    :anonymous-data-state="anonymousDataState"
+    :delete-anonymous-data="deleteAnonymousData"
+    :delete-cloud-sync="deleteCloudSync"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>
   <output data-testid="export-type">{{ exportType ?? "" }}</output>
   <output data-testid="import-file-name">{{ importedFile?.name ?? "" }}</output>
+  <output data-testid="signed-in-email">{{ signedInEmail }}</output>
+  <output data-testid="signed-in-password">{{ signedInPassword }}</output>
   `
 })
 
@@ -104,6 +129,22 @@ describe("SettingsDialog", () => {
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
     expect(screen.getByRole("checkbox", { name: "日別サマリーを表示" })).toBeChecked()
+  })
+
+  it("クラウド同期のパスワード欄で Enter を押すと設定 dialog を閉じずにサインインする", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByText("クラウド同期"))
+    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+    await user.keyboard("{Enter}")
+
+    expect(screen.getByTestId("signed-in-email")).toHaveTextContent("user@example.com")
+    expect(screen.getByTestId("signed-in-password")).toHaveTextContent("Passw0rd!")
+    expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
+    expect(container.querySelector("dialog")).toHaveAttribute("open")
   })
 
   it("開き直すと 記録のインポート パネルが閉じて入力状態がリセットされる", async () => {

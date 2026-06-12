@@ -35,6 +35,7 @@ const props = defineProps<{
   runtimeSessionState: RuntimeSessionState
   anonymousDataState: AnonymousDataState
   deleteAnonymousData: () => void
+  deleteCloudSync: () => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -91,10 +92,7 @@ defineExpose({ open })
     aria-labelledby="settings-dialog-heading"
     @click="handleDialogClick"
   >
-    <form
-      class="dialog-form"
-      @submit.prevent="saveAndClose"
-    >
+    <div class="dialog-form">
       <h2
         id="settings-dialog-heading"
         class="dialog-heading"
@@ -139,6 +137,7 @@ defineExpose({ open })
             :sign-up-with-email="props.signUpWithEmail"
             :sign-out="props.signOut"
             :runtime-session-state="props.runtimeSessionState"
+            :delete-cloud-sync="props.deleteCloudSync"
           />
         </div>
       </details>
@@ -218,7 +217,7 @@ defineExpose({ open })
       <div class="confirm-actions">
         <button
           class="button-primary"
-          type="submit"
+          type="button"
           @click="saveAndClose"
         >
           設定を保存
@@ -231,7 +230,7 @@ defineExpose({ open })
           キャンセル
         </button>
       </div>
-    </form>
+    </div>
   </dialog>
 </template>
 
