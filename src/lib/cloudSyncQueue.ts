@@ -5,6 +5,8 @@ import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "./q
 export type CloudSyncContext = {
   user: User | null
   data: QuicklogData
+  dataRevision: number
+  scopeRevision: number
 }
 
 export type CloudSyncQueueOptions = {

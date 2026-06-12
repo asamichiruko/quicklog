@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import type { User } from "@supabase/supabase-js"
 import type { QuicklogData } from "@/types"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
-import { createCloudSyncQueue } from "./cloudSyncQueue"
+import { createCloudSyncQueue, type CloudSyncContext } from "./cloudSyncQueue"
 
 function createDeferred<T>() {
   let resolve!: (value: T) => void
@@ -34,12 +34,22 @@ function createResult(data: QuicklogData): CloudQuicklogDataSyncResult {
 
 const user = { id: "user1" } as User
 
+function createContext(data: QuicklogData, overrides: Partial<CloudSyncContext> = {}): CloudSyncContext {
+  return {
+    user,
+    data,
+    dataRevision: 1,
+    scopeRevision: 1,
+    ...overrides,
+  }
+}
+
 describe("createCloudSyncQueue", () => {
   it("user がないときは同期しない", async () => {
     const sync = vi.fn()
     const applyResult = vi.fn()
     const queue = createCloudSyncQueue({
-      getContext: () => ({ user: null, data: createQuicklogData("local") }),
+      getContext: () => createContext(createQuicklogData("local"), { user: null }),
       sync,
       applyResult,
     })
@@ -55,12 +65,16 @@ describe("createCloudSyncQueue", () => {
     const secondData = createQuicklogData("second")
     const firstResult = createResult(firstData)
     const secondResult = createResult(secondData)
+    let currentContext = createContext(firstData, { dataRevision: 1 })
     const sync = vi.fn()
-      .mockReturnValueOnce(firstDeferred.promise)
+      .mockImplementationOnce(() => {
+        currentContext = createContext(secondData, { dataRevision: 2 })
+        return firstDeferred.promise
+      })
       .mockResolvedValueOnce(secondResult)
     const applyResult = vi.fn()
     const queue = createCloudSyncQueue({
-      getContext: () => ({ user, data: firstData }),
+      getContext: () => currentContext,
       sync,
       applyResult,
     })
@@ -78,23 +92,24 @@ describe("createCloudSyncQueue", () => {
     await expect(firstRequest).resolves.toBe(secondResult)
     await expect(secondRequest).resolves.toBe(secondResult)
     expect(sync).toHaveBeenCalledTimes(2)
-    expect(applyResult).toHaveBeenCalledWith(firstResult, { user, data: firstData })
-    expect(applyResult).toHaveBeenCalledWith(secondResult, { user, data: firstData })
+    expect(applyResult).toHaveBeenCalledWith(firstResult, createContext(firstData, { dataRevision: 1 }))
+    expect(applyResult).toHaveBeenCalledWith(secondResult, createContext(secondData, { dataRevision: 2 }))
   })
 
   it("result 適用時に同期開始時点の context を渡す", async () => {
     const data = createQuicklogData("local")
     const result = createResult(createQuicklogData("merged"))
+    const context = createContext(data, { dataRevision: 3, scopeRevision: 4 })
     const applyResult = vi.fn()
     const queue = createCloudSyncQueue({
-      getContext: () => ({ user, data }),
+      getContext: () => context,
       sync: vi.fn().mockResolvedValue(result),
       applyResult,
     })
 
     await queue.request()
 
-    expect(applyResult).toHaveBeenCalledWith(result, { user, data })
+    expect(applyResult).toHaveBeenCalledWith(result, context)
   })
 
   it("sync が失敗しても次回 request できる", async () => {
@@ -106,7 +121,7 @@ describe("createCloudSyncQueue", () => {
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce(result)
     const queue = createCloudSyncQueue({
-      getContext: () => ({ user, data }),
+      getContext: () => createContext(data),
       sync,
       applyResult: vi.fn(),
       onError,

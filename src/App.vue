@@ -55,7 +55,7 @@ import {
 } from "@/lib/storage"
 import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import { supabase } from "@/lib/supabase"
-import type { AnonymousDataState, AppSettings, ExportType, LogEntry, QuicklogData, RuntimeSessionState } from "@/types"
+import type { AnonymousDataState, AppSettings, DataScope, ExportType, LogEntry, QuicklogData, RuntimeSessionState } from "@/types"
 import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 
@@ -63,6 +63,8 @@ const session = ref<Session | null>(null)
 
 let unsubscribeAuth: (() => void) | undefined
 const deletedCloudUserIds = new Set<string>()
+let quicklogDataRevision = 0
+let dataScopeRevision = 0
 
 const quicklogData = ref<QuicklogData>({
   version: 3,
@@ -105,18 +107,23 @@ const cloudSyncQueue = createCloudSyncQueue({
     return {
       user: getActiveCloudUser(),
       data: quicklogData.value,
+      dataRevision: quicklogDataRevision,
+      scopeRevision: dataScopeRevision,
     }
   },
   sync: syncQuicklogDataWithCloud,
   applyResult: (result, context) => {
     const currentUser = getActiveCloudUser()
 
-    if (!currentUser || !context.user || currentUser.id !== context.user.id) {
+    if (!currentUser || !context.user || currentUser.id !== context.user.id) return
+    if (context.dataRevision !== quicklogDataRevision) {
+      cloudSyncScheduler.scheduleAfterLocalChange()
       return
     }
+    if (context.scopeRevision !== dataScopeRevision) return
 
     saveActiveQuicklogData(result.data)
-    quicklogData.value = result.data
+    setActiveQuicklogData(result.data)
   },
   onError(error) {
     console.warn("Failed to sync quicklog data", error)
@@ -170,7 +177,14 @@ function openSettings() {
   settingsDialog.value?.open()
 }
 
+function isSameDataScope(a: DataScope, b: DataScope): boolean {
+  if (a.type !== b.type) return false
+  if (a.type === "anonymous" || b.type === "anonymous") return true
+  return a.userId === b.userId
+}
+
 function applySessionTransition(event: SessionTransitionEvent, nextSession: Session | null) {
+  const previousScope = runtimeSessionState.value.scope
   const nextState = resolveSessionTransition({
     event,
     storedDataScope: loadStoredDataScope(),
@@ -179,8 +193,10 @@ function applySessionTransition(event: SessionTransitionEvent, nextSession: Sess
 
   session.value = nextSession
   runtimeSessionState.value = nextState
+  if (!isSameDataScope(previousScope, nextState.scope)) dataScopeRevision += 1
+
   saveStoredDataScope(nextState.scope)
-  quicklogData.value = loadActiveQuicklogData()
+  setActiveQuicklogData(loadActiveQuicklogData())
 
   applySessionSideEffects(nextState)
 }
@@ -212,11 +228,11 @@ function refreshAnonymousQuicklogDataState() {
 function deleteAnonymousQuicklogData() {
   clearQuicklogData()
   if (isAnonymous(runtimeSessionState.value)) {
-    quicklogData.value = {
+    setActiveQuicklogData({
       version: 3,
       logEntries: [],
       logEntryDeletions: [],
-    } satisfies QuicklogData
+    } satisfies QuicklogData)
   }
   refreshAnonymousQuicklogDataState()
 }
@@ -231,7 +247,7 @@ function saveActiveQuicklogData(data: QuicklogData) {
 
 function applyLocalQuicklogDataChange(nextData: QuicklogData) {
   saveActiveQuicklogData(nextData)
-  quicklogData.value = nextData
+  setActiveQuicklogData(nextData)
   cloudSyncScheduler.scheduleAfterLocalChange()
 }
 
@@ -252,7 +268,7 @@ function applyResolvedSession(nextSession: Session | null) {
 
 function pruneActiveQuicklogData() {
   const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), new Date())
-  quicklogData.value = pruned
+  setActiveQuicklogData(pruned)
   saveActiveQuicklogData(pruned)
 }
 
@@ -287,6 +303,11 @@ function activateAnonymousScope() {
   applySessionTransition({ type: "signedOut" }, null)
 }
 
+function setActiveQuicklogData(nextData: QuicklogData) {
+  quicklogData.value = nextData
+  quicklogDataRevision += 1
+}
+
 function updateNewLogEntryButtonVisibility() {
   const scrollY = window.scrollY
 
@@ -305,8 +326,7 @@ function moveToLogEntryForm() {
 
 function moveAnonymousDataToUser(user: User) {
   const result = moveAnonymousQuicklogDataToUser(user.id, new Date())
-
-  quicklogData.value = result.data
+  setActiveQuicklogData(result.data)
 
   if (result.moved) {
     cloudSyncScheduler.scheduleAfterLocalChange()
@@ -451,6 +471,12 @@ async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
   return result
 }
 
+function requestCloudSyncNowSilently() {
+  void cloudSyncScheduler.requestNow().catch((error) => {
+    console.warn("Failed to sync quicklog data", error)
+  })
+}
+
 function handleSelectDate(selectedDate: Date) {
   const target = document.getElementById(getDateGroupId(selectedDate))
   target?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -461,24 +487,24 @@ function handleSaveSettings(nextSettings: AppSettings) {
   saveSettings(nextSettings)
 }
 
-async function handleSignUpWithEmail(email: string, password: string) {
+async function startCloudSyncWithEmail(authenticate: () => Promise<void>) {
   await startCloudSync({
-    authenticate: () => signUpWithEmail(email, password),
+    authenticate,
     reloadAuthState,
     getActiveUser: getActiveCloudUser,
     moveAnonymousDataToUser,
     rollback: rollbackCloudSyncStart,
   })
+
+  requestCloudSyncNowSilently()
+}
+
+async function handleSignUpWithEmail(email: string, password: string) {
+  await startCloudSyncWithEmail(() => signUpWithEmail(email, password))
 }
 
 async function handleSignInWithEmail(email: string, password: string) {
-  await startCloudSync({
-    authenticate: () => signInWithEmail(email, password),
-    reloadAuthState,
-    getActiveUser: getActiveCloudUser,
-    moveAnonymousDataToUser,
-    rollback: rollbackCloudSyncStart,
-  })
+  await startCloudSyncWithEmail(() => signInWithEmail(email, password))
 }
 
 async function handleSignOut() {
