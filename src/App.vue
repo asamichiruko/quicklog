@@ -13,6 +13,7 @@ import {
   signUpWithEmail,
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
+import { deleteCloudSyncData } from "@/lib/cloudSyncDeletion"
 import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
 import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
 import { startCloudSync } from "@/lib/cloudSyncStart"
@@ -39,10 +40,9 @@ import {
   isAnonymous,
   isAuthPending,
   isSessionLost,
-  resolvePendingRuntimeSessionState,
-  resolveRuntimeSessionState,
   syncStatusMessage,
 } from "@/lib/runtimeSessionState"
+import { resolveSessionTransition, type SessionTransitionEvent } from "@/lib/sessionTransition"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import {
   clearQuicklogData,
@@ -137,7 +137,7 @@ const logEntryFormArea = ref<HTMLElement | null>(null)
 onMounted(() => {
   migrateStorageLayout()
 
-  applyPendingStoredSessionState()
+  applySessionTransition({ type: "startAuthCheck" }, null)
   pruneActiveQuicklogData()
   settings.value = loadSettings()
 
@@ -170,8 +170,35 @@ function openSettings() {
   settingsDialog.value?.open()
 }
 
-function openCalendar() {
-  calendarDialog.value?.open()
+function applySessionTransition(event: SessionTransitionEvent, nextSession: Session | null) {
+  const nextState = resolveSessionTransition({
+    event,
+    storedDataScope: loadStoredDataScope(),
+    ignoredUserIds: deletedCloudUserIds,
+  })
+
+  session.value = nextSession
+  runtimeSessionState.value = nextState
+  saveStoredDataScope(nextState.scope)
+  quicklogData.value = loadActiveQuicklogData()
+
+  applySessionSideEffects(nextState)
+}
+
+function applySessionSideEffects(nextState: RuntimeSessionState) {
+  clearAuthPendingTimeout()
+
+  if (isAuthPending(nextState)) {
+    scheduleAuthPendingTimeout()
+    return
+  }
+
+  if (isAnonymous(nextState) || isSessionLost(nextState)) {
+    cloudSyncScheduler.cancelScheduled()
+    return
+  }
+
+  cloudSyncScheduler.requestIfDue()
 }
 
 function refreshAnonymousQuicklogDataState() {
@@ -217,23 +244,10 @@ function getActiveCloudUser(): User | null {
 }
 
 function applyResolvedSession(nextSession: Session | null) {
-  if (nextSession && deletedCloudUserIds.has(nextSession.user.id)) {
-    activateAnonymousScope()
-    return
-  }
+  const sessionUserId = nextSession?.user.id ?? null
+  const acceptedSession = sessionUserId && deletedCloudUserIds.has(sessionUserId) ? null : nextSession
 
-  session.value = nextSession
-
-  const sessionUserId = nextSession ? nextSession.user.id : null
-  const storedDataScope = loadStoredDataScope()
-  applyRuntimeSessionState(resolveRuntimeSessionState(sessionUserId, storedDataScope))
-
-  cloudSyncScheduler.requestIfDue()
-}
-
-function applyPendingStoredSessionState() {
-  applyRuntimeSessionState(resolvePendingRuntimeSessionState(loadStoredDataScope()))
-  scheduleAuthPendingTimeout()
+  applySessionTransition({ type: "authResolved", sessionUserId }, acceptedSession)
 }
 
 function pruneActiveQuicklogData() {
@@ -247,15 +261,8 @@ async function reloadAuthState() {
     applyResolvedSession(await getCurrentSession())
   } catch (error) {
     console.warn("Failed to reload auth state", error)
-    applyResolvedSession(null)
+    applySessionTransition({ type: "authReloadFailed" }, null)
   }
-}
-
-function applyRuntimeSessionState(nextState: RuntimeSessionState) {
-  clearAuthPendingTimeout()
-  runtimeSessionState.value = nextState
-  saveStoredDataScope(nextState.scope)
-  quicklogData.value = loadActiveQuicklogData()
 }
 
 function scheduleAuthPendingTimeout() {
@@ -265,8 +272,7 @@ function scheduleAuthPendingTimeout() {
   authPendingTimeoutId = window.setTimeout(() => {
     if (!isAuthPending(runtimeSessionState.value)) return
 
-    session.value = null
-    applyRuntimeSessionState(resolveRuntimeSessionState(null, loadStoredDataScope()))
+    applySessionTransition({ type: "authCheckTimedOut" }, null)
   }, authPendingTimeoutMs)
 }
 
@@ -278,9 +284,62 @@ function clearAuthPendingTimeout() {
 }
 
 function activateAnonymousScope() {
-  cloudSyncScheduler.cancelScheduled()
-  session.value = null
-  applyRuntimeSessionState({ scope: { type: "anonymous" }, syncStatus: "disabled" })
+  applySessionTransition({ type: "signedOut" }, null)
+}
+
+function updateNewLogEntryButtonVisibility() {
+  const scrollY = window.scrollY
+
+  if (showNewLogEntryButton.value) {
+    showNewLogEntryButton.value = scrollY > newLogEntryButtonHideScrollY
+    return
+  }
+
+  showNewLogEntryButton.value = scrollY > newLogEntryButtonShowScrollY
+}
+
+function moveToLogEntryForm() {
+  logEntryFormArea.value?.scrollIntoView({ behavior: "smooth", block: "start" })
+  logEntryForm.value?.focus({ preventScroll: true }) // focus の副作用によるスクロールを抑える
+}
+
+function moveAnonymousDataToUser(user: User) {
+  const result = moveAnonymousQuicklogDataToUser(user.id, new Date())
+
+  quicklogData.value = result.data
+
+  if (result.moved) {
+    cloudSyncScheduler.scheduleAfterLocalChange()
+  }
+}
+
+async function rollbackCloudSyncStart() {
+  await signOut()
+  activateAnonymousScope()
+}
+
+async function deleteCloudSync() {
+  const user = getActiveCloudUser()
+  if (!user) {
+    throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
+  }
+  const userId = user.id
+
+  await deleteCloudSyncData({
+    loadAnonymousData: () => loadQuicklogData(),
+    loadUserData: () => loadQuicklogData(userId),
+    saveAnonymousData: (data) => saveQuicklogData(data),
+    clearUserData: () => clearQuicklogData(userId),
+    deleteCurrentAccount,
+    clearLocalAuthSession,
+    onLocalAuthSessionClearError: (error) => {
+      console.warn("Failed to clear local auth session after account deletion", error)
+    },
+  })
+
+  deletedCloudUserIds.add(userId)
+  applySessionTransition({ type: "accountDeleted", userId }, null)
+  refreshAnonymousQuicklogDataState()
 }
 
 function handleVisibilityChange() {
@@ -312,26 +371,10 @@ async function handleSubmit(text: string) {
   }
 }
 
-function updateNewLogEntryButtonVisibility() {
-  const scrollY = window.scrollY
-
-  if (showNewLogEntryButton.value) {
-    showNewLogEntryButton.value = scrollY > newLogEntryButtonHideScrollY
-    return
-  }
-
-  showNewLogEntryButton.value = scrollY > newLogEntryButtonShowScrollY
-}
-
-function moveToLogEntryForm() {
-  logEntryFormArea.value?.scrollIntoView({ behavior: "smooth", block: "start" })
-  logEntryForm.value?.focus({ preventScroll: true }) // focus の副作用によるスクロールを抑える
-}
-
 async function handleOpenCalendar(date: Date) {
   initialDate.value = date
   await nextTick() // 確実に currentDate が更新されるように待つ
-  openCalendar()
+  calendarDialog.value?.open()
 }
 
 async function handleRemove(id: string) {
@@ -416,58 +459,6 @@ function handleSelectDate(selectedDate: Date) {
 function handleSaveSettings(nextSettings: AppSettings) {
   settings.value = nextSettings
   saveSettings(nextSettings)
-}
-
-function moveAnonymousDataToUser(user: User) {
-  const result = moveAnonymousQuicklogDataToUser(user.id, new Date())
-
-  quicklogData.value = result.data
-
-  if (result.moved) {
-    cloudSyncScheduler.scheduleAfterLocalChange()
-  }
-}
-
-async function rollbackCloudSyncStart() {
-  await signOut()
-  activateAnonymousScope()
-}
-
-async function deleteCloudSync() {
-  const user = getActiveCloudUser()
-  if (!user) {
-    throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
-  }
-  const userId = user.id
-
-  const anonymousData = loadQuicklogData()
-  if (anonymousData.logEntries.length > 0 || anonymousData.logEntryDeletions.length > 0) {
-    throw new CloudSyncDeletionError("この端末に匿名データが残っているため、クラウド同期アカウントを削除できません。先にローカルデータの管理から匿名データを削除してください")
-  }
-
-  const userData = loadQuicklogData(userId)
-  try {
-    saveQuicklogData(userData)
-  } catch {
-    throw new CloudSyncDeletionError("この端末に記録を保存できないため、削除を開始できませんでした")
-  }
-
-  try {
-    await deleteCurrentAccount()
-  } catch {
-    saveQuicklogData(anonymousData)
-    throw new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした")
-  }
-
-  deletedCloudUserIds.add(userId)
-  activateAnonymousScope()
-  clearQuicklogData(userId)
-  try {
-    await clearLocalAuthSession()
-  } catch (error) {
-    console.warn("Failed to clear local auth session after account deletion", error)
-  }
-  refreshAnonymousQuicklogDataState()
 }
 
 async function handleSignUpWithEmail(email: string, password: string) {
