@@ -3,7 +3,7 @@ import { addDays, getLocalDateKey, startOfMonth } from "@/lib/date"
 export function createCalendarDays(
   displayedMonth: Date,
   initialDate: Date,
-  recordCounts: Map<string, number>,
+  logEntryCountsByDate: Map<string, number>,
 ) {
   const firstDay = startOfMonth(displayedMonth)
   const startDate = addDays(firstDay, -firstDay.getDay())
@@ -11,7 +11,7 @@ export function createCalendarDays(
   return Array.from({ length: 42 }, (_, index) => {
     const date = addDays(startDate, index)
     const dateKey = getLocalDateKey(date)
-    const count = recordCounts.get(dateKey) ?? 0
+    const count = logEntryCountsByDate.get(dateKey) ?? 0
 
     return {
       date,
