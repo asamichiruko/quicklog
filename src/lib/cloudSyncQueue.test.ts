@@ -140,4 +140,21 @@ describe("createCloudSyncQueue", () => {
     expect(sync).toHaveBeenCalledTimes(2)
     expect(onError).toHaveBeenCalledWith(error)
   })
+
+  it("sync が失敗したら result を適用しない", async () => {
+    const data = createQuicklogData("local")
+    const error = new Error("network error")
+    const onError = vi.fn()
+    const sync = vi.fn().mockRejectedValue(error)
+    const applyResult = vi.fn()
+    const queue = createCloudSyncQueue({
+      getContext: () => createContext(data),
+      sync,
+      applyResult,
+      onError,
+    })
+
+    await expect(queue.request()).rejects.toThrow(error)
+    expect(applyResult).not.toHaveBeenCalled()
+  })
 })

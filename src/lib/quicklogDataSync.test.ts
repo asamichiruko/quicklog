@@ -1,6 +1,6 @@
 import type { LogEntry, QuicklogData } from "@/types"
 import type { User } from "@supabase/supabase-js"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { fetchCloudLogEntries, upsertCloudLogEntries } from "@/lib/logEntryRepository"
 import {
   fetchCloudLogEntryDeletions,
@@ -126,6 +126,10 @@ describe("mergeQuicklogDataWithCloud", () => {
 })
 
 describe("syncQuicklogDataWithCloud", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it("リモートから取得したデータをマージして Supabase に upsert する", async () => {
     const localData = createLocalData()
     const cloudData = createCloudData()
@@ -156,5 +160,61 @@ describe("syncQuicklogDataWithCloud", () => {
     expect(repeatedResult.addedCount).toBe(0)
     expect(repeatedResult.deletedCount).toBe(0)
     expect(repeatedResult.uploadedCount).toBe(0)
+  })
+
+  it("cloud が空でも local data を残して upsert する", async () => {
+    const localData = createLocalData()
+    const user = { id: "user-id" } as unknown as User
+
+    vi.mocked(fetchCloudLogEntries).mockResolvedValue([])
+    vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue([])
+    vi.mocked(recordLogEntryDeletions).mockResolvedValue()
+
+    const result = await syncQuicklogDataWithCloud(localData, user)
+
+    expect(result.data.logEntries).toEqual(localData.logEntries)
+    expect(upsertCloudLogEntries).toHaveBeenCalledWith(localData.logEntries, user)
+    expect(recordLogEntryDeletions).toHaveBeenCalledWith(localData.logEntryDeletions, user)
+  })
+
+  it("remote の log entries 取得に失敗したら upsert せず失敗を返す", async () => {
+    const localData = createLocalData()
+    const user = { id: "user-id" } as unknown as User
+    const error = new Error("fetch failed")
+
+    vi.mocked(fetchCloudLogEntries).mockRejectedValue(error)
+
+    await expect(syncQuicklogDataWithCloud(localData, user)).rejects.toThrow(error)
+
+    expect(upsertCloudLogEntries).not.toHaveBeenCalled()
+    expect(recordLogEntryDeletions).not.toHaveBeenCalled()
+  })
+
+  it("remote の削除履歴取得に失敗したら upsert せず失敗を返す", async () => {
+    const localData = createLocalData()
+    const user = { id: "user-id" } as unknown as User
+    const error = new Error("fetch deletions failed")
+
+    vi.mocked(fetchCloudLogEntries).mockResolvedValue([])
+    vi.mocked(fetchCloudLogEntryDeletions).mockRejectedValue(error)
+
+    await expect(syncQuicklogDataWithCloud(localData, user)).rejects.toThrow(error)
+
+    expect(upsertCloudLogEntries).not.toHaveBeenCalled()
+    expect(recordLogEntryDeletions).not.toHaveBeenCalled()
+  })
+
+  it("upsert に失敗したら削除履歴を記録せず失敗を返す", async () => {
+    const localData = createLocalData()
+    const user = { id: "user-id" } as unknown as User
+    const error = new Error("upsert failed")
+
+    vi.mocked(fetchCloudLogEntries).mockResolvedValue([])
+    vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue([])
+    vi.mocked(upsertCloudLogEntries).mockRejectedValue(error)
+
+    await expect(syncQuicklogDataWithCloud(localData, user)).rejects.toThrow(error)
+
+    expect(recordLogEntryDeletions).not.toHaveBeenCalled()
   })
 })

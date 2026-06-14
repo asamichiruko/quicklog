@@ -97,7 +97,7 @@
 
 ## quicklogData/
 
-### moveAnonymousQuicklogDataToUser.ts
+### anonymousDataMigration.ts
 
 - 匿名データをユーザデータへ合成・移動
 

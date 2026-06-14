@@ -1,7 +1,7 @@
-import { moveAnonymousQuicklogDataToUser } from "@/lib/moveAnonymousQuicklogDataToUser"
+import { moveAnonymousQuicklogDataToUser } from "@/lib/anonymousDataMigration"
 import { loadQuicklogData, saveQuicklogData } from "@/lib/storage"
 import type { QuicklogData } from "@/types"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const emptyData = {
   version: 3,
@@ -56,5 +56,22 @@ describe("moveAnonymousQuicklogDataToUser", () => {
     expect(result.moved).toBe(true)
     expect(loadQuicklogData()).toEqual(emptyData)
     expect(loadQuicklogData("user1")).toEqual(mergedData)
+  })
+
+  it("user data への保存に失敗したら anonymous data を削除しない", () => {
+    const error = new Error("save failed")
+    const storage = {
+      loadQuicklogData: vi.fn((userId?: string) => (userId ? userData : anonymousData)),
+      saveQuicklogData: vi.fn((_: QuicklogData, userId?: string) => {
+        if (userId === "user1") throw error
+      }),
+    }
+
+    expect(() => {
+      moveAnonymousQuicklogDataToUser("user1", new Date("2026-06-10T02:00:00.000Z"), storage)
+    }).toThrow(error)
+
+    expect(storage.saveQuicklogData).toHaveBeenCalledExactlyOnceWith(mergedData, "user1")
+    // anonymous へ書き込む saveQuicklogData(mergedData) は呼び出されていない
   })
 })

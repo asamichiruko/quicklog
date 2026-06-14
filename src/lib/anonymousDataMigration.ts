@@ -7,12 +7,23 @@ export type MoveAnonymousQuicklogDataToUserResult = {
   moved: boolean
 }
 
+type MoveAnonymousQuicklogDataToUserStorage = {
+  loadQuicklogData: typeof loadQuicklogData
+  saveQuicklogData: typeof saveQuicklogData
+}
+
+const defaultStorage = {
+  loadQuicklogData,
+  saveQuicklogData,
+} satisfies MoveAnonymousQuicklogDataToUserStorage
+
 export function moveAnonymousQuicklogDataToUser(
   userId: string,
   now: Date,
+  storage: MoveAnonymousQuicklogDataToUserStorage = defaultStorage,
 ): MoveAnonymousQuicklogDataToUserResult {
-  const anonymousData = loadQuicklogData()
-  const userData = loadQuicklogData(userId)
+  const anonymousData = storage.loadQuicklogData()
+  const userData = storage.loadQuicklogData(userId)
 
   if (anonymousData.logEntries.length === 0 && anonymousData.logEntryDeletions.length === 0) {
     return { data: userData, moved: false }
@@ -20,14 +31,14 @@ export function moveAnonymousQuicklogDataToUser(
 
   const merged = mergeImportedQuicklogData(userData, anonymousData, now)
 
-  saveQuicklogData(merged.data, userId)
-  clearAnonymousQuicklogData()
+  storage.saveQuicklogData(merged.data, userId)
+  clearAnonymousQuicklogData(storage)
 
   return { data: merged.data, moved: true }
 }
 
-function clearAnonymousQuicklogData() {
-  saveQuicklogData({
+function clearAnonymousQuicklogData(storage: MoveAnonymousQuicklogDataToUserStorage) {
+  storage.saveQuicklogData({
     version: 3,
     logEntries: [],
     logEntryDeletions: [],

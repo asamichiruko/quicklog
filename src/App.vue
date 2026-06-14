@@ -32,7 +32,7 @@ import {
   pruneQuicklogDataLogEntryDeletions,
 } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
-import { moveAnonymousQuicklogDataToUser } from "@/lib/moveAnonymousQuicklogDataToUser"
+import { moveAnonymousQuicklogDataToUser } from "@/lib/anonymousDataMigration"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import {
   canUseCloud,
