@@ -24,10 +24,17 @@ const props = defineProps<{
 type PanelView = "signIn" | "signedIn" | "signUp" | "authPending"
 type FeedbackKind = "success" | "error"
 
+const canUseCloudSession = computed<boolean>(() => {
+  return Boolean(
+    props.session &&
+    props.runtimeSessionState.syncStatus === "authenticated" &&
+    props.session.user.id === props.runtimeSessionState.scope.userId,
+  )
+})
 const mode = ref<PanelView>("signIn")
 const panelView = computed<PanelView>(() => {
   if (isAuthPending(props.runtimeSessionState)) return "authPending"
-  if (props.session) return "signedIn"
+  if (canUseCloudSession.value) return "signedIn"
   return mode.value
 })
 const isConfirmingCloudSyncDeletion = ref(false)
@@ -170,7 +177,7 @@ async function handleSignOut(): Promise<void> {
 
 async function handleSync(): Promise<void> {
   if (isLoading.value) return
-  if (!props.session) {
+  if (!canUseCloudSession.value) {
     feedbackMessage.value = "サインイン状態にありません"
     feedbackKind.value = "error"
     return
@@ -480,6 +487,7 @@ defineExpose({ reset })
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
 }
+
 .account-input::placeholder {
   color: var(--color-text-subtle);
 }
@@ -538,9 +546,11 @@ defineExpose({ reset })
   color: var(--color-text);
   font-size: var(--font-size-small);
 }
+
 .feedback-message.success {
   color: var(--color-text-muted);
 }
+
 .feedback-message.error {
   color: var(--color-error);
 }
