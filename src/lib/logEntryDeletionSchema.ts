@@ -1,5 +1,5 @@
 import type { LogEntryDeletion } from "@/types"
-import { SchemaValidationError } from "@/lib/errors"
+import { SchemaValidationError } from "@/errors"
 
 function isValidDateString(value: string): boolean {
   return !Number.isNaN(Date.parse(value))

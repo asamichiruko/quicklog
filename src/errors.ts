@@ -36,7 +36,7 @@ export class InvalidDateError extends RangeError {
   }
 }
 
-export class CloudSyncStartError extends Error {
+export class CloudSyncActivationError extends Error {
   constructor(message: string) {
     super(message)
     this.name = "CloudSyncStartError"

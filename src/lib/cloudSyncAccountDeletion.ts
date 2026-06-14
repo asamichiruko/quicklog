@@ -1,4 +1,4 @@
-import { CloudSyncDeletionError } from "@/lib/errors"
+import { CloudSyncDeletionError } from "@/errors"
 import type { QuicklogData } from "@/types"
 
 export async function deleteCloudSyncData(options: {

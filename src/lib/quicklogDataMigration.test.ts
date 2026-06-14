@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { parseAsQuicklogData } from "./quicklogDataMigration"
-import { SchemaValidationError } from "./errors"
+import { SchemaValidationError } from "../errors"
 
 describe("parseAsQuicklogData", () => {
   it("旧形式として LogEntry[] 型のデータを parse できる", () => {

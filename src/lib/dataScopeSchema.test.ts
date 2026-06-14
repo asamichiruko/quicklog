@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { SchemaValidationError } from "@/lib/errors"
-import { parseAsDataScope } from "./dataScope"
+import { SchemaValidationError } from "@/errors"
+import { parseAsDataScope } from "./dataScopeSchema"
 
 describe("parseAsDataScope", () => {
   it("anonymous scope を parse できる", () => {

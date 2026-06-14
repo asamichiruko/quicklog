@@ -1,5 +1,5 @@
 import { startOfLocalDay } from "@/lib/date"
-import { InvalidDateError } from "@/lib/errors"
+import { InvalidDateError } from "@/errors"
 
 export function formatTimeWithSeconds(date: Date) {
   if (isNaN(date.getTime())) {

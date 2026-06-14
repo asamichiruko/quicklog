@@ -5,7 +5,7 @@ import {
   MAX_QUICKLOG_DATA_STORAGE_BYTES,
   MAX_SETTINGS_STORAGE_BYTES,
 } from "@/lib/sizeLimits"
-import { SizeError } from "@/lib/errors"
+import { SizeError } from "@/errors"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import {
   ANONYMOUS_DATA_KEY,
@@ -13,7 +13,7 @@ import {
   SETTINGS_KEY,
   STORED_DATA_SCOPE_KEY,
 } from "@/lib/storageLayoutMigration"
-import { parseAsDataScope } from "@/lib/dataScope"
+import { parseAsDataScope } from "@/lib/dataScopeSchema"
 
 export function loadStoredDataScope(): DataScope {
   const raw = localStorage.getItem(STORED_DATA_SCOPE_KEY)

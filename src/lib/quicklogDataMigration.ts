@@ -1,7 +1,7 @@
 import type { LogEntry, QuicklogData } from "@/types"
 import { mergeLogEntryDeletions } from "@/lib/logEntryDeletionCollection"
 import { parseAsLogEntries } from "@/lib/logEntrySchema"
-import { SchemaValidationError } from "@/lib/errors"
+import { SchemaValidationError } from "@/errors"
 import { parseAsLogEntryDeletions } from "@/lib/logEntryDeletionSchema"
 
 const LATEST_VERSION = 3

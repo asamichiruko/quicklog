@@ -20,7 +20,7 @@ describe("formatLogEntriesAsMarkdown size limit", () => {
     })
 
     const { formatLogEntriesAsMarkdown } = await import("./createQuicklogExportFile")
-    const { SizeError } = await import("@/lib/errors")
+    const { SizeError } = await import("@/errors")
 
     const logEntries = [
       {
@@ -48,7 +48,7 @@ describe("formatQuicklogDataAsJson size limit", () => {
     })
 
     const { formatQuicklogDataAsJson } = await import("./createQuicklogExportFile")
-    const { SizeError } = await import("@/lib/errors")
+    const { SizeError } = await import("@/errors")
 
     const quicklogData = {
       version: 3,

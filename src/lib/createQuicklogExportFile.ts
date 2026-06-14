@@ -6,7 +6,7 @@ import {
 } from "@/lib/logEntryCollection"
 import { formatLongJapaneseDate, formatTimeWithSeconds } from "@/lib/dateFormat"
 import { getUtf8ByteLength, MAX_EXPORT_FILE_BYTES } from "@/lib/sizeLimits"
-import { SchemaValidationError, SizeError } from "@/lib/errors"
+import { SchemaValidationError, SizeError } from "@/errors"
 import { parseAsQuicklogData } from "./quicklogDataMigration"
 import { isValidLogEntry } from "./logEntrySchema"
 

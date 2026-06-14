@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { getAuthFeedbackMessage } from "./authFeedbackMessage"
-import { CloudSyncDeletionError, CloudSyncStartError } from "@/lib/errors"
+import { CloudSyncDeletionError, CloudSyncActivationError } from "@/errors"
 
 describe("getAuthFeedbackMessage", () => {
   it("CloudSyncStartError object からメッセージを取り出す", () => {
-    expect(getAuthFeedbackMessage(new CloudSyncStartError("CloudSyncStartError"))).toBe(
+    expect(getAuthFeedbackMessage(new CloudSyncActivationError("CloudSyncStartError"))).toBe(
       "CloudSyncStartError",
     )
   })

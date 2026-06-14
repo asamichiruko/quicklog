@@ -1,5 +1,5 @@
 import type { DataScope } from "@/types"
-import { SchemaValidationError } from "@/lib/errors"
+import { SchemaValidationError } from "@/errors"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)

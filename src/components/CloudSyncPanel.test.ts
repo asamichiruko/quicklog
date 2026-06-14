@@ -5,7 +5,7 @@ import type { Session } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
 import CloudSyncPanel from "./CloudSyncPanel.vue"
 import type { RuntimeSessionState } from "@/types.ts"
-import { CloudSyncDeletionError } from "@/lib/errors.ts"
+import { CloudSyncDeletionError } from "@/errors.ts"
 
 function createSession(email = "user@example.com"): Session {
   return {

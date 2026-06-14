@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { isValidLogEntryDeletion, parseAsLogEntryDeletions } from "./logEntryDeletionSchema"
-import { SchemaValidationError } from "@/lib/errors"
+import { SchemaValidationError } from "@/errors"
 
 describe("isValidLogEntryDeletion", () => {
   it("valid な LogEntryDeletion を true と判定する", () => {

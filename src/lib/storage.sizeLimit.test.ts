@@ -25,7 +25,7 @@ describe("quicklogData size limit", () => {
     })
 
     const { loadQuicklogData, saveQuicklogData } = await import("./storage")
-    const { SizeError } = await import("@/lib/errors")
+    const { SizeError } = await import("@/errors")
 
     const existing = {
       version: 3 as const,
@@ -88,7 +88,7 @@ describe("settings size limit", () => {
 
     const { saveSettings } = await import("./storage")
     const { DEFAULT_SETTINGS } = await import("@/lib/settings")
-    const { SizeError } = await import("@/lib/errors")
+    const { SizeError } = await import("@/errors")
     const { SETTINGS_KEY } = await import("@/lib/storageLayoutMigration.ts")
 
     const existing = {

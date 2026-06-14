@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { downloadTextFile, readQuicklogImportFile } from "./browserFile"
-import { SizeError } from "@/lib/errors"
+import { SizeError } from "@/errors"
 
 describe("downloadTextFile", () => {
   afterEach(() => {
@@ -20,7 +20,7 @@ describe("downloadTextFile", () => {
     })
 
     const anchor = document.createElement("a")
-    const click = vi.spyOn(anchor, "click").mockImplementation(() => {})
+    const click = vi.spyOn(anchor, "click").mockImplementation(() => { })
     vi.spyOn(document, "createElement").mockReturnValue(anchor)
 
     downloadTextFile({

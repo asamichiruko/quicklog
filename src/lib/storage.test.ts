@@ -9,7 +9,7 @@ import {
 } from "./storage"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type { AppSettings, DataScope, QuicklogData } from "@/types"
-import { SchemaValidationError } from "@/lib/errors"
+import { SchemaValidationError } from "@/errors"
 import { STORED_DATA_SCOPE_KEY } from "./storageLayoutMigration"
 
 describe("storedDataScope", () => {

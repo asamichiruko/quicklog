@@ -1,4 +1,4 @@
-import { moveAnonymousQuicklogDataToUser } from "@/lib/quicklogDataScopeMigration"
+import { moveAnonymousQuicklogDataToUser } from "@/lib/moveAnonymousQuicklogDataToUser"
 import { loadQuicklogData, saveQuicklogData } from "@/lib/storage"
 import type { QuicklogData } from "@/types"
 import { beforeEach, describe, expect, it } from "vitest"

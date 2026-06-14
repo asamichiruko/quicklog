@@ -8,7 +8,7 @@ import {
   startOfLocalDay,
   startOfMonth,
 } from "./date"
-import { InvalidDateError } from "@/lib/errors"
+import { InvalidDateError } from "@/errors"
 
 describe("getLocalDateKey", () => {
   it("正規の Date オブジェクトから YYYY-MM-DD 形式の文字列を取得できる", () => {

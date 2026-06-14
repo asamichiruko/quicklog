@@ -1,5 +1,5 @@
-import { deleteCloudSyncData } from "@/lib/cloudSyncDeletion"
-import { CloudSyncDeletionError } from "@/lib/errors"
+import { deleteCloudSyncData } from "@/lib/cloudSyncAccountDeletion"
+import { CloudSyncDeletionError } from "@/errors"
 import type { QuicklogData } from "@/types"
 import { describe, expect, it, vi } from "vitest"
 
@@ -35,7 +35,7 @@ function createOptions(overrides: Partial<Parameters<typeof deleteCloudSyncData>
 }
 
 describe("deleteCloudSyncData", () => {
-  it("user data を anonymous に退避してからアカウントを削除し、ローカル後始末を行う", async () => {
+  it("user data を anonymous に退避してからアカウントを削除し、ローカルの clear を行う", async () => {
     const options = createOptions()
 
     await expect(deleteCloudSyncData(options)).resolves.toBeUndefined()

@@ -1,9 +1,9 @@
-import { startCloudSync } from "@/lib/cloudSyncStart"
-import { CloudSyncStartError, SizeError } from "@/lib/errors"
+import { activateCloudSync } from "@/lib/cloudSyncActivation"
+import { CloudSyncActivationError, SizeError } from "@/errors"
 import type { User } from "@supabase/supabase-js"
 import { describe, expect, it, vi } from "vitest"
 
-function createOptions(overrides: Partial<Parameters<typeof startCloudSync>[0]> = {}) {
+function createOptions(overrides: Partial<Parameters<typeof activateCloudSync>[0]> = {}) {
   const user = { id: "user1" } as User
 
   return {
@@ -19,11 +19,11 @@ function createOptions(overrides: Partial<Parameters<typeof startCloudSync>[0]> 
   }
 }
 
-describe("startCloudSync", () => {
+describe("activateCloudSync", () => {
   it("認証、認証状態の再読み込み、匿名データ移行に成功すると rollback しない", async () => {
     const { user, options } = createOptions()
 
-    await expect(startCloudSync(options)).resolves.toBeUndefined()
+    await expect(activateCloudSync(options)).resolves.toBeUndefined()
 
     expect(options.authenticate).toHaveBeenCalledOnce()
     expect(options.reloadAuthState).toHaveBeenCalledOnce()
@@ -38,7 +38,7 @@ describe("startCloudSync", () => {
       authenticate: vi.fn().mockRejectedValue(authError),
     })
 
-    await expect(startCloudSync(options)).rejects.toBe(authError)
+    await expect(activateCloudSync(options)).rejects.toBe(authError)
 
     expect(options.reloadAuthState).not.toHaveBeenCalled()
     expect(options.getActiveUser).not.toHaveBeenCalled()
@@ -51,7 +51,7 @@ describe("startCloudSync", () => {
       reloadAuthState: vi.fn().mockRejectedValue(new Error("reload failed")),
     })
 
-    await expect(startCloudSync(options)).rejects.toThrow(CloudSyncStartError)
+    await expect(activateCloudSync(options)).rejects.toThrow(CloudSyncActivationError)
 
     expect(options.authenticate).toHaveBeenCalledOnce()
     expect(options.reloadAuthState).toHaveBeenCalledOnce()
@@ -65,7 +65,7 @@ describe("startCloudSync", () => {
       getActiveUser: vi.fn(() => null),
     })
 
-    await expect(startCloudSync(options)).rejects.toThrow(
+    await expect(activateCloudSync(options)).rejects.toThrow(
       "サインイン状態を確認できませんでした。時間をおいて再度お試しください",
     )
 
@@ -83,7 +83,7 @@ describe("startCloudSync", () => {
       }),
     })
 
-    await expect(startCloudSync(options)).rejects.toThrow(
+    await expect(activateCloudSync(options)).rejects.toThrow(
       "記録が多すぎるため、クラウド同期を開始できませんでした",
     )
 

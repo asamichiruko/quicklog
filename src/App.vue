@@ -13,13 +13,13 @@ import {
   signUpWithEmail,
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
-import { deleteCloudSyncData } from "@/lib/cloudSyncDeletion"
+import { deleteCloudSyncData } from "@/lib/cloudSyncAccountDeletion"
 import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
 import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
-import { startCloudSync } from "@/lib/cloudSyncStart"
+import { activateCloudSync } from "@/lib/cloudSyncActivation"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
-import { CloudSyncDeletionError, SchemaValidationError, SizeError } from "@/lib/errors"
+import { CloudSyncDeletionError, SchemaValidationError, SizeError } from "@/errors"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import {
   appendLogEntry,
@@ -32,7 +32,7 @@ import {
   pruneQuicklogDataLogEntryDeletions,
 } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
-import { moveAnonymousQuicklogDataToUser } from "@/lib/quicklogDataScopeMigration"
+import { moveAnonymousQuicklogDataToUser } from "@/lib/moveAnonymousQuicklogDataToUser"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import {
   canUseCloud,
@@ -497,7 +497,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
 }
 
 async function startCloudSyncWithEmail(authenticate: () => Promise<void>) {
-  await startCloudSync({
+  await activateCloudSync({
     authenticate,
     reloadAuthState,
     getActiveUser: getActiveCloudUser,
