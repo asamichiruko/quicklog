@@ -93,9 +93,10 @@ npm run build
 1. Supabase プロジェクトを作成する
 2. Authentication で Email / Password 認証を有効にする
 3. Supabase SQL Editor で `supabase/setup.sql` を実行する
-4. Project Settings > API から Project URL と anon public key を確認する
-5. プロジェクトルートに `.env.local` を作成する
-6. `delete-account` Edge Function をデプロイする
+4. Supabase CLI で対象プロジェクトを link する
+5. `delete-account` Edge Function をデプロイする
+6. Project Settings > API から Project URL と anon public key を確認する
+7. プロジェクトルートに `.env.local` を作成する
 
 ### Authentication
 

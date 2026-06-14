@@ -17,9 +17,10 @@ on public.log_entries (user_id, client_created_at desc);
 create or replace function public.update_updated_at_column()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
-  new.updated_at = now();
+  new.updated_at = pg_catalog.now();
   return new;
 end;
 $$;
@@ -89,14 +90,3 @@ for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
-
-create or replace function public.update_updated_at_column()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-begin
-  new.updated_at = pg_catalog.now();
-  return new;
-end;
-$$;
