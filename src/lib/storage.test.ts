@@ -6,11 +6,12 @@ import {
   saveQuicklogData,
   saveStoredDataScope,
   loadStoredDataScope,
+  clearQuicklogData,
 } from "./storage"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type { AppSettings, DataScope, QuicklogData } from "@/types"
 import { SchemaValidationError } from "@/errors"
-import { STORED_DATA_SCOPE_KEY } from "./storageLayoutMigration"
+import { ANONYMOUS_DATA_KEY, getUserDataKey, STORED_DATA_SCOPE_KEY } from "./storageLayoutMigration"
 
 describe("storedDataScope", () => {
   beforeEach(() => {
@@ -54,6 +55,12 @@ describe("quicklogData", () => {
     logEntryDeletions: [{ createdAt: "2026-05-22T00:00:00.000Z", logEntryId: "id3" }],
   } satisfies QuicklogData
 
+  const emptyQuicklogData = {
+    version: 3,
+    logEntries: [],
+    logEntryDeletions: [],
+  } satisfies QuicklogData
+
   beforeEach(() => {
     localStorage.clear()
   })
@@ -91,11 +98,48 @@ describe("quicklogData", () => {
   })
 
   it("localStorage の内容が空のとき、空の quicklogData を返す", () => {
-    expect(loadQuicklogData()).toEqual({
-      version: 3,
-      logEntries: [],
-      logEntryDeletions: [],
-    })
+    expect(loadQuicklogData()).toEqual(emptyQuicklogData)
+  })
+
+  it("localStorage の内容が invalid なとき、空の quicklogData を返す", () => {
+    localStorage.setItem(getUserDataKey("user1"), JSON.stringify({ name: "invalid data" }))
+    expect(loadQuicklogData("user1")).toEqual(emptyQuicklogData)
+
+    localStorage.setItem(ANONYMOUS_DATA_KEY, JSON.stringify({ name: "invalid data" }))
+    expect(loadQuicklogData()).toEqual(emptyQuicklogData)
+  })
+
+  it("user の localStorage の内容が invalid なとき、anonymous data に fallback しない", () => {
+    localStorage.setItem(getUserDataKey("user1"), JSON.stringify({ name: "invalid data" }))
+    saveQuicklogData(quicklogData1)
+
+    expect(loadQuicklogData("user1")).not.toEqual(quicklogData1)
+  })
+
+  it("user の quicklogData を clear したとき、anonymous の quicklogData が clear されない", () => {
+    saveQuicklogData(quicklogData1)
+    saveQuicklogData(quicklogData2, "user1")
+
+    expect(loadQuicklogData()).toEqual(quicklogData1)
+    expect(loadQuicklogData("user1")).toEqual(quicklogData2)
+
+    clearQuicklogData("user1")
+
+    expect(loadQuicklogData()).toEqual(quicklogData1)
+    expect(loadQuicklogData("user1")).toEqual(emptyQuicklogData)
+  })
+
+  it("anonymous の quicklogData を clear したとき、user の quicklogData が clear されない", () => {
+    saveQuicklogData(quicklogData1)
+    saveQuicklogData(quicklogData2, "user1")
+
+    expect(loadQuicklogData()).toEqual(quicklogData1)
+    expect(loadQuicklogData("user1")).toEqual(quicklogData2)
+
+    clearQuicklogData()
+
+    expect(loadQuicklogData()).toEqual(emptyQuicklogData)
+    expect(loadQuicklogData("user1")).toEqual(quicklogData2)
   })
 })
 

@@ -217,4 +217,17 @@ describe("syncQuicklogDataWithCloud", () => {
 
     expect(recordLogEntryDeletions).not.toHaveBeenCalled()
   })
+
+  it("recordLogEntryDeletions に失敗したら削除履歴を記録せず失敗を返す", async () => {
+    const localData = createLocalData()
+    const user = { id: "user-id" } as unknown as User
+    const error = new Error("recordLogEntryDeletions failed")
+
+    vi.mocked(fetchCloudLogEntries).mockResolvedValue([])
+    vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue([])
+    vi.mocked(upsertCloudLogEntries).mockResolvedValue()
+    vi.mocked(recordLogEntryDeletions).mockRejectedValue(error)
+
+    await expect(syncQuicklogDataWithCloud(localData, user)).rejects.toThrow(error)
+  })
 })
