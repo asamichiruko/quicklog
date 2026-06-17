@@ -113,8 +113,8 @@ SQL Editor 上で `supabase/setup.sql` を実行します。
 プロジェクトルートに `.env.local` を作成します。
 
 ```env
-VITE_SUPABASE_URL=your-supabase-project-url
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+VITE_SUPABASE_URL=<your-supabase-project-url>
+VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 ```
 
 ### Edge Function
@@ -135,6 +135,53 @@ supabase functions deploy delete-account
 ```
 
 この関数は、サインイン中のユーザ自身のアカウントと関連データを削除するために使用します。
+
+## ローカル開発
+
+Windows + WSL2 でのローカル開発環境の構築例です。
+
+### 前提
+
+- Node.js
+- Docker Desktop
+- Docker Desktop の WSL Integration
+- Supabase CLI
+- Deno
+
+### 初回セットアップ
+
+```bash
+npm install
+npx supabase start
+npx supabase db reset
+```
+
+`npx supabase status` で表示されるローカルの接続情報を `.env.development.local` に設定する：
+
+```env
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=<local publishable key>
+```
+
+### 起動
+
+各プロセスを別々のターミナルなどで起動：
+
+- `npx supabase start`
+- `npx supabase functions serve delete-account`
+- `npm run dev`
+
+### 停止
+
+```bash
+npx supabase stop
+```
+
+### ローカル DB の初期化
+
+```bash
+npx supabase db reset
+```
 
 ## 第三者ライセンス
 
