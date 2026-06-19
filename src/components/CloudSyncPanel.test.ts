@@ -7,9 +7,10 @@ import CloudSyncPanel from "./CloudSyncPanel.vue"
 import type { RuntimeSessionState } from "@/types.ts"
 import { CloudSyncDeletionError } from "@/errors.ts"
 
-function createSession(email = "user@example.com"): Session {
+function createSession(userId: string, email: string): Session {
   return {
     user: {
+      id: userId,
       email,
     },
   } as unknown as Session
@@ -157,7 +158,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
-        session: createSession("user@example.com"),
+        session: createSession("user1", "user@example.com"),
         signOut,
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
@@ -182,7 +183,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
-        session: createSession("user@example.com"),
+        session: createSession("user1", "user@example.com"),
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
@@ -262,7 +263,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
-        session: createSession("user@example.com"),
+        session: createSession("user1", "user@example.com"),
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
@@ -289,7 +290,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
-        session: createSession("user@example.com"),
+        session: createSession("user1", "user@example.com"),
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
@@ -419,7 +420,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
-        session: createSession("user@example.com"),
+        session: createSession("user1", "user@example.com"),
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
@@ -443,7 +444,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
-        session: createSession("user@example.com"),
+        session: createSession("user1", "user@example.com"),
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
@@ -479,7 +480,7 @@ describe("CloudSyncPanel", () => {
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
-        session: createSession("user@example.com"),
+        session: createSession("user1", "user@example.com"),
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
