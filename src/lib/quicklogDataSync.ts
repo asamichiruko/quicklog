@@ -5,7 +5,7 @@ import {
   fetchCloudLogEntryDeletions,
   recordLogEntryDeletions,
 } from "@/lib/logEntryDeletionRepository"
-import { mergeQuicklogData } from "@/lib/quicklogDataMerge"
+import { mergeQuicklogData, pruneQuicklogDataLogEntryDeletions } from "@/lib/quicklogDataMerge"
 
 export type CloudQuicklogDataSyncResult = {
   data: QuicklogData
@@ -37,14 +37,20 @@ export function mergeQuicklogDataWithCloud(
 export async function syncQuicklogDataWithCloud(
   localData: QuicklogData,
   user: User,
+  now = new Date(),
 ): Promise<CloudQuicklogDataSyncResult> {
   const cloudLogEntries = await fetchCloudLogEntries(user)
   const cloudLogEntryDeletions = await fetchCloudLogEntryDeletions(user)
-  const result = mergeQuicklogDataWithCloud(localData, {
-    version: 3,
-    logEntries: cloudLogEntries,
-    logEntryDeletions: cloudLogEntryDeletions,
-  })
+  const prunedLocalData = pruneQuicklogDataLogEntryDeletions(localData, now)
+  const prunedCloudData = pruneQuicklogDataLogEntryDeletions(
+    {
+      version: 3,
+      logEntries: cloudLogEntries,
+      logEntryDeletions: cloudLogEntryDeletions,
+    },
+    now,
+  )
+  const result = mergeQuicklogDataWithCloud(prunedLocalData, prunedCloudData)
 
   await upsertCloudLogEntries(result.data.logEntries, user)
   await recordLogEntryDeletions(result.data.logEntryDeletions, user)

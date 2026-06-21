@@ -69,11 +69,18 @@ const sharedLogEntryDeletion = {
   createdAt: "2026-06-05T14:00:00.000Z",
 }
 
+const expiredCloudLogEntryDeletion = {
+  logEntryId: "expired-cloud-deleted",
+  createdAt: "2026-01-01T00:00:00.000Z",
+}
+
 const expectedLogEntryDeletions = [
   cloudLogEntryDeletion,
   sharedLogEntryDeletion,
   localLogEntryDeletion,
 ]
+
+const syncNow = new Date("2026-06-21T00:00:00.000Z")
 
 function createLocalData(): QuicklogData {
   return {
@@ -139,7 +146,7 @@ describe("syncQuicklogDataWithCloud", () => {
     vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue(cloudData.logEntryDeletions)
     vi.mocked(recordLogEntryDeletions).mockResolvedValue()
 
-    const result = await syncQuicklogDataWithCloud(localData, user)
+    const result = await syncQuicklogDataWithCloud(localData, user, syncNow)
 
     expect(fetchCloudLogEntries).toHaveBeenCalledWith(user)
     expect(upsertCloudLogEntries).toHaveBeenCalledWith(
@@ -154,7 +161,7 @@ describe("syncQuicklogDataWithCloud", () => {
     vi.mocked(fetchCloudLogEntries).mockResolvedValue(result.data.logEntries)
     vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue(result.data.logEntryDeletions)
 
-    const repeatedResult = await syncQuicklogDataWithCloud(result.data, user)
+    const repeatedResult = await syncQuicklogDataWithCloud(result.data, user, syncNow)
 
     expect(repeatedResult.data).toEqual(result.data)
     expect(repeatedResult.addedCount).toBe(0)
@@ -170,11 +177,34 @@ describe("syncQuicklogDataWithCloud", () => {
     vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue([])
     vi.mocked(recordLogEntryDeletions).mockResolvedValue()
 
-    const result = await syncQuicklogDataWithCloud(localData, user)
+    const result = await syncQuicklogDataWithCloud(localData, user, syncNow)
 
     expect(result.data.logEntries).toEqual(localData.logEntries)
     expect(upsertCloudLogEntries).toHaveBeenCalledWith(localData.logEntries, user)
     expect(recordLogEntryDeletions).toHaveBeenCalledWith(localData.logEntryDeletions, user)
+  })
+
+  it("期限切れの remote 削除履歴を local に戻さず Supabase にも記録しない", async () => {
+    const localData = {
+      version: 3,
+      logEntries: [localOnlyEntry],
+      logEntryDeletions: [],
+    } satisfies QuicklogData
+    const cloudData = {
+      version: 3,
+      logEntries: [],
+      logEntryDeletions: [expiredCloudLogEntryDeletion],
+    } satisfies QuicklogData
+    const user = { id: "user-id" } as unknown as User
+
+    vi.mocked(fetchCloudLogEntries).mockResolvedValue(cloudData.logEntries)
+    vi.mocked(fetchCloudLogEntryDeletions).mockResolvedValue(cloudData.logEntryDeletions)
+    vi.mocked(recordLogEntryDeletions).mockResolvedValue()
+
+    const result = await syncQuicklogDataWithCloud(localData, user, syncNow)
+
+    expect(result.data.logEntryDeletions).toEqual([])
+    expect(recordLogEntryDeletions).toHaveBeenCalledWith([], user)
   })
 
   it("remote の log entries 取得に失敗したら upsert せず失敗を返す", async () => {
