@@ -1,4 +1,8 @@
-import { CloudSyncActivationError as CloudSyncActivationError, isQuotaExceededError, SizeError } from "@/errors"
+import {
+  CloudSyncActivationError as CloudSyncActivationError,
+  isQuotaExceededError,
+  SizeError,
+} from "@/errors"
 import type { User } from "@supabase/supabase-js"
 
 export async function activateCloudSync(options: {

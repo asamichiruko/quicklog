@@ -20,7 +20,7 @@ describe("downloadTextFile", () => {
     })
 
     const anchor = document.createElement("a")
-    const click = vi.spyOn(anchor, "click").mockImplementation(() => { })
+    const click = vi.spyOn(anchor, "click").mockImplementation(() => {})
     vi.spyOn(document, "createElement").mockReturnValue(anchor)
 
     downloadTextFile({
