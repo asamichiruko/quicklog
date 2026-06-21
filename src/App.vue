@@ -348,10 +348,13 @@ async function rollbackCloudSyncStart() {
 }
 
 async function deleteCloudSync() {
+  // 削除フローを開始できるかの事前チェック
   const user = getActiveCloudUser()
   if (!user) {
     throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
   }
+
+  await syncCloudDataBeforeDeletion(user)
   const userId = user.id
 
   await deleteCloudSyncData({
@@ -369,6 +372,27 @@ async function deleteCloudSync() {
   deletedCloudUserIds.add(userId)
   applySessionTransition({ type: "accountDeleted", userId }, null)
   refreshAnonymousQuicklogDataState()
+}
+
+async function syncCloudDataBeforeDeletion(user: User) {
+  const scopeRevisionBeforeSync = dataScopeRevision
+
+  let result: CloudQuicklogDataSyncResult | null
+  try {
+    result = await cloudSyncScheduler.requestNow()
+  } catch (error) {
+    console.warn("Failed to sync quicklog data before account deletion", error)
+    throw new CloudSyncDeletionError("クラウド同期に失敗しました")
+  }
+
+  const currentUser = getActiveCloudUser()
+  if (!result || !currentUser || currentUser.id !== user.id) {
+    throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
+  }
+
+  if (scopeRevisionBeforeSync !== dataScopeRevision || quicklogData.value !== result.data) {
+    throw new CloudSyncDeletionError("クラウド同期に失敗しました")
+  }
 }
 
 function handleVisibilityChange() {
