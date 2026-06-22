@@ -30,6 +30,8 @@ const canSignUp = computed(() => {
 })
 
 function handleSubmit() {
+  if (!canSignUp.value) return
+
   emit("submit", signUpEmail.value, signUpPassword.value)
 }
 

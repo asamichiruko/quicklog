@@ -38,6 +38,8 @@ function validateSignInPassword() {
 }
 
 function handleSubmit() {
+  if (!canSignIn.value) return
+
   emit("submit", signInEmail.value, signInPassword.value)
 }
 

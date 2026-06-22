@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { SelectablePanelView } from "@/components/CloudSyncAccountPanel.vue"
 import { validateEmail } from "@/lib/authFormValidation"
 import { computed, ref } from "vue"
 
@@ -9,7 +8,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   submit: [email: string]
-  changeView: [view: SelectablePanelView]
+  cancel: []
   edit: []
 }>()
 
@@ -29,12 +28,14 @@ const canPasswordResetRequest = computed(() => {
 })
 
 function handleSubmit() {
+  if (!canPasswordResetRequest.value) return
+
   emit("submit", passwordResetRequestEmail.value)
 }
 
 function handleCancel() {
   reset()
-  emit("changeView", "signIn")
+  emit("cancel")
 }
 
 function reset() {
