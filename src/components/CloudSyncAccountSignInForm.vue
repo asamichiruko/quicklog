@@ -184,23 +184,4 @@ defineExpose({ reset })
 button {
   width: fit-content;
 }
-
-.feedback-message {
-  display: block;
-  margin: 0;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-surface);
-  background: var(--color-page);
-  color: var(--color-text);
-  font-size: var(--font-size-small);
-}
-
-.feedback-message.success {
-  color: var(--color-text-muted);
-}
-
-.feedback-message.error {
-  color: var(--color-error);
-}
 </style>
