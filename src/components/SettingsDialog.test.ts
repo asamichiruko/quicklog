@@ -139,7 +139,11 @@ describe("SettingsDialog", () => {
     const { container } = render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByText("クラウド同期"))
+
+    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
+    expect(cloudSyncSummary).not.toBeNull()
+
+    await user.click(cloudSyncSummary as HTMLElement)
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
     await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
     await user.keyboard("{Enter}")
@@ -148,6 +152,30 @@ describe("SettingsDialog", () => {
     expect(screen.getByTestId("signed-in-password")).toHaveTextContent("Passw0rd!")
     expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
     expect(container.querySelector("dialog")).toHaveAttribute("open")
+  })
+
+  it("パスワードリセットの確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
+    expect(cloudSyncSummary).not.toBeNull()
+
+    await user.click(cloudSyncSummary as HTMLElement)
+    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+
+    expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
+    expect(cloudSyncPanel).toHaveAttribute("open")
+    expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
   })
 
   it("開き直すと 記録のインポート パネルが閉じて入力状態がリセットされる", async () => {

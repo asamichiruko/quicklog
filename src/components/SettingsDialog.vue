@@ -55,8 +55,12 @@ function open() {
 
   nextSettings.value = { ...props.settings }
 
-  cloudSyncPanel.value?.reset()
-  if (cloudSyncPanelDetails.value) cloudSyncPanelDetails.value.open = false
+  cloudSyncPanel.value?.prepareForDialogOpen()
+  if (cloudSyncPanelDetails.value) {
+    cloudSyncPanelDetails.value.open = Boolean(
+      cloudSyncPanel.value?.hasPendingPasswordResetVerification,
+    )
+  }
 
   copyPanel.value?.reset()
   if (copyPanelDetails.value) copyPanelDetails.value.open = false
