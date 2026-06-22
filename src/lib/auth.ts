@@ -70,3 +70,51 @@ export async function deleteCurrentAccount(): Promise<void> {
     throw new Error("アカウントを削除できませんでした")
   }
 }
+
+export async function sendPasswordResetCode(email: string): Promise<void> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email)
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function verifyPasswordResetCode(email: string, code: string): Promise<void> {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: code,
+    type: "recovery",
+  })
+
+  if (error) {
+    throw error
+  }
+
+  if (!data.session) {
+    throw new Error("パスワードリセット用のセッションを開始できませんでした")
+  }
+}
+
+export async function updatePasswordAfterRecovery(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  })
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function changePassword(
+  newPassword: string,
+  currentPassword?: string,
+): Promise<void> {
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+    ...(currentPassword ? { currentPassword } : {}),
+  })
+
+  if (error) {
+    throw error
+  }
+}
