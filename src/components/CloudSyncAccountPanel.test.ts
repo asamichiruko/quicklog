@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import type { Session } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
-import CloudSyncPanel from "./CloudSyncPanel.vue"
+import CloudSyncPanel from "./CloudSyncAccountPanel.vue"
 import type { RuntimeSessionState } from "@/types.ts"
 import { CloudSyncDeletionError } from "@/errors.ts"
 
@@ -43,7 +43,7 @@ vi.mock("@/lib/auth", () => ({
   signOut: vi.fn(),
 }))
 
-describe("CloudSyncPanel", () => {
+describe("CloudSyncAccountPanel", () => {
   afterEach(() => {
     vi.clearAllMocks()
   })

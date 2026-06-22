@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CloudSyncPanel from "@/components/CloudSyncPanel.vue"
+import CloudSyncPanel from "@/components/CloudSyncAccountPanel.vue"
 import LocalDataManagementPanel from "@/components/LocalDataManagementPanel.vue"
 import LogEntryCopyPanel from "@/components/LogEntryCopyPanel.vue"
 import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
