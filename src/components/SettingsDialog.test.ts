@@ -52,6 +52,9 @@ const TestHost = defineComponent({
       signOut: vi.fn(),
       deleteAnonymousData: vi.fn(),
       deleteCloudSync: vi.fn(),
+      sendPasswordResetCode: vi.fn(),
+      verifyPasswordResetCode: vi.fn(),
+      changePassword: vi.fn(),
     }
   },
   template: `
@@ -72,6 +75,9 @@ const TestHost = defineComponent({
     :anonymous-data-state="anonymousDataState"
     :delete-anonymous-data="deleteAnonymousData"
     :delete-cloud-sync="deleteCloudSync"
+    :send-password-reset-code="sendPasswordResetCode"
+    :verify-password-reset-code="verifyPasswordResetCode"
+    :change-password="changePassword"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>

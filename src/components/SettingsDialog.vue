@@ -32,16 +32,19 @@ const localDataManagementPanelDetails = ref<HTMLDetailsElement | null>(null)
 
 const props = defineProps<{
   session: Session | null
+  runtimeSessionState: RuntimeSessionState
   logEntries: LogEntry[]
   settings: AppSettings
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
   signInWithEmail: (email: string, password: string) => Promise<void>
   signUpWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  runtimeSessionState: RuntimeSessionState
   anonymousDataState: AnonymousDataState
   deleteAnonymousData: () => void
   deleteCloudSync: () => Promise<void>
+  sendPasswordResetCode: (email: string) => Promise<void>
+  verifyPasswordResetCode: (email: string, code: string) => Promise<void>
+  changePassword: (password: string) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -57,9 +60,7 @@ function open() {
 
   cloudSyncPanel.value?.prepareForDialogOpen()
   if (cloudSyncPanelDetails.value) {
-    cloudSyncPanelDetails.value.open = Boolean(
-      cloudSyncPanel.value?.hasPendingPasswordResetVerification,
-    )
+    cloudSyncPanelDetails.value.open = Boolean(cloudSyncPanel.value?.hasActivePasswordResetFlow)
   }
 
   copyPanel.value?.reset()
@@ -134,12 +135,15 @@ defineExpose({ open })
             <CloudSyncPanel
               ref="cloudSyncPanel"
               :session="props.session"
+              :runtime-session-state="props.runtimeSessionState"
               :sync-log-entries="props.syncLogEntries"
               :sign-in-with-email="props.signInWithEmail"
               :sign-up-with-email="props.signUpWithEmail"
               :sign-out="props.signOut"
-              :runtime-session-state="props.runtimeSessionState"
               :delete-cloud-sync="props.deleteCloudSync"
+              :send-password-reset-code="props.sendPasswordResetCode"
+              :verify-password-reset-code="props.verifyPasswordResetCode"
+              :change-password="props.changePassword"
             />
           </div>
         </details>

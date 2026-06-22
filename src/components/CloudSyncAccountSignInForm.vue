@@ -50,7 +50,7 @@ function showSignUpView() {
 
 function showResetPasswordView() {
   resetAuthFormState()
-  emit("changeView", "resetPassword")
+  emit("changeView", "passwordResetRequest")
 }
 
 function resetAuthFormState() {

@@ -5,12 +5,15 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import {
+  changePassword,
   clearLocalAuthSession,
   deleteCurrentAccount,
   getCurrentSession,
+  sendPasswordResetCode,
   signInWithEmail,
   signOut,
   signUpWithEmail,
+  verifyPasswordResetCode,
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { deleteCloudSyncData } from "@/lib/cloudSyncAccountDeletion"
@@ -544,6 +547,18 @@ async function handleSignOut() {
   await signOut()
   activateAnonymousScope()
 }
+
+async function handleSendPasswordResetCode(email: string) {
+  await sendPasswordResetCode(email)
+}
+
+async function handleVerifyPasswordResetCode(email: string, code: string) {
+  await verifyPasswordResetCode(email, code)
+}
+
+async function handleChangePassword(password: string) {
+  await changePassword(password)
+}
 </script>
 
 <template>
@@ -613,6 +628,9 @@ async function handleSignOut() {
     :anonymous-data-state="anonymousQuicklogDataState"
     :delete-anonymous-data="deleteAnonymousQuicklogData"
     :delete-cloud-sync="deleteCloudSync"
+    :send-password-reset-code="handleSendPasswordResetCode"
+    :verify-password-reset-code="handleVerifyPasswordResetCode"
+    :change-password="handleChangePassword"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"

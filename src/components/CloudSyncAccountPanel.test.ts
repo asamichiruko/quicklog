@@ -22,6 +22,9 @@ function createDefaultProps() {
   const signUpWithEmail = vi.fn()
   const signOut = vi.fn()
   const deleteCloudSync = vi.fn()
+  const sendPasswordResetCode = vi.fn()
+  const verifyPasswordResetCode = vi.fn()
+  const changePassword = vi.fn()
   const runtimeSessionState = {
     scope: { type: "anonymous" },
     syncStatus: "disabled",
@@ -34,6 +37,9 @@ function createDefaultProps() {
     signOut,
     deleteCloudSync,
     runtimeSessionState,
+    sendPasswordResetCode,
+    verifyPasswordResetCode,
+    changePassword,
   }
 }
 
