@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CloudSyncAccountSignedInView from "@/components/CloudSyncAccountSignedInView.vue"
 import CloudSyncAccountSignInForm from "@/components/CloudSyncAccountSignInForm.vue"
 import CloudSyncAccountSignUpForm from "@/components/CloudSyncAccountSignUpForm.vue"
 import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
@@ -42,11 +43,13 @@ const panelView = computed<PanelView>(() => {
   if (isAwaitingPasswordResetVerification.value) return "verifyEmail"
   return selectedPanelView.value
 })
-const isConfirmingCloudSyncDeletion = ref(false)
 const isAwaitingPasswordResetVerification = ref(false)
 
 const cloudSyncAccountSignInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
 const cloudSyncAccountSignUpForm = ref<InstanceType<typeof CloudSyncAccountSignUpForm> | null>(null)
+const cloudSyncAccountSignedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(
+  null,
+)
 
 const passwordResetRequestEmail = ref("")
 const verificationCode = ref("")
@@ -244,16 +247,8 @@ function clearPasswordResetVerification() {
   verificationCodeErrorMessage.value = ""
 }
 
-function showCloudSyncDeletionConfirmation() {
-  isConfirmingCloudSyncDeletion.value = true
-}
-
-function hideCloudSyncDeletionConfirmation() {
-  isConfirmingCloudSyncDeletion.value = false
-}
-
 async function handleConfirmDeleteCloudSync() {
-  if (isLoading.value || !isConfirmingCloudSyncDeletion.value) return
+  if (isLoading.value) return
 
   feedbackMessage.value = ""
   isLoading.value = true
@@ -263,7 +258,7 @@ async function handleConfirmDeleteCloudSync() {
     resetAuthFormState()
     feedbackMessage.value = "クラウド同期アカウントを削除しました"
     feedbackKind.value = "success"
-    isConfirmingCloudSyncDeletion.value = false
+    cloudSyncAccountSignedInView.value?.reset()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -293,15 +288,14 @@ function resetAuthFormState() {
 function reset() {
   selectedPanelView.value = "signIn"
   isAwaitingPasswordResetVerification.value = false
-
-  isConfirmingCloudSyncDeletion.value = false
+  cloudSyncAccountSignedInView.value?.reset()
   resetAuthFormState()
 }
 
 function prepareForDialogOpen() {
   if (isAwaitingPasswordResetVerification.value) {
     selectedPanelView.value = "verifyEmail"
-    isConfirmingCloudSyncDeletion.value = false
+    cloudSyncAccountSignedInView.value?.reset()
     clearFeedbackMessage()
     isLoading.value = false
     return
@@ -327,57 +321,13 @@ defineExpose({
     </p>
 
     <template v-if="panelView === 'signedIn'">
-      <h4 class="panel-heading">クラウド同期</h4>
-      <button
-        type="button"
-        class="button-secondary sync-button"
-        :disabled="isLoading"
-        @click="handleSync"
-      >
-        同期
-      </button>
-      <button
-        type="button"
-        class="button-secondary sign-out-button"
-        :disabled="isLoading"
-        @click="handleSignOut"
-      >
-        サインアウト
-      </button>
-      <button
-        type="button"
-        class="button-link show-delete-cloud-data-button"
-        :disabled="isLoading || isConfirmingCloudSyncDeletion"
-        @click="showCloudSyncDeletionConfirmation"
-      >
-        クラウド同期アカウントとデータを削除
-      </button>
-      <template v-if="isConfirmingCloudSyncDeletion">
-        <p class="delete-cloud-sync-description">
-          現在サインインしているクラウド同期アカウントと、クラウド上の同期データを削除します。この端末に保存されている記録は、サインインしていない状態のデータとして残ります。
-        </p>
-        <p class="confirm-message">
-          クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？
-        </p>
-        <div class="confirm-actions">
-          <button
-            type="button"
-            class="button-secondary hide-delete-cloud-sync-button"
-            :disabled="isLoading"
-            @click="hideCloudSyncDeletionConfirmation"
-          >
-            キャンセル
-          </button>
-          <button
-            type="button"
-            class="button-danger delete-cloud-sync-button"
-            :disabled="isLoading"
-            @click="handleConfirmDeleteCloudSync"
-          >
-            削除する
-          </button>
-        </div>
-      </template>
+      <CloudSyncAccountSignedInView
+        ref="cloudSyncAccountSignedInView"
+        :is-loading="isLoading"
+        @sync="handleSync"
+        @sign-out="handleSignOut"
+        @delete-cloud-sync="handleConfirmDeleteCloudSync"
+      />
     </template>
 
     <template v-else-if="panelView === 'signIn'">
@@ -587,21 +537,6 @@ defineExpose({
   display: grid;
   justify-items: start;
   gap: var(--space-1);
-}
-
-.delete-cloud-sync-description {
-  margin: 0;
-  font-size: var(--font-size-small);
-}
-
-.confirm-message {
-  margin: 0;
-  color: var(--color-error);
-}
-
-.confirm-actions {
-  display: flex;
-  gap: var(--space-2);
 }
 
 button {

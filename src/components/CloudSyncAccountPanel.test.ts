@@ -330,40 +330,6 @@ describe("CloudSyncAccountPanel", () => {
     expect(await screen.findByText("クラウド同期アカウントを削除しました")).toBeInTheDocument()
   })
 
-  it("アカウントの削除確認でキャンセルできる", async () => {
-    const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
-    const deleteCloudSync = vi.fn().mockResolvedValue(null)
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
-        },
-        deleteCloudSync,
-      },
-    })
-
-    await user.click(screen.getByRole("button", { name: "クラウド同期アカウントとデータを削除" }))
-    expect(
-      await screen.findByText(
-        "クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？",
-      ),
-    ).toBeInTheDocument()
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
-
-    expect(deleteCloudSync).not.toHaveBeenCalled()
-    expect(
-      screen.queryByText(
-        "クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？",
-      ),
-    ).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "削除する" })).not.toBeInTheDocument()
-  })
-
   it("アカウントの削除に失敗したらエラーを表示する", async () => {
     const user = userEvent.setup()
     const defaultProps = createDefaultProps()
