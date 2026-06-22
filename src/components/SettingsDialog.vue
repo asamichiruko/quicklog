@@ -98,91 +98,101 @@ defineExpose({ open })
     aria-labelledby="settings-dialog-heading"
     @click="handleDialogClick"
   >
-    <div class="dialog-form">
+    <div class="container">
       <h2 id="settings-dialog-heading" class="dialog-heading">設定</h2>
       <section class="section">
         <h3 class="section-heading">表示</h3>
-        <ul class="setting-items">
-          <li>
-            <label class="setting-item">
+        <div class="display-setting-body">
+          <div class="display-setting-item">
+            <label class="checkbox-label">
               <input
                 v-model="nextSettings.showDailySummary"
-                class="setting-checkbox"
+                class="checkbox"
                 type="checkbox"
                 name="show-daily-summary"
               />
-              <span class="setting-label">日別サマリーを表示</span>
+              <span class="checkbox-label-text">日別サマリーを表示</span>
             </label>
-          </li>
-        </ul>
+          </div>
+        </div>
       </section>
-      <details
-        ref="cloudSyncPanelDetails"
-        class="settings-panel"
-        aria-labelledby="settings-panel-cloud-sync"
-      >
-        <summary id="settings-panel-cloud-sync" class="settings-panel-summary">
-          クラウド同期
-        </summary>
-        <div class="settings-panel-body">
-          <CloudSyncPanel
-            ref="cloudSyncPanel"
-            :session="props.session"
-            :sync-log-entries="props.syncLogEntries"
-            :sign-in-with-email="props.signInWithEmail"
-            :sign-up-with-email="props.signUpWithEmail"
-            :sign-out="props.signOut"
-            :runtime-session-state="props.runtimeSessionState"
-            :delete-cloud-sync="props.deleteCloudSync"
-          />
-        </div>
-      </details>
-      <details ref="copyPanelDetails" class="settings-panel" aria-labelledby="settings-panel-copy">
-        <summary id="settings-panel-copy" class="settings-panel-summary">記録のコピー</summary>
-        <div class="settings-panel-body">
-          <LogEntryCopyPanel ref="copyPanel" :log-entries="props.logEntries" />
-        </div>
-      </details>
-      <details
-        ref="exportPanelDetails"
-        class="settings-panel"
-        aria-labelledby="settings-panel-export"
-      >
-        <summary id="settings-panel-export" class="settings-panel-summary">
-          記録のエクスポート
-        </summary>
-        <div class="settings-panel-body">
-          <LogEntryExportPanel ref="exportPanel" @export="emit('export', $event)" />
-        </div>
-      </details>
-      <details
-        ref="importPanelDetails"
-        class="settings-panel"
-        aria-labelledby="settings-panel-import"
-      >
-        <summary id="settings-panel-import" class="settings-panel-summary">
-          記録のインポート
-        </summary>
-        <div class="settings-panel-body">
-          <LogEntryImportPanel ref="importPanel" @import="emit('import', $event)" />
-        </div>
-      </details>
-      <details
-        ref="localDataManagementPanelDetails"
-        class="settings-panel"
-        aria-labelledby="settings-panel-local-data-management"
-      >
-        <summary id="settings-panel-local-data-management" class="settings-panel-summary">
-          ローカルデータの管理
-        </summary>
-        <div class="settings-panel-body">
-          <LocalDataManagementPanel
-            ref="localDataManagementPanel"
-            :anonymous-data-state="props.anonymousDataState"
-            :delete-anonymous-data="props.deleteAnonymousData"
-          />
-        </div>
-      </details>
+      <section class="section">
+        <h3 class="section-heading">アカウントと同期</h3>
+        <details
+          ref="cloudSyncPanelDetails"
+          class="settings-panel"
+          aria-labelledby="settings-panel-cloud-sync"
+        >
+          <summary id="settings-panel-cloud-sync" class="settings-panel-summary">
+            アカウントと同期
+          </summary>
+          <div class="settings-panel-body">
+            <CloudSyncPanel
+              ref="cloudSyncPanel"
+              :session="props.session"
+              :sync-log-entries="props.syncLogEntries"
+              :sign-in-with-email="props.signInWithEmail"
+              :sign-up-with-email="props.signUpWithEmail"
+              :sign-out="props.signOut"
+              :runtime-session-state="props.runtimeSessionState"
+              :delete-cloud-sync="props.deleteCloudSync"
+            />
+          </div>
+        </details>
+      </section>
+      <section class="section">
+        <h3 class="section-heading">データの管理</h3>
+        <details
+          ref="copyPanelDetails"
+          class="settings-panel"
+          aria-labelledby="settings-panel-copy"
+        >
+          <summary id="settings-panel-copy" class="settings-panel-summary">記録のコピー</summary>
+          <div class="settings-panel-body">
+            <LogEntryCopyPanel ref="copyPanel" :log-entries="props.logEntries" />
+          </div>
+        </details>
+        <details
+          ref="exportPanelDetails"
+          class="settings-panel"
+          aria-labelledby="settings-panel-export"
+        >
+          <summary id="settings-panel-export" class="settings-panel-summary">
+            記録のエクスポート
+          </summary>
+          <div class="settings-panel-body">
+            <LogEntryExportPanel ref="exportPanel" @export="emit('export', $event)" />
+          </div>
+        </details>
+        <details
+          ref="importPanelDetails"
+          class="settings-panel"
+          aria-labelledby="settings-panel-import"
+        >
+          <summary id="settings-panel-import" class="settings-panel-summary">
+            記録のインポート
+          </summary>
+          <div class="settings-panel-body">
+            <LogEntryImportPanel ref="importPanel" @import="emit('import', $event)" />
+          </div>
+        </details>
+        <details
+          ref="localDataManagementPanelDetails"
+          class="settings-panel"
+          aria-labelledby="settings-panel-local-data-management"
+        >
+          <summary id="settings-panel-local-data-management" class="settings-panel-summary">
+            ローカルデータの管理
+          </summary>
+          <div class="settings-panel-body">
+            <LocalDataManagementPanel
+              ref="localDataManagementPanel"
+              :anonymous-data-state="props.anonymousDataState"
+              :delete-anonymous-data="props.deleteAnonymousData"
+            />
+          </div>
+        </details>
+      </section>
       <div class="confirm-actions">
         <button class="button-primary" type="button" @click="saveAndClose">設定を保存</button>
         <button class="button-secondary" type="button" @click="close">キャンセル</button>
@@ -200,7 +210,7 @@ defineExpose({ open })
   padding: 0;
 }
 
-.dialog-form {
+.container {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-2);
@@ -227,15 +237,12 @@ defineExpose({ open })
   font-weight: var(--font-weight-bold);
 }
 
-.setting-items {
+.display-setting-body {
   display: grid;
   gap: var(--space-2);
-  padding: 0;
-  margin: 0;
-  list-style: none;
 }
 
-.setting-item {
+.checkbox-label {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -243,14 +250,14 @@ defineExpose({ open })
   cursor: pointer;
 }
 
-.setting-label {
-  font-size: var(--font-size-medium);
-}
-
-.setting-checkbox {
+.checkbox {
   width: 20px;
   height: 20px;
   accent-color: var(--color-primary);
+}
+
+.checkbox-label-text {
+  font-size: var(--font-size-medium);
 }
 
 .settings-panel {
@@ -274,11 +281,12 @@ defineExpose({ open })
 .settings-panel-body {
   display: grid;
   gap: var(--space-2);
-  padding: 0 var(--space-2) var(--space-2);
+  padding: 0 0 var(--space-1);
 }
 
 .settings-panel[open] .settings-panel-body {
-  padding-top: var(--space-2);
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--color-border);
 }
 
 .confirm-actions {
