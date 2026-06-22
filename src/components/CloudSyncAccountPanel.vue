@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CloudSyncAccountOtpVerificationForm from "@/components/CloudSyncAccountOtpVerificationForm.vue"
 import CloudSyncAccountPasswordResetRequestForm from "@/components/CloudSyncAccountPasswordResetRequestForm.vue"
 import CloudSyncAccountSignedInView from "@/components/CloudSyncAccountSignedInView.vue"
 import CloudSyncAccountSignInForm from "@/components/CloudSyncAccountSignInForm.vue"
@@ -18,12 +19,14 @@ import { computed, nextTick, ref } from "vue"
 
 const props = defineProps<{
   session: Session | null
+  runtimeSessionState: RuntimeSessionState
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
   signInWithEmail: (email: string, password: string) => Promise<void>
   signUpWithEmail: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  runtimeSessionState: RuntimeSessionState
   deleteCloudSync: () => Promise<void>
+  sendPasswordResetCode: (email: string) => Promise<void>
+  verifyPasswordResetCode: (email: string, code: string) => Promise<void>
 }>()
 
 export type SelectablePanelView = "signIn" | "signUp" | "resetPassword" | "verifyEmail"
@@ -37,6 +40,7 @@ const canUseCloudSession = computed<boolean>(() => {
     props.session.user.id === props.runtimeSessionState.scope.userId,
   )
 })
+
 const selectedPanelView = ref<SelectablePanelView>("signIn")
 const panelView = computed<PanelView>(() => {
   if (isAuthPending(props.runtimeSessionState)) return "authPending"
@@ -44,6 +48,7 @@ const panelView = computed<PanelView>(() => {
   if (isAwaitingPasswordResetVerification.value) return "verifyEmail"
   return selectedPanelView.value
 })
+
 const isAwaitingPasswordResetVerification = ref(false)
 const passwordResetRequestEmail = ref("")
 
@@ -55,9 +60,9 @@ const cloudSyncAccountSignedInView = ref<InstanceType<typeof CloudSyncAccountSig
 const cloudSyncAccountPasswordResetRequestForm = ref<InstanceType<
   typeof CloudSyncAccountPasswordResetRequestForm
 > | null>(null)
-
-const verificationCode = ref("")
-const verificationCodeErrorMessage = ref("")
+const cloudSyncAccountOtpVerificationForm = ref<InstanceType<
+  typeof CloudSyncAccountOtpVerificationForm
+> | null>(null)
 
 const feedbackMessage = ref("")
 const feedbackKind = ref<FeedbackKind | null>(null)
@@ -66,10 +71,6 @@ const isLoading = ref(false)
 function clearFeedbackMessage() {
   feedbackMessage.value = ""
   feedbackKind.value = null
-}
-
-function validateEmailVerificationCode() {
-  verificationCodeErrorMessage.value = validateVerificationCode(verificationCode.value)
 }
 
 const sessionStateMessage = computed(() => {
@@ -82,14 +83,6 @@ const sessionStateMessage = computed(() => {
   } else {
     return "クラウド同期を使うにはサインインしてください"
   }
-})
-
-const canVerifyEmail = computed(() => {
-  return (
-    !isLoading.value &&
-    !validateVerificationCode(verificationCode.value) &&
-    !verificationCodeErrorMessage.value
-  )
 })
 
 async function handleSignIn(email: string, password: string): Promise<void> {
@@ -190,8 +183,7 @@ async function passwordResetRequest() {
     feedbackKind.value = "success"
 
     isAwaitingPasswordResetVerification.value = true
-    verificationCode.value = ""
-    verificationCodeErrorMessage.value = ""
+    cloudSyncAccountOtpVerificationForm.value?.reset()
     selectedPanelView.value = "verifyEmail"
   } catch {
     feedbackMessage.value = "パスワードリセット用のメールの送信に失敗しました"
@@ -201,10 +193,9 @@ async function passwordResetRequest() {
   }
 }
 
-async function handleVerifyEmail() {
+async function handleVerifyEmail(verificationCode: string) {
   if (isLoading.value) return
-  validateEmailVerificationCode()
-  if (verificationCodeErrorMessage.value) return
+  if (validateVerificationCode(verificationCode) !== "") return
 
   feedbackMessage.value = ""
   isLoading.value = true
@@ -213,6 +204,7 @@ async function handleVerifyEmail() {
     await nextTick() // パスワードのリセットを承認する
     feedbackMessage.value = "パスワードをリセットしました"
     feedbackKind.value = "success"
+
     clearPasswordResetVerification()
     selectedPanelView.value = "signIn"
   } catch {
@@ -232,10 +224,8 @@ function cancelPasswordResetVerification() {
 
 function clearPasswordResetVerification() {
   cloudSyncAccountPasswordResetRequestForm.value?.reset()
-
   isAwaitingPasswordResetVerification.value = false
-  verificationCode.value = ""
-  verificationCodeErrorMessage.value = ""
+  cloudSyncAccountOtpVerificationForm.value?.reset()
 }
 
 async function handleConfirmDeleteCloudSync() {
@@ -262,13 +252,11 @@ function handleChangeView(view: SelectablePanelView) {
 }
 
 function resetAuthFormState() {
-  verificationCode.value = ""
-  verificationCodeErrorMessage.value = ""
-
   cloudSyncAccountSignedInView.value?.reset()
   cloudSyncAccountSignInForm.value?.reset()
   cloudSyncAccountSignUpForm.value?.reset()
   cloudSyncAccountPasswordResetRequestForm.value?.reset()
+  cloudSyncAccountOtpVerificationForm.value?.reset()
 
   clearFeedbackMessage()
   isLoading.value = false
@@ -342,60 +330,21 @@ defineExpose({
       <CloudSyncAccountPasswordResetRequestForm
         ref="cloudSyncAccountPasswordResetRequestForm"
         :is-loading="isLoading"
-        @change-view="cancelPasswordResetVerification"
+        @cancel="cancelPasswordResetVerification"
         @submit="handlePasswordResetRequest"
         @edit="clearFeedbackMessage"
       />
     </template>
 
-    <form
-      v-else-if="panelView === 'verifyEmail'"
-      class="account-form"
-      @submit.prevent="handleVerifyEmail"
-    >
-      <h4 class="panel-heading">メールアドレス確認</h4>
-      <p class="email-verify-description">送信された確認コードを入力してください</p>
-      <div class="account-field">
-        <label class="account-label">
-          <span class="account-label-text">確認コード</span>
-          <input
-            v-model="verificationCode"
-            type="text"
-            name="verification-code"
-            class="account-input"
-            placeholder="確認コードを入力"
-            aria-describedby="verification-code-error"
-            :aria-invalid="Boolean(verificationCodeErrorMessage)"
-            @input="clearFeedbackMessage"
-            @blur="validateEmailVerificationCode"
-          />
-        </label>
-        <p v-if="verificationCodeErrorMessage" id="verification-code-error" class="field-error">
-          {{ verificationCodeErrorMessage }}
-        </p>
-      </div>
-      <div class="account-actions">
-        <button
-          type="submit"
-          class="button-secondary verify-email-button"
-          :disabled="!canVerifyEmail"
-        >
-          確認する
-        </button>
-
-        <button type="button" class="button-link change-mode-button" :disabled="isLoading">
-          確認メールを再送する
-        </button>
-        <button
-          type="button"
-          class="button-link cancel-reset-password-button"
-          :disabled="isLoading"
-          @click="cancelPasswordResetVerification"
-        >
-          パスワードリセットを中止
-        </button>
-      </div>
-    </form>
+    <template v-else-if="panelView === 'verifyEmail'">
+      <CloudSyncAccountOtpVerificationForm
+        ref="cloudSyncAccountOtpVerificationForm"
+        :is-loading="isLoading"
+        @cancel="cancelPasswordResetVerification"
+        @submit="handleVerifyEmail"
+        @edit="clearFeedbackMessage"
+      />
+    </template>
 
     <output
       v-if="feedbackMessage"
@@ -415,12 +364,6 @@ defineExpose({
   gap: var(--space-2);
 }
 
-.panel-heading {
-  font-size: var(--font-size-medium);
-  padding: 0;
-  margin: 0;
-}
-
 .description {
   display: grid;
   gap: var(--space-1);
@@ -435,57 +378,6 @@ defineExpose({
 
 .description.session-lost {
   color: var(--color-error);
-}
-
-.account-field {
-  display: grid;
-  gap: 4px;
-}
-
-.account-form {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.account-label {
-  display: grid;
-  gap: 4px;
-}
-
-.account-label-text {
-  font-weight: var(--font-weight-bold);
-}
-
-.account-input {
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-surface);
-}
-
-.account-input::placeholder {
-  color: var(--color-text-subtle);
-}
-
-.field-error {
-  margin: 0;
-  padding: 0;
-  color: var(--color-error);
-}
-
-.email-verify-description {
-  margin: 0;
-  padding: 0;
-  font-size: var(--font-size-small);
-}
-
-.account-actions {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-1);
-}
-
-button {
-  width: fit-content;
 }
 
 .feedback-message {
