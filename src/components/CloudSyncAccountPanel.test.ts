@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/vue"
+import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import type { Session } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
@@ -304,60 +304,6 @@ describe("CloudSyncAccountPanel", () => {
 
     expect(signUpWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
     expect(await screen.findByText("アカウントを作成しました")).toBeInTheDocument()
-  })
-
-  it("アカウント作成のメールアドレスを不正な値にして離れるとエラーを表示してボタンを無効にする", async () => {
-    const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-      },
-    })
-
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-
-    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
-    const emailInput = screen.getByLabelText("メールアドレス")
-
-    expect(signUpButton).toBeDisabled()
-    expect(
-      screen.queryByText("正しい形式のメールアドレスを入力してください"),
-    ).not.toBeInTheDocument()
-
-    await user.type(emailInput, "invalid email")
-    await fireEvent.blur(emailInput)
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-
-    expect(signUpButton).toBeDisabled()
-    expect(screen.getByText("正しい形式のメールアドレスを入力してください")).toBeInTheDocument()
-  })
-
-  it("アカウント作成のパスワードを不正な値にして離れるとエラーを表示してボタンを無効にする", async () => {
-    const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-      },
-    })
-
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-
-    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
-    const passwordInput = screen.getByLabelText("パスワード")
-
-    expect(signUpButton).toBeDisabled()
-    expect(screen.queryByText("パスワードは 8 文字以上で作成してください")).not.toBeInTheDocument()
-
-    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
-    await user.type(passwordInput, "Pswd0!")
-    await fireEvent.blur(passwordInput)
-
-    expect(signUpButton).toBeDisabled()
-    expect(screen.getByText("パスワードは 8 文字以上で作成してください")).toBeInTheDocument()
   })
 
   it("アカウントを削除できる", async () => {

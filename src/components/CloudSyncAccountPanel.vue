@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CloudSyncAccountSignInForm from "@/components/CloudSyncAccountSignInForm.vue"
+import CloudSyncAccountSignUpForm from "@/components/CloudSyncAccountSignUpForm.vue"
 import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
 import {
   validateRequiredPassword,
@@ -45,14 +46,11 @@ const isConfirmingCloudSyncDeletion = ref(false)
 const isAwaitingPasswordResetVerification = ref(false)
 
 const cloudSyncAccountSignInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
+const cloudSyncAccountSignUpForm = ref<InstanceType<typeof CloudSyncAccountSignUpForm> | null>(null)
 
-const signUpEmail = ref("")
-const signUpPassword = ref("")
 const passwordResetRequestEmail = ref("")
 const verificationCode = ref("")
 
-const signUpEmailErrorMessage = ref("")
-const signUpPasswordErrorMessage = ref("")
 const passwordResetRequestEmailErrorMessage = ref("")
 const verificationCodeErrorMessage = ref("")
 
@@ -65,27 +63,12 @@ function clearFeedbackMessage() {
   feedbackKind.value = null
 }
 
-function validateSignUpEmail() {
-  signUpEmailErrorMessage.value = validateEmail(signUpEmail.value)
-}
-
-function validateSignUpPassword() {
-  signUpPasswordErrorMessage.value = validateCreatedPassword(signUpPassword.value)
-}
-
 function validatePasswordResetRequestEmail() {
   passwordResetRequestEmailErrorMessage.value = validateEmail(passwordResetRequestEmail.value)
 }
 
 function validateEmailVerificationCode() {
   verificationCodeErrorMessage.value = validateVerificationCode(verificationCode.value)
-}
-
-function validateSignUpFields(): boolean {
-  signUpEmailErrorMessage.value = validateEmail(signUpEmail.value)
-  signUpPasswordErrorMessage.value = validateCreatedPassword(signUpPassword.value)
-
-  return !signUpEmailErrorMessage.value && !signUpPasswordErrorMessage.value
 }
 
 const sessionStateMessage = computed(() => {
@@ -98,16 +81,6 @@ const sessionStateMessage = computed(() => {
   } else {
     return "クラウド同期を使うにはサインインしてください"
   }
-})
-
-const canSignUp = computed(() => {
-  return (
-    !isLoading.value &&
-    !validateEmail(signUpEmail.value) &&
-    !validateCreatedPassword(signUpPassword.value) &&
-    !signUpEmailErrorMessage.value &&
-    !signUpPasswordErrorMessage.value
-  )
 })
 
 const canPasswordResetRequest = computed(() => {
@@ -145,15 +118,15 @@ async function handleSignIn(email: string, password: string): Promise<void> {
   }
 }
 
-async function handleSignUp(): Promise<void> {
+async function handleSignUp(email: string, password: string): Promise<void> {
   if (isLoading.value) return
-  if (!validateSignUpFields()) return
+  if (validateEmail(email) !== "" || validateCreatedPassword(password) !== "") return
 
   feedbackMessage.value = ""
   isLoading.value = true
 
   try {
-    await props.signUpWithEmail(signUpEmail.value.trim(), signUpPassword.value)
+    await props.signUpWithEmail(email.trim(), password)
     feedbackMessage.value = "アカウントを作成しました"
     feedbackKind.value = "success"
   } catch (error) {
@@ -304,17 +277,14 @@ function handleChangeView(view: SelectablePanelView) {
 }
 
 function resetAuthFormState() {
-  signUpEmail.value = ""
-  signUpPassword.value = ""
   passwordResetRequestEmail.value = ""
   verificationCode.value = ""
 
-  signUpEmailErrorMessage.value = ""
-  signUpPasswordErrorMessage.value = ""
   passwordResetRequestEmailErrorMessage.value = ""
   verificationCodeErrorMessage.value = ""
 
   cloudSyncAccountSignInForm.value?.reset()
+  cloudSyncAccountSignUpForm.value?.reset()
 
   clearFeedbackMessage()
   isLoading.value = false
@@ -420,61 +390,15 @@ defineExpose({
       />
     </template>
 
-    <form v-else-if="panelView === 'signUp'" class="account-form" @submit.prevent="handleSignUp">
-      <h4 class="panel-heading">アカウント作成</h4>
-      <div class="account-field">
-        <label class="account-label">
-          <span class="account-label-text">メールアドレス</span>
-          <input
-            v-model="signUpEmail"
-            name="sign-up-email"
-            type="email"
-            class="account-input"
-            placeholder="メールアドレスを入力"
-            aria-describedby="sign-up-email-error"
-            :aria-invalid="Boolean(signUpEmailErrorMessage)"
-            @input="clearFeedbackMessage"
-            @blur="validateSignUpEmail"
-          />
-        </label>
-        <p v-if="signUpEmailErrorMessage" id="sign-up-email-error" class="field-error">
-          {{ signUpEmailErrorMessage }}
-        </p>
-      </div>
-      <div class="account-field">
-        <label class="account-label">
-          <span class="account-label-text">パスワード</span>
-          <input
-            v-model="signUpPassword"
-            name="sign-up-password"
-            type="password"
-            class="account-input"
-            placeholder="パスワードを入力"
-            aria-describedby="sign-up-password-error"
-            :aria-invalid="Boolean(signUpPasswordErrorMessage)"
-            @input="clearFeedbackMessage"
-            @blur="validateSignUpPassword"
-          />
-        </label>
-        <p class="password-rules">英大小文字、数字、記号を含む 8 文字以上</p>
-        <p v-if="signUpPasswordErrorMessage" id="sign-up-password-error" class="field-error">
-          {{ signUpPasswordErrorMessage }}
-        </p>
-      </div>
-      <div class="account-actions">
-        <button type="submit" class="button-secondary sign-up-button" :disabled="!canSignUp">
-          アカウントを作成
-        </button>
-        <button
-          type="button"
-          class="button-link change-mode-button"
-          :disabled="isLoading"
-          @click="showSignInView"
-        >
-          サインインに戻る
-        </button>
-      </div>
-    </form>
+    <template v-else-if="panelView === 'signUp'">
+      <CloudSyncAccountSignUpForm
+        ref="cloudSyncAccountSignUpForm"
+        :is-loading="isLoading"
+        @change-view="handleChangeView"
+        @submit="handleSignUp"
+        @edit="clearFeedbackMessage"
+      />
+    </template>
 
     <form
       v-else-if="panelView === 'resetPassword'"
@@ -651,12 +575,6 @@ defineExpose({
   margin: 0;
   padding: 0;
   color: var(--color-error);
-}
-
-.password-rules {
-  margin: 0;
-  padding: 0;
-  font-size: var(--font-size-small);
 }
 
 .email-verify-description {
