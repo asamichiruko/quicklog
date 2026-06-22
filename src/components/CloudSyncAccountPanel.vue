@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import CloudSyncAccountSignInForm from "@/components/CloudSyncAccountSignInForm.vue"
 import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
 import {
+  validateRequiredPassword,
   validateCreatedPassword,
   validateEmail,
-  validateRequiredPassword,
   validateVerificationCode,
 } from "@/lib/authFormValidation"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
@@ -22,8 +23,8 @@ const props = defineProps<{
   deleteCloudSync: () => Promise<void>
 }>()
 
-type SelectablePanelView = "signIn" | "signUp" | "resetPassword" | "verifyEmail"
-type PanelView = SelectablePanelView | "signedIn" | "authPending"
+export type SelectablePanelView = "signIn" | "signUp" | "resetPassword" | "verifyEmail"
+export type PanelView = SelectablePanelView | "signedIn" | "authPending"
 type FeedbackKind = "success" | "error"
 
 const canUseCloudSession = computed<boolean>(() => {
@@ -43,15 +44,13 @@ const panelView = computed<PanelView>(() => {
 const isConfirmingCloudSyncDeletion = ref(false)
 const isAwaitingPasswordResetVerification = ref(false)
 
-const signInEmail = ref("")
-const signInPassword = ref("")
+const cloudSyncAccountSignInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
+
 const signUpEmail = ref("")
 const signUpPassword = ref("")
 const passwordResetRequestEmail = ref("")
 const verificationCode = ref("")
 
-const signInEmailErrorMessage = ref("")
-const signInPasswordErrorMessage = ref("")
 const signUpEmailErrorMessage = ref("")
 const signUpPasswordErrorMessage = ref("")
 const passwordResetRequestEmailErrorMessage = ref("")
@@ -64,14 +63,6 @@ const isLoading = ref(false)
 function clearFeedbackMessage() {
   feedbackMessage.value = ""
   feedbackKind.value = null
-}
-
-function validateSignInEmail() {
-  signInEmailErrorMessage.value = validateEmail(signInEmail.value)
-}
-
-function validateSignInPassword() {
-  signInPasswordErrorMessage.value = validateRequiredPassword(signInPassword.value)
 }
 
 function validateSignUpEmail() {
@@ -88,13 +79,6 @@ function validatePasswordResetRequestEmail() {
 
 function validateEmailVerificationCode() {
   verificationCodeErrorMessage.value = validateVerificationCode(verificationCode.value)
-}
-
-function validateSignInFields(): boolean {
-  signInEmailErrorMessage.value = validateEmail(signInEmail.value)
-  signInPasswordErrorMessage.value = validateRequiredPassword(signInPassword.value)
-
-  return !signInEmailErrorMessage.value && !signInPasswordErrorMessage.value
 }
 
 function validateSignUpFields(): boolean {
@@ -114,16 +98,6 @@ const sessionStateMessage = computed(() => {
   } else {
     return "クラウド同期を使うにはサインインしてください"
   }
-})
-
-const canSignIn = computed(() => {
-  return (
-    !isLoading.value &&
-    !validateEmail(signInEmail.value) &&
-    !validateRequiredPassword(signInPassword.value) &&
-    !signInEmailErrorMessage.value &&
-    !signInPasswordErrorMessage.value
-  )
 })
 
 const canSignUp = computed(() => {
@@ -152,6 +126,25 @@ const canVerifyEmail = computed(() => {
   )
 })
 
+async function handleSignIn(email: string, password: string): Promise<void> {
+  if (isLoading.value) return
+  if (validateEmail(email) !== "" || validateRequiredPassword(password) !== "") return
+
+  feedbackMessage.value = ""
+  isLoading.value = true
+
+  try {
+    await props.signInWithEmail(email.trim(), password)
+    feedbackMessage.value = "クラウド同期を開始しました"
+    feedbackKind.value = "success"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
+    feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
+  }
+}
+
 async function handleSignUp(): Promise<void> {
   if (isLoading.value) return
   if (!validateSignUpFields()) return
@@ -162,25 +155,6 @@ async function handleSignUp(): Promise<void> {
   try {
     await props.signUpWithEmail(signUpEmail.value.trim(), signUpPassword.value)
     feedbackMessage.value = "アカウントを作成しました"
-    feedbackKind.value = "success"
-  } catch (error) {
-    feedbackMessage.value = getAuthFeedbackMessage(error)
-    feedbackKind.value = "error"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function handleSignIn(): Promise<void> {
-  if (isLoading.value) return
-  if (!validateSignInFields()) return
-
-  feedbackMessage.value = ""
-  isLoading.value = true
-
-  try {
-    await props.signInWithEmail(signInEmail.value.trim(), signInPassword.value)
-    feedbackMessage.value = "クラウド同期を開始しました"
     feedbackKind.value = "success"
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
@@ -231,19 +205,9 @@ async function handleSync(): Promise<void> {
   }
 }
 
-function showSignUpView() {
-  resetAuthFormState()
-  selectedPanelView.value = "signUp"
-}
-
 function showSignInView() {
   resetAuthFormState()
   selectedPanelView.value = "signIn"
-}
-
-function showResetPasswordView() {
-  resetAuthFormState()
-  selectedPanelView.value = "resetPassword"
 }
 
 async function handlePasswordResetRequest() {
@@ -335,20 +299,22 @@ async function handleConfirmDeleteCloudSync() {
   }
 }
 
+function handleChangeView(view: SelectablePanelView) {
+  selectedPanelView.value = view
+}
+
 function resetAuthFormState() {
-  signInEmail.value = ""
-  signInPassword.value = ""
   signUpEmail.value = ""
   signUpPassword.value = ""
   passwordResetRequestEmail.value = ""
   verificationCode.value = ""
 
-  signInEmailErrorMessage.value = ""
-  signInPasswordErrorMessage.value = ""
   signUpEmailErrorMessage.value = ""
   signUpPasswordErrorMessage.value = ""
   passwordResetRequestEmailErrorMessage.value = ""
   verificationCodeErrorMessage.value = ""
+
+  cloudSyncAccountSignInForm.value?.reset()
 
   clearFeedbackMessage()
   isLoading.value = false
@@ -444,68 +410,15 @@ defineExpose({
       </template>
     </template>
 
-    <form v-else-if="panelView === 'signIn'" class="account-form" @submit.prevent="handleSignIn">
-      <h4 class="panel-heading">サインイン</h4>
-      <div class="account-field">
-        <label class="account-label">
-          <span class="account-label-text">メールアドレス</span>
-          <input
-            v-model="signInEmail"
-            name="sign-in-email"
-            type="email"
-            class="account-input"
-            placeholder="メールアドレスを入力"
-            aria-describedby="sign-in-email-error"
-            :aria-invalid="Boolean(signInEmailErrorMessage)"
-            @input="clearFeedbackMessage"
-            @blur="validateSignInEmail"
-          />
-        </label>
-        <p v-if="signInEmailErrorMessage" id="sign-in-email-error" class="field-error">
-          {{ signInEmailErrorMessage }}
-        </p>
-      </div>
-      <div class="account-field">
-        <label class="account-label">
-          <span class="account-label-text">パスワード</span>
-          <input
-            v-model="signInPassword"
-            name="sign-in-password"
-            type="password"
-            class="account-input"
-            placeholder="パスワードを入力"
-            aria-describedby="sign-in-password-error"
-            :aria-invalid="Boolean(signInPasswordErrorMessage)"
-            @input="clearFeedbackMessage"
-            @blur="validateSignInPassword"
-          />
-        </label>
-        <p v-if="signInPasswordErrorMessage" id="sign-in-password-error" class="field-error">
-          {{ signInPasswordErrorMessage }}
-        </p>
-      </div>
-      <div class="account-actions">
-        <button type="submit" class="button-secondary sign-in-button" :disabled="!canSignIn">
-          サインイン
-        </button>
-        <button
-          type="button"
-          class="button-link change-mode-button"
-          :disabled="isLoading"
-          @click="showSignUpView"
-        >
-          アカウントを作成する
-        </button>
-        <button
-          type="button"
-          class="button-link change-mode-button"
-          :disabled="isLoading"
-          @click="showResetPasswordView"
-        >
-          パスワードを忘れた場合
-        </button>
-      </div>
-    </form>
+    <template v-else-if="panelView === 'signIn'">
+      <CloudSyncAccountSignInForm
+        ref="cloudSyncAccountSignInForm"
+        :is-loading="isLoading"
+        @change-view="handleChangeView"
+        @submit="handleSignIn"
+        @edit="clearFeedbackMessage"
+      />
+    </template>
 
     <form v-else-if="panelView === 'signUp'" class="account-form" @submit.prevent="handleSignUp">
       <h4 class="panel-heading">アカウント作成</h4>
