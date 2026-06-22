@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CloudSyncAccountPasswordResetRequestForm from "@/components/CloudSyncAccountPasswordResetRequestForm.vue"
 import CloudSyncAccountSignedInView from "@/components/CloudSyncAccountSignedInView.vue"
 import CloudSyncAccountSignInForm from "@/components/CloudSyncAccountSignInForm.vue"
 import CloudSyncAccountSignUpForm from "@/components/CloudSyncAccountSignUpForm.vue"
@@ -44,17 +45,18 @@ const panelView = computed<PanelView>(() => {
   return selectedPanelView.value
 })
 const isAwaitingPasswordResetVerification = ref(false)
+const passwordResetRequestEmail = ref("")
 
 const cloudSyncAccountSignInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
 const cloudSyncAccountSignUpForm = ref<InstanceType<typeof CloudSyncAccountSignUpForm> | null>(null)
 const cloudSyncAccountSignedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(
   null,
 )
+const cloudSyncAccountPasswordResetRequestForm = ref<InstanceType<
+  typeof CloudSyncAccountPasswordResetRequestForm
+> | null>(null)
 
-const passwordResetRequestEmail = ref("")
 const verificationCode = ref("")
-
-const passwordResetRequestEmailErrorMessage = ref("")
 const verificationCodeErrorMessage = ref("")
 
 const feedbackMessage = ref("")
@@ -64,10 +66,6 @@ const isLoading = ref(false)
 function clearFeedbackMessage() {
   feedbackMessage.value = ""
   feedbackKind.value = null
-}
-
-function validatePasswordResetRequestEmail() {
-  passwordResetRequestEmailErrorMessage.value = validateEmail(passwordResetRequestEmail.value)
 }
 
 function validateEmailVerificationCode() {
@@ -84,14 +82,6 @@ const sessionStateMessage = computed(() => {
   } else {
     return "クラウド同期を使うにはサインインしてください"
   }
-})
-
-const canPasswordResetRequest = computed(() => {
-  return (
-    !isLoading.value &&
-    !validateEmail(passwordResetRequestEmail.value) &&
-    !passwordResetRequestEmailErrorMessage.value
-  )
 })
 
 const canVerifyEmail = computed(() => {
@@ -181,15 +171,15 @@ async function handleSync(): Promise<void> {
   }
 }
 
-function showSignInView() {
-  resetAuthFormState()
-  selectedPanelView.value = "signIn"
+async function handlePasswordResetRequest(email: string) {
+  if (validateEmail(email) !== "") return
+  passwordResetRequestEmail.value = email
+
+  await passwordResetRequest()
 }
 
-async function handlePasswordResetRequest() {
+async function passwordResetRequest() {
   if (isLoading.value) return
-  validatePasswordResetRequestEmail()
-  if (passwordResetRequestEmailErrorMessage.value) return
 
   feedbackMessage.value = ""
   isLoading.value = true
@@ -198,6 +188,7 @@ async function handlePasswordResetRequest() {
     await nextTick() // パスワードリセット用のメールを送信する
     feedbackMessage.value = "パスワードリセット用のメールを送信しました"
     feedbackKind.value = "success"
+
     isAwaitingPasswordResetVerification.value = true
     verificationCode.value = ""
     verificationCodeErrorMessage.value = ""
@@ -240,10 +231,10 @@ function cancelPasswordResetVerification() {
 }
 
 function clearPasswordResetVerification() {
+  cloudSyncAccountPasswordResetRequestForm.value?.reset()
+
   isAwaitingPasswordResetVerification.value = false
-  passwordResetRequestEmail.value = ""
   verificationCode.value = ""
-  passwordResetRequestEmailErrorMessage.value = ""
   verificationCodeErrorMessage.value = ""
 }
 
@@ -258,7 +249,6 @@ async function handleConfirmDeleteCloudSync() {
     resetAuthFormState()
     feedbackMessage.value = "クラウド同期アカウントを削除しました"
     feedbackKind.value = "success"
-    cloudSyncAccountSignedInView.value?.reset()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -272,14 +262,13 @@ function handleChangeView(view: SelectablePanelView) {
 }
 
 function resetAuthFormState() {
-  passwordResetRequestEmail.value = ""
   verificationCode.value = ""
-
-  passwordResetRequestEmailErrorMessage.value = ""
   verificationCodeErrorMessage.value = ""
 
+  cloudSyncAccountSignedInView.value?.reset()
   cloudSyncAccountSignInForm.value?.reset()
   cloudSyncAccountSignUpForm.value?.reset()
+  cloudSyncAccountPasswordResetRequestForm.value?.reset()
 
   clearFeedbackMessage()
   isLoading.value = false
@@ -288,7 +277,6 @@ function resetAuthFormState() {
 function reset() {
   selectedPanelView.value = "signIn"
   isAwaitingPasswordResetVerification.value = false
-  cloudSyncAccountSignedInView.value?.reset()
   resetAuthFormState()
 }
 
@@ -350,53 +338,15 @@ defineExpose({
       />
     </template>
 
-    <form
-      v-else-if="panelView === 'resetPassword'"
-      class="account-form"
-      @submit.prevent="handlePasswordResetRequest"
-    >
-      <h4 class="panel-heading">パスワードリセット</h4>
-      <div class="account-field">
-        <label class="account-label">
-          <span class="account-label-text">メールアドレス</span>
-          <input
-            v-model="passwordResetRequestEmail"
-            type="email"
-            name="password-reset-request-input"
-            class="account-input"
-            placeholder="メールアドレスを入力"
-            aria-describedby="password-reset-request-email-error"
-            :aria-invalid="Boolean(passwordResetRequestEmailErrorMessage)"
-            @input="clearFeedbackMessage"
-            @blur="validatePasswordResetRequestEmail"
-          />
-        </label>
-        <p
-          v-if="passwordResetRequestEmailErrorMessage"
-          id="password-reset-request-email-error"
-          class="field-error"
-        >
-          {{ passwordResetRequestEmailErrorMessage }}
-        </p>
-      </div>
-      <div class="account-actions">
-        <button
-          type="submit"
-          class="button-secondary reset-password-button"
-          :disabled="!canPasswordResetRequest"
-        >
-          パスワードリセット
-        </button>
-        <button
-          type="button"
-          class="button-link change-mode-button"
-          :disabled="isLoading"
-          @click="showSignInView"
-        >
-          サインインに戻る
-        </button>
-      </div>
-    </form>
+    <template v-else-if="panelView === 'resetPassword'">
+      <CloudSyncAccountPasswordResetRequestForm
+        ref="cloudSyncAccountPasswordResetRequestForm"
+        :is-loading="isLoading"
+        @change-view="cancelPasswordResetVerification"
+        @submit="handlePasswordResetRequest"
+        @edit="clearFeedbackMessage"
+      />
+    </template>
 
     <form
       v-else-if="panelView === 'verifyEmail'"
@@ -433,12 +383,7 @@ defineExpose({
           確認する
         </button>
 
-        <button
-          type="button"
-          class="button-link change-mode-button"
-          :disabled="!canPasswordResetRequest"
-          @click="handlePasswordResetRequest"
-        >
+        <button type="button" class="button-link change-mode-button" :disabled="isLoading">
           確認メールを再送する
         </button>
         <button
