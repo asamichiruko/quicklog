@@ -5,7 +5,6 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import {
-  changePassword,
   clearLocalAuthSession,
   deleteCurrentAccount,
   getCurrentSession,
@@ -13,6 +12,7 @@ import {
   signInWithEmail,
   signOut,
   signUpWithEmail,
+  updatePasswordAfterRecovery,
   verifyPasswordResetCode,
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
@@ -74,6 +74,7 @@ const session = ref<Session | null>(null)
 
 let unsubscribeAuth: (() => void) | undefined
 const deletedCloudUserIds = new Set<string>()
+let passwordRecoveryInProgress = false
 let quicklogDataRevision = 0
 let dataScopeRevision = 0
 
@@ -164,9 +165,11 @@ onMounted(() => {
   document.addEventListener("visibilitychange", handleVisibilityChange)
   window.addEventListener("online", handleOnline)
 
-  const { data } = supabase.auth.onAuthStateChange((_event, nextSession) =>
-    applyResolvedSession(nextSession),
-  )
+  const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    if (passwordRecoveryInProgress) return
+
+    applyResolvedSession(nextSession)
+  })
   unsubscribeAuth = () => {
     data.subscription.unsubscribe()
   }
@@ -553,11 +556,34 @@ async function handleSendPasswordResetCode(email: string) {
 }
 
 async function handleVerifyPasswordResetCode(email: string, code: string) {
-  await verifyPasswordResetCode(email, code)
+  passwordRecoveryInProgress = true
+  try {
+    await verifyPasswordResetCode(email, code)
+  } catch (error) {
+    passwordRecoveryInProgress = false
+    throw error
+  }
 }
 
-async function handleChangePassword(password: string) {
-  await changePassword(password)
+async function handleUpdatePasswordAfterRecovery(password: string) {
+  await updatePasswordAfterRecovery(password)
+  try {
+    await clearLocalAuthSession()
+  } catch (error) {
+    console.warn("Failed to clear local auth session after password recovery", error)
+  }
+  passwordRecoveryInProgress = false
+  activateAnonymousScope()
+}
+
+async function handleCancelPasswordRecovery() {
+  try {
+    await clearLocalAuthSession()
+  } catch (error) {
+    console.warn("Failed to clear local auth session when password recovery cancelled", error)
+  }
+  passwordRecoveryInProgress = false
+  activateAnonymousScope()
 }
 </script>
 
@@ -630,7 +656,8 @@ async function handleChangePassword(password: string) {
     :delete-cloud-sync="deleteCloudSync"
     :send-password-reset-code="handleSendPasswordResetCode"
     :verify-password-reset-code="handleVerifyPasswordResetCode"
-    :change-password="handleChangePassword"
+    :update-password-after-recovery="handleUpdatePasswordAfterRecovery"
+    @cancel-password-recovery="handleCancelPasswordRecovery"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"

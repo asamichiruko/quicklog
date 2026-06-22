@@ -8,6 +8,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   submit: [verificationCode: string]
+  resend: []
   cancel: []
   edit: []
 }>()
@@ -70,10 +71,15 @@ defineExpose({ reset })
         class="button-secondary verify-email-button"
         :disabled="!canVerifyEmail"
       >
-        確認する
+        認証する
       </button>
 
-      <button type="button" class="button-link change-mode-button" :disabled="isLoading">
+      <button
+        type="button"
+        class="button-link change-mode-button"
+        :disabled="isLoading"
+        @click="emit('resend')"
+      >
         確認メールを再送する
       </button>
       <button

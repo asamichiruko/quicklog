@@ -44,13 +44,14 @@ const props = defineProps<{
   deleteCloudSync: () => Promise<void>
   sendPasswordResetCode: (email: string) => Promise<void>
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
-  changePassword: (password: string) => Promise<void>
+  updatePasswordAfterRecovery: (password: string) => Promise<void>
 }>()
 
 const emit = defineEmits<{
   save: [nextSettings: AppSettings]
   export: [exportType: ExportType]
   import: [file: File]
+  cancelPasswordRecovery: []
 }>()
 
 function open() {
@@ -143,7 +144,8 @@ defineExpose({ open })
               :delete-cloud-sync="props.deleteCloudSync"
               :send-password-reset-code="props.sendPasswordResetCode"
               :verify-password-reset-code="props.verifyPasswordResetCode"
-              :change-password="props.changePassword"
+              :update-password-after-recovery="props.updatePasswordAfterRecovery"
+              @cancel-password-recovery="emit('cancelPasswordRecovery')"
             />
           </div>
         </details>

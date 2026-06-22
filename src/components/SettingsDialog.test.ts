@@ -54,7 +54,7 @@ const TestHost = defineComponent({
       deleteCloudSync: vi.fn(),
       sendPasswordResetCode: vi.fn(),
       verifyPasswordResetCode: vi.fn(),
-      changePassword: vi.fn(),
+      updatePasswordAfterRecovery: vi.fn(),
     }
   },
   template: `
@@ -77,7 +77,7 @@ const TestHost = defineComponent({
     :delete-cloud-sync="deleteCloudSync"
     :send-password-reset-code="sendPasswordResetCode"
     :verify-password-reset-code="verifyPasswordResetCode"
-    :change-password="changePassword"
+    :update-password-after-recovery="updatePasswordAfterRecovery"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>
@@ -182,6 +182,32 @@ describe("SettingsDialog", () => {
     const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
     expect(cloudSyncPanel).toHaveAttribute("open")
     expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
+  })
+
+  it("パスワードリセットの認証後なら開き直しても新しいパスワード設定画面を表示する", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
+    expect(cloudSyncSummary).not.toBeNull()
+
+    await user.click(cloudSyncSummary as HTMLElement)
+    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+    await user.type(await screen.findByLabelText("確認コード"), "123456")
+    await user.click(screen.getByRole("button", { name: "認証する" }))
+
+    expect(await screen.findByLabelText("新しいパスワード")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
+    expect(cloudSyncPanel).toHaveAttribute("open")
+    expect(screen.getByLabelText("新しいパスワード")).toBeInTheDocument()
   })
 
   it("開き直すと 記録のインポート パネルが閉じて入力状態がリセットされる", async () => {

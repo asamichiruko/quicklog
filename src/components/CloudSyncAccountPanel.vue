@@ -28,7 +28,11 @@ const props = defineProps<{
   deleteCloudSync: () => Promise<void>
   sendPasswordResetCode: (email: string) => Promise<void>
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
-  changePassword: (password: string) => Promise<void>
+  updatePasswordAfterRecovery: (password: string) => Promise<void>
+}>()
+
+const emit = defineEmits<{
+  cancelPasswordRecovery: []
 }>()
 
 export type SelectablePanelView = "signIn" | "signUp" | "passwordResetRequest"
@@ -196,7 +200,28 @@ async function passwordResetRequest() {
     feedbackMessage.value = "パスワードリセット用のメールを送信しました"
     feedbackKind.value = "success"
 
+    cloudSyncAccountOtpVerificationForm.value?.reset()
     passwordResetFlowStep.value = "awaitingCode"
+  } catch {
+    feedbackMessage.value = "パスワードリセット用のメールの送信に失敗しました"
+    feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleResendPasswordResetRequest() {
+  if (isLoading.value) return
+  if (!passwordResetRequestEmail.value) return
+
+  feedbackMessage.value = ""
+  isLoading.value = true
+
+  try {
+    await props.sendPasswordResetCode(passwordResetRequestEmail.value)
+    feedbackMessage.value = "パスワードリセット用のメールを再送しました"
+    feedbackKind.value = "success"
+
     cloudSyncAccountOtpVerificationForm.value?.reset()
   } catch {
     feedbackMessage.value = "パスワードリセット用のメールの送信に失敗しました"
@@ -237,7 +262,7 @@ async function handlePasswordReset(password: string) {
   isLoading.value = true
 
   try {
-    await props.changePassword(password)
+    await props.updatePasswordAfterRecovery(password)
     feedbackMessage.value = "パスワードを再設定しました"
     feedbackKind.value = null
 
@@ -256,17 +281,20 @@ function cancelPasswordReset() {
   clearPasswordResetVerification()
   selectedPanelView.value = "signIn"
   clearFeedbackMessage()
+  emit("cancelPasswordRecovery")
 }
 
 function cancelPasswordResetVerification() {
   clearPasswordResetVerification()
   selectedPanelView.value = "signIn"
   clearFeedbackMessage()
+  emit("cancelPasswordRecovery")
 }
 
 function clearPasswordResetVerification() {
   cloudSyncAccountPasswordResetRequestForm.value?.reset()
   cloudSyncAccountPasswordResetForm.value?.reset()
+  passwordResetFlowStep.value = "idle"
 }
 
 async function handleConfirmDeleteCloudSync() {
@@ -310,7 +338,11 @@ function reset() {
 
 function prepareForDialogOpen() {
   if (passwordResetFlowStep.value === "awaitingCode") {
-    cloudSyncAccountSignedInView.value?.reset()
+    clearFeedbackMessage()
+    isLoading.value = false
+    return
+  }
+  if (passwordResetFlowStep.value === "settingPassword") {
     clearFeedbackMessage()
     isLoading.value = false
     return
@@ -381,6 +413,7 @@ defineExpose({
         :is-loading="isLoading"
         @cancel="cancelPasswordResetVerification"
         @submit="handleVerifyEmail"
+        @resend="handleResendPasswordResetRequest"
         @edit="clearFeedbackMessage"
       />
     </template>
