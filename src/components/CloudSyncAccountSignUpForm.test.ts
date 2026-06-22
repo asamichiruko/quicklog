@@ -51,5 +51,4 @@ describe("CloudSyncAccountSignUpForm", () => {
     expect(signUpButton).toBeDisabled()
     expect(screen.getByText("パスワードは 8 文字以上で作成してください")).toBeInTheDocument()
   })
-
 })

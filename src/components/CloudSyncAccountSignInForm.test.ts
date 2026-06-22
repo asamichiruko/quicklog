@@ -9,7 +9,7 @@ describe("CloudSyncAccountSignInForm", () => {
 
     render(CloudSyncAccountSignInForm, {
       props: {
-        isLoading: false
+        isLoading: false,
       },
     })
 
