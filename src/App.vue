@@ -65,7 +65,7 @@ import type {
   RuntimeSessionState,
 } from "@/types"
 import { type Session, type User } from "@supabase/supabase-js"
-import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
+import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
 
 const session = ref<Session | null>(null)
 
@@ -390,7 +390,7 @@ async function syncCloudDataBeforeDeletion(user: User) {
     throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
   }
 
-  if (scopeRevisionBeforeSync !== dataScopeRevision || quicklogData.value !== result.data) {
+  if (scopeRevisionBeforeSync !== dataScopeRevision || toRaw(quicklogData.value) !== result.data) {
     throw new CloudSyncDeletionError("クラウド同期に失敗しました")
   }
 }
