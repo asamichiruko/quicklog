@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { cleanup, render, screen } from "@testing-library/vue"
+import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import type { Session } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
@@ -393,7 +393,9 @@ describe("CloudSyncAccountPanel", () => {
     await user.click(requestButton)
 
     expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
-    expect(await screen.findByText("パスワードリセット用のメールを送信しました")).toBeInTheDocument()
+    expect(
+      await screen.findByText("パスワードリセット用のメールを送信しました"),
+    ).toBeInTheDocument()
 
     await user.type(screen.getByLabelText("確認コード"), "123456")
 
@@ -435,11 +437,15 @@ describe("CloudSyncAccountPanel", () => {
     await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
     expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
-    expect(await screen.findByText("パスワードリセット用のメールを送信しました")).toBeInTheDocument()
+    expect(
+      await screen.findByText("パスワードリセット用のメールを送信しました"),
+    ).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "確認メールを再送する" }))
     expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
-    expect(await screen.findByText("パスワードリセット用のメールを再送しました")).toBeInTheDocument()
+    expect(
+      await screen.findByText("パスワードリセット用のメールを再送しました"),
+    ).toBeInTheDocument()
 
     expect(await screen.findByRole("heading", { name: "メールアドレス確認" })).toBeInTheDocument()
   })
@@ -467,7 +473,9 @@ describe("CloudSyncAccountPanel", () => {
     await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
     expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
-    expect(await screen.findByText("パスワードリセット用のメールを送信しました")).toBeInTheDocument()
+    expect(
+      await screen.findByText("パスワードリセット用のメールを送信しました"),
+    ).toBeInTheDocument()
 
     await user.type(screen.getByLabelText("確認コード"), "123456")
 
@@ -477,7 +485,9 @@ describe("CloudSyncAccountPanel", () => {
     await user.click(verifyButton)
 
     expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "123456")
-    expect(await screen.findByText("認証に失敗しました。確認コードが正しいかお確かめください")).toBeInTheDocument()
+    expect(
+      await screen.findByText("認証に失敗しました。確認コードが正しいかお確かめください"),
+    ).toBeInTheDocument()
     expect(updatePasswordAfterRecovery).not.toHaveBeenCalled()
     expect(await screen.findByRole("heading", { name: "メールアドレス確認" })).toBeInTheDocument()
 
@@ -488,7 +498,9 @@ describe("CloudSyncAccountPanel", () => {
     expect(verifyPasswordResetCode).toHaveBeenCalledTimes(2)
 
     expect(await screen.findByText("認証に成功しました")).toBeInTheDocument()
-    expect(await screen.findByRole("heading", { name: "新しいパスワードの設定" })).toBeInTheDocument()
+    expect(
+      await screen.findByRole("heading", { name: "新しいパスワードの設定" }),
+    ).toBeInTheDocument()
   })
 
   it("パスワード変更失敗時に新しいパスワード画面に残る", async () => {
@@ -521,7 +533,9 @@ describe("CloudSyncAccountPanel", () => {
     await user.click(passwordResetButton)
 
     expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Passw0rd!")
-    expect(await screen.findByText("パスワードの再設定に失敗しました。時間をおいて再度お試しください")).toBeInTheDocument()
+    expect(
+      await screen.findByText("パスワードの再設定に失敗しました。時間をおいて再度お試しください"),
+    ).toBeInTheDocument()
 
     await user.clear(passwordResetInput)
     await user.type(passwordResetInput, "Reset42@")

@@ -3,6 +3,7 @@ import {
   validateEmail,
   validateRequiredPassword,
   validateCreatedPassword,
+  validateVerificationCode,
 } from "./authFormValidation"
 
 describe("validateEmail", () => {
@@ -71,5 +72,21 @@ describe("validateCreatedPassword", () => {
     expect(validateCreatedPassword("Passw0rd")).toBe(
       "パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください",
     )
+  })
+
+  it("空の認証コードに対してエラーメッセージを返す", () => {
+    expect(validateVerificationCode("")).toBe("確認コードを入力してください")
+  })
+
+  it("条件を満たす認証コードに対して空文字を返す", () => {
+    expect(validateVerificationCode("123456")).toBe("")
+  })
+
+  it("6 文字未満の認証コードに対してエラーメッセージを返す", () => {
+    expect(validateVerificationCode("12345")).toBe("確認コードは 6 文字で入力してください")
+  })
+
+  it("6 文字を超えるの認証コードに対してエラーメッセージを返す", () => {
+    expect(validateVerificationCode("1234567")).toBe("確認コードは 6 文字で入力してください")
   })
 })

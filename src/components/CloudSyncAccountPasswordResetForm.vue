@@ -35,6 +35,7 @@ function handleCancel() {
 }
 
 function reset() {
+  newPassword.value = ""
   newPasswordErrorMessage.value = ""
 }
 
