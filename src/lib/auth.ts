@@ -106,9 +106,26 @@ export async function updatePasswordAfterRecovery(newPassword: string): Promise<
 }
 
 export async function changePassword(newPassword: string, currentPassword: string): Promise<void> {
+  const {
+    data: { user },
+    error: getUserError,
+  } = await supabase.auth.getUser()
+
+  if (getUserError) throw getUserError
+
+  if (!user?.email) throw new Error("メールアドレスでサインインしているユーザーではありません")
+
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  })
+
+  if (signInError) {
+    throw signInError
+  }
+
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
-    current_password: currentPassword,
   })
 
   if (error) {

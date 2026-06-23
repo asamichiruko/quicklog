@@ -227,20 +227,54 @@ describe("auth", () => {
   })
 
   it("現在のパスワード付きでパスワードを変更する", async () => {
+    const user = { id: "user-id", email: "user@example.com" } as unknown as User
+    supabaseMocks.getUser.mockResolvedValue({ data: { user }, error: null })
+    supabaseMocks.signInWithPassword.mockResolvedValue({ error: null })
     supabaseMocks.updateUser.mockResolvedValue({ error: null })
 
     await expect(changePassword("NewPassw0rd!", "CurrentPassw0rd!")).resolves.toBeUndefined()
 
-    expect(supabaseMocks.updateUser).toHaveBeenCalledWith({
-      password: "NewPassw0rd!",
-      current_password: "CurrentPassw0rd!",
+    expect(supabaseMocks.signInWithPassword).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "CurrentPassw0rd!",
     })
+    expect(supabaseMocks.updateUser).toHaveBeenCalledWith({ password: "NewPassw0rd!" })
+  })
+
+  it("現在のパスワードが誤っていればパスワードを変更しない", async () => {
+    const user = { id: "user-id", email: "user@example.com" } as unknown as User
+    const error = new Error("invalid credentials")
+    supabaseMocks.getUser.mockResolvedValue({ data: { user }, error: null })
+    supabaseMocks.signInWithPassword.mockResolvedValue({ error })
+
+    await expect(changePassword("NewPassw0rd!", "WrongPassw0rd!")).rejects.toThrow(error)
+
+    expect(supabaseMocks.signInWithPassword).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "WrongPassw0rd!",
+    })
+    expect(supabaseMocks.updateUser).not.toHaveBeenCalled()
   })
 
   it("パスワード変更時に error があれば throw する", async () => {
+    const user = { id: "user-id", email: "user@example.com" } as unknown as User
     const error = new Error("change password failed")
+    supabaseMocks.getUser.mockResolvedValue({ data: { user }, error: null })
+    supabaseMocks.signInWithPassword.mockResolvedValue({ error: null })
     supabaseMocks.updateUser.mockResolvedValue({ error })
 
-    await expect(changePassword("NewPassw0rd!")).rejects.toThrow(error)
+    await expect(changePassword("NewPassw0rd!", "CurrentPassw0rd!")).rejects.toThrow(error)
+  })
+
+  it("メールアドレスでサインインしていないユーザーのパスワード変更は失敗する", async () => {
+    const user = { id: "user-id", email: undefined } as unknown as User
+    supabaseMocks.getUser.mockResolvedValue({ data: { user }, error: null })
+
+    await expect(changePassword("NewPassw0rd!", "CurrentPassw0rd!")).rejects.toThrow(
+      "メールアドレスでサインインしているユーザーではありません",
+    )
+
+    expect(supabaseMocks.signInWithPassword).not.toHaveBeenCalled()
+    expect(supabaseMocks.updateUser).not.toHaveBeenCalled()
   })
 })
