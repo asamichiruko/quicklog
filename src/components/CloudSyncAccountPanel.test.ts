@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import type { Session } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
-import CloudSyncPanel from "./CloudSyncAccountPanel.vue"
+import CloudSyncPanel, { type CloudSyncAccountActions } from "./CloudSyncAccountPanel.vue"
 import type { RuntimeSessionState } from "@/types.ts"
 import { CloudSyncDeletionError } from "@/errors.ts"
 
@@ -16,18 +16,26 @@ function createSession(userId: string, email: string): Session {
   } as unknown as Session
 }
 
-function createDefaultProps() {
+function createActions() {
+  const actions = {
+    signInWithEmail: vi.fn(),
+    signUpWithEmail: vi.fn(),
+    signOut: vi.fn(),
+    deleteCloudSync: vi.fn(),
+    sendPasswordResetCode: vi.fn(),
+    verifyPasswordResetCode: vi.fn(),
+    updatePasswordAfterRecovery: vi.fn(),
+    changePassword: vi.fn(),
+    verifySignUpCode: vi.fn(),
+    resendSignUpCode: vi.fn(),
+    cancelPasswordRecovery: vi.fn(),
+  } satisfies CloudSyncAccountActions
+
+  return actions
+}
+
+function createDefaultProps(actions: CloudSyncAccountActions) {
   const session = null
-  const signInWithEmail = vi.fn()
-  const signUpWithEmail = vi.fn()
-  const signOut = vi.fn()
-  const deleteCloudSync = vi.fn()
-  const sendPasswordResetCode = vi.fn()
-  const verifyPasswordResetCode = vi.fn()
-  const updatePasswordAfterRecovery = vi.fn()
-  const changePassword = vi.fn()
-  const verifySignUpCode = vi.fn()
-  const resendSignUpCode = vi.fn()
   const runtimeSessionState = {
     scope: { type: "anonymous" },
     syncStatus: "disabled",
@@ -35,17 +43,8 @@ function createDefaultProps() {
 
   return {
     session,
-    signInWithEmail,
-    signUpWithEmail,
-    signOut,
-    deleteCloudSync,
     runtimeSessionState,
-    sendPasswordResetCode,
-    verifyPasswordResetCode,
-    updatePasswordAfterRecovery,
-    changePassword,
-    verifySignUpCode,
-    resendSignUpCode,
+    actions,
   }
 }
 
@@ -66,15 +65,13 @@ describe("CloudSyncAccountPanel", () => {
 
   it("メールアドレスとパスワードを入力してサインインできる", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const signInWithEmail = vi.fn()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        signInWithEmail,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      signInWithEmail,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
     await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
@@ -91,14 +88,12 @@ describe("CloudSyncAccountPanel", () => {
   it("サインイン時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
     const signInWithEmail = vi.fn().mockRejectedValue({ code: "invalid_credentials" })
-    const defaultProps = createDefaultProps()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        signInWithEmail,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      signInWithEmail,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
     await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
@@ -117,13 +112,15 @@ describe("CloudSyncAccountPanel", () => {
   it("サインイン中にメールアドレスが表示されてサインアウトできる", async () => {
     const user = userEvent.setup()
     const signOut = vi.fn()
-    const defaultProps = createDefaultProps()
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      signOut,
+    })
 
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
         session: createSession("user1", "user@example.com"),
-        signOut,
         runtimeSessionState: {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
@@ -141,8 +138,11 @@ describe("CloudSyncAccountPanel", () => {
 
   it("サインアウト時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const signOut = vi.fn().mockRejectedValue({ code: "request_timeout" })
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      signOut,
+    })
 
     render(CloudSyncPanel, {
       props: {
@@ -152,7 +152,6 @@ describe("CloudSyncAccountPanel", () => {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
         },
-        signOut,
       },
     })
 
@@ -164,7 +163,7 @@ describe("CloudSyncAccountPanel", () => {
   })
 
   it("セッションが失われているとき同期停止メッセージを目立たせる", () => {
-    const defaultProps = createDefaultProps()
+    const defaultProps = createDefaultProps(createActions())
     render(CloudSyncPanel, {
       props: {
         ...defaultProps,
@@ -182,7 +181,7 @@ describe("CloudSyncAccountPanel", () => {
   })
 
   it("認証確認中のときは同期停止メッセージとして目立たせない", () => {
-    const defaultProps = createDefaultProps()
+    const defaultProps = createDefaultProps(createActions())
 
     render(CloudSyncPanel, {
       props: {
@@ -209,7 +208,6 @@ describe("CloudSyncAccountPanel", () => {
 
   it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const result = {
       data: {
         version: 3,
@@ -220,9 +218,15 @@ describe("CloudSyncAccountPanel", () => {
       deletedCount: 3,
       uploadedCount: 1,
     } satisfies CloudQuicklogDataSyncResult
+
     const syncLogEntries = vi
       .fn<() => Promise<CloudQuicklogDataSyncResult>>()
       .mockResolvedValue(result)
+
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      syncLogEntries,
+    })
 
     render(CloudSyncPanel, {
       props: {
@@ -232,7 +236,6 @@ describe("CloudSyncAccountPanel", () => {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
         },
-        syncLogEntries,
       },
     })
 
@@ -249,7 +252,11 @@ describe("CloudSyncAccountPanel", () => {
     const syncLogEntries = vi
       .fn<() => Promise<CloudQuicklogDataSyncResult>>()
       .mockRejectedValue(new Error("network error"))
-    const defaultProps = createDefaultProps()
+
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      syncLogEntries,
+    })
 
     render(CloudSyncPanel, {
       props: {
@@ -259,7 +266,6 @@ describe("CloudSyncAccountPanel", () => {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
         },
-        syncLogEntries,
       },
     })
 
@@ -272,7 +278,7 @@ describe("CloudSyncAccountPanel", () => {
 
   it("サインイン中に パスワードを変更 ボタンを押すと ChangePasswordForm に遷移する", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
+    const defaultProps = createDefaultProps(createActions())
 
     render(CloudSyncPanel, {
       props: {
@@ -292,7 +298,7 @@ describe("CloudSyncAccountPanel", () => {
 
   it("パスワードの変更に成功すると changePassword が呼ばれてクラウド同期画面に遷移する", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
+    const defaultProps = createDefaultProps(createActions())
 
     render(CloudSyncPanel, {
       props: {
@@ -318,9 +324,12 @@ describe("CloudSyncAccountPanel", () => {
 
   it("パスワードの変更に失敗すると画面を遷移しない", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const error = new Error("パスワード変更エラー")
     const changePassword = vi.fn().mockRejectedValue(error)
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      changePassword,
+    })
 
     render(CloudSyncPanel, {
       props: {
@@ -330,7 +339,6 @@ describe("CloudSyncAccountPanel", () => {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
         },
-        changePassword,
       },
     })
 
@@ -352,15 +360,12 @@ describe("CloudSyncAccountPanel", () => {
   it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {
     const user = userEvent.setup()
     const signUpWithEmail = vi.fn().mockRejectedValue({ code: "email_exists" })
-    const defaultProps = createDefaultProps()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: null,
-        signUpWithEmail,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      signUpWithEmail,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
@@ -381,16 +386,13 @@ describe("CloudSyncAccountPanel", () => {
     const user = userEvent.setup()
     const signUpWithEmail = vi.fn()
     const verifySignUpCode = vi.fn()
-    const defaultProps = createDefaultProps()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: null,
-        signUpWithEmail,
-        verifySignUpCode,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      signUpWithEmail,
+      verifySignUpCode,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
@@ -420,15 +422,12 @@ describe("CloudSyncAccountPanel", () => {
     const user = userEvent.setup()
     const error = new Error("認証エラー")
     const verifySignUpCode = vi.fn().mockRejectedValueOnce(error)
-    const defaultProps = createDefaultProps()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: null,
-        verifySignUpCode,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      verifySignUpCode,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
@@ -450,7 +449,9 @@ describe("CloudSyncAccountPanel", () => {
 
     await user.click(verifyButton)
 
-    expect(screen.getByText("認証処理に失敗しました。時間をおいて再度お試しください")).toBeInTheDocument()
+    expect(
+      screen.getByText("認証処理に失敗しました。時間をおいて再度お試しください"),
+    ).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
     expect(codeInput).toHaveValue("")
 
@@ -464,15 +465,12 @@ describe("CloudSyncAccountPanel", () => {
   it("アカウント作成で認証コードを再送できる", async () => {
     const user = userEvent.setup()
     const resendSignUpCode = vi.fn()
-    const defaultProps = createDefaultProps()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: null,
-        resendSignUpCode,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      resendSignUpCode,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
@@ -495,18 +493,15 @@ describe("CloudSyncAccountPanel", () => {
 
   it("アカウント作成をキャンセルすると state が破棄される", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const signUpWithEmail = vi.fn()
     const verifySignUpCode = vi.fn()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: null,
-        signUpWithEmail,
-        verifySignUpCode,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      signUpWithEmail,
+      verifySignUpCode,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
     await user.type(screen.getByLabelText("メールアドレス"), " first@example.com ")
@@ -530,13 +525,20 @@ describe("CloudSyncAccountPanel", () => {
     await user.type(screen.getByLabelText("確認コード"), "123456")
     await user.click(screen.getByRole("button", { name: "認証する" }))
 
-    expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith("second@example.com", "123456", "Second123!")
+    expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith(
+      "second@example.com",
+      "123456",
+      "Second123!",
+    )
   })
 
   it("アカウントを削除できる", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const deleteCloudSync = vi.fn().mockResolvedValue(null)
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      deleteCloudSync,
+    })
 
     render(CloudSyncPanel, {
       props: {
@@ -546,7 +548,6 @@ describe("CloudSyncAccountPanel", () => {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
         },
-        deleteCloudSync,
       },
     })
 
@@ -559,10 +560,13 @@ describe("CloudSyncAccountPanel", () => {
 
   it("アカウントの削除に失敗したらエラーを表示する", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const deleteCloudSync = vi
       .fn()
       .mockRejectedValue(new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした"))
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      deleteCloudSync,
+    })
 
     render(CloudSyncPanel, {
       props: {
@@ -572,7 +576,6 @@ describe("CloudSyncAccountPanel", () => {
           scope: { type: "user", userId: "user1" },
           syncStatus: "authenticated",
         },
-        deleteCloudSync,
       },
     })
 
@@ -588,19 +591,17 @@ describe("CloudSyncAccountPanel", () => {
 
   it("OTP を利用してパスワードを再設定できる", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
     const verifyPasswordResetCode = vi.fn().mockResolvedValue(null)
     const updatePasswordAfterRecovery = vi.fn().mockResolvedValue(null)
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        sendPasswordResetCode,
-        verifyPasswordResetCode,
-        updatePasswordAfterRecovery,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      sendPasswordResetCode,
+      verifyPasswordResetCode,
+      updatePasswordAfterRecovery,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
@@ -640,15 +641,13 @@ describe("CloudSyncAccountPanel", () => {
 
   it("OTP を再送できる", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        sendPasswordResetCode,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      sendPasswordResetCode,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
@@ -670,20 +669,18 @@ describe("CloudSyncAccountPanel", () => {
 
   it("OTP の確認失敗時にパスワード再設定画面へ進まない", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const error = new Error("認証失敗")
     const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
     const verifyPasswordResetCode = vi.fn().mockRejectedValueOnce(error).mockResolvedValue(null)
     const updatePasswordAfterRecovery = vi.fn()
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        sendPasswordResetCode,
-        verifyPasswordResetCode,
-        updatePasswordAfterRecovery,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      sendPasswordResetCode,
+      verifyPasswordResetCode,
+      updatePasswordAfterRecovery,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
@@ -723,15 +720,13 @@ describe("CloudSyncAccountPanel", () => {
 
   it("パスワード変更失敗時に新しいパスワード画面に残る", async () => {
     const user = userEvent.setup()
-    const defaultProps = createDefaultProps()
     const updatePasswordAfterRecovery = vi.fn().mockRejectedValueOnce(null).mockResolvedValue(null)
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        updatePasswordAfterRecovery,
-      },
+    const defaultProps = createDefaultProps({
+      ...createActions(),
+      updatePasswordAfterRecovery,
     })
+
+    render(CloudSyncPanel, { props: defaultProps })
 
     await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")

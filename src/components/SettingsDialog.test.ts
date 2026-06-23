@@ -4,6 +4,27 @@ import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
 import { defineComponent, ref } from "vue"
 import type { ExportType, RuntimeSessionState } from "@/types"
+import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
+
+function createCloudSyncAccountActions(
+  overrides: Partial<CloudSyncAccountActions> = {},
+): CloudSyncAccountActions {
+  return {
+    syncLogEntries: vi.fn(),
+    signInWithEmail: vi.fn(),
+    signUpWithEmail: vi.fn(),
+    signOut: vi.fn(),
+    deleteCloudSync: vi.fn(),
+    sendPasswordResetCode: vi.fn(),
+    verifyPasswordResetCode: vi.fn(),
+    updatePasswordAfterRecovery: vi.fn(),
+    changePassword: vi.fn(),
+    verifySignUpCode: vi.fn(),
+    resendSignUpCode: vi.fn(),
+    cancelPasswordRecovery: vi.fn(),
+    ...overrides,
+  }
+}
 
 const TestHost = defineComponent({
   components: { SettingsDialog },
@@ -35,6 +56,10 @@ const TestHost = defineComponent({
       signedInPassword.value = password
     }
 
+    const cloudSyncAccountActions = createCloudSyncAccountActions({
+      signInWithEmail,
+    })
+
     return {
       dialog,
       settings,
@@ -47,17 +72,8 @@ const TestHost = defineComponent({
       anonymousDataState,
       signedInEmail,
       signedInPassword,
-      signInWithEmail,
-      signUpWithEmail: vi.fn(),
-      signOut: vi.fn(),
       deleteAnonymousData: vi.fn(),
-      deleteCloudSync: vi.fn(),
-      sendPasswordResetCode: vi.fn(),
-      verifyPasswordResetCode: vi.fn(),
-      updatePasswordAfterRecovery: vi.fn(),
-      changePassword: vi.fn(),
-      verifySignUpCode: vi.fn(),
-      resendSignUpCode: vi.fn(),
+      cloudSyncAccountActions,
     }
   },
   template: `
@@ -71,19 +87,10 @@ const TestHost = defineComponent({
     @export="exportType = $event"
     @import="importedFile = $event"
     :session="null"
-    :sign-in-with-email="signInWithEmail"
-    :sign-up-with-email="signUpWithEmail"
-    :sign-out="signOut"
     :runtime-session-state="runtimeSessionState"
     :anonymous-data-state="anonymousDataState"
     :delete-anonymous-data="deleteAnonymousData"
-    :delete-cloud-sync="deleteCloudSync"
-    :send-password-reset-code="sendPasswordResetCode"
-    :verify-password-reset-code="verifyPasswordResetCode"
-    :update-password-after-recovery="updatePasswordAfterRecovery"
-    :change-password="changePassword"
-    :verify-sign-up-code="verifySignUpCode"
-    :resend-sign-up-code="resendSignUpCode"
+    :cloud-sync-account-actions="cloudSyncAccountActions"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>
@@ -231,7 +238,7 @@ describe("SettingsDialog", () => {
     await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
     await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
 
-    expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
+    expect(screen.queryByLabelText("確認コード")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "キャンセル" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))

@@ -19,9 +19,7 @@ import type { RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
 import { computed, ref } from "vue"
 
-const props = defineProps<{
-  session: Session | null
-  runtimeSessionState: RuntimeSessionState
+export type CloudSyncAccountActions = {
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
   signInWithEmail: (email: string, password: string) => Promise<void>
   signUpWithEmail: (email: string, password: string) => Promise<void>
@@ -33,10 +31,13 @@ const props = defineProps<{
   changePassword: (newPassword: string, currentPassword: string) => Promise<void>
   verifySignUpCode: (email: string, code: string, password: string) => Promise<void>
   resendSignUpCode: (email: string) => Promise<void>
-}>()
+  cancelPasswordRecovery: () => void
+}
 
-const emit = defineEmits<{
-  cancelPasswordRecovery: []
+const props = defineProps<{
+  session: Session | null
+  runtimeSessionState: RuntimeSessionState
+  actions: CloudSyncAccountActions
 }>()
 
 export type SelectablePanelView = "signIn" | "signUp" | "passwordResetRequest"
@@ -131,7 +132,7 @@ async function handleSignIn(email: string, password: string): Promise<void> {
   isLoading.value = true
 
   try {
-    await props.signInWithEmail(email.trim(), password)
+    await props.actions.signInWithEmail(email.trim(), password)
     feedbackMessage.value = "クラウド同期を開始しました"
     feedbackKind.value = "success"
   } catch (error) {
@@ -150,7 +151,7 @@ async function handleSignUp(email: string, password: string): Promise<void> {
   isLoading.value = true
 
   try {
-    await props.signUpWithEmail(email.trim(), password)
+    await props.actions.signUpWithEmail(email.trim(), password)
     signUpRequestEmail.value = email.trim()
     signUpRequestPassword.value = password
     signUpFlowStep.value = "awaitingCode"
@@ -174,7 +175,11 @@ async function handleVerifySignUpCode(code: string): Promise<void> {
   isLoading.value = true
 
   try {
-    await props.verifySignUpCode(signUpRequestEmail.value, code, signUpRequestPassword.value)
+    await props.actions.verifySignUpCode(
+      signUpRequestEmail.value,
+      code,
+      signUpRequestPassword.value,
+    )
     feedbackMessage.value = "認証に成功しました"
     feedbackKind.value = null
 
@@ -210,7 +215,7 @@ async function handleResendSignUpCode(): Promise<void> {
   isLoading.value = true
 
   try {
-    await props.resendSignUpCode(signUpRequestEmail.value)
+    await props.actions.resendSignUpCode(signUpRequestEmail.value)
     feedbackMessage.value = "アカウント作成用のメールを再送しました"
     feedbackKind.value = "success"
 
@@ -229,7 +234,7 @@ async function handleSignOut(): Promise<void> {
   isLoading.value = true
 
   try {
-    await props.signOut()
+    await props.actions.signOut()
     feedbackMessage.value = "クラウド同期を停止しました"
     feedbackKind.value = "success"
   } catch (error) {
@@ -251,9 +256,9 @@ async function handleSync(): Promise<void> {
   isLoading.value = true
 
   try {
-    if (!props.syncLogEntries) throw new Error("Cloud sync handler is not configured.")
+    if (!props.actions.syncLogEntries) throw new Error("Cloud sync handler is not configured.")
 
-    const result = await props.syncLogEntries()
+    const result = await props.actions.syncLogEntries()
     feedbackMessage.value = `同期しました（追加 ${result.addedCount} 件、削除 ${result.deletedCount} 件、アップロード ${result.uploadedCount} 件）`
     feedbackKind.value = "success"
   } catch (error) {
@@ -276,7 +281,7 @@ async function handleChangePassword(newPassword: string, currentPassword: string
   feedbackMessage.value = ""
 
   try {
-    await props.changePassword(newPassword, currentPassword)
+    await props.actions.changePassword(newPassword, currentPassword)
 
     feedbackMessage.value = "パスワードを変更しました"
     feedbackKind.value = "success"
@@ -305,7 +310,7 @@ async function passwordResetRequest() {
   isLoading.value = true
 
   try {
-    await props.sendPasswordResetCode(passwordResetRequestEmail.value)
+    await props.actions.sendPasswordResetCode(passwordResetRequestEmail.value)
     feedbackMessage.value = "パスワードリセット用のメールを送信しました"
     feedbackKind.value = "success"
 
@@ -327,7 +332,7 @@ async function handleResendPasswordResetRequest() {
   isLoading.value = true
 
   try {
-    await props.sendPasswordResetCode(passwordResetRequestEmail.value)
+    await props.actions.sendPasswordResetCode(passwordResetRequestEmail.value)
     feedbackMessage.value = "パスワードリセット用のメールを再送しました"
     feedbackKind.value = "success"
 
@@ -349,7 +354,7 @@ async function handleVerifyPasswordResetCode(code: string) {
   isLoading.value = true
 
   try {
-    await props.verifyPasswordResetCode(passwordResetRequestEmail.value, code)
+    await props.actions.verifyPasswordResetCode(passwordResetRequestEmail.value, code)
     feedbackMessage.value = "認証に成功しました"
     feedbackKind.value = null
 
@@ -371,7 +376,7 @@ async function handlePasswordReset(password: string) {
   isLoading.value = true
 
   try {
-    await props.updatePasswordAfterRecovery(password)
+    await props.actions.updatePasswordAfterRecovery(password)
     feedbackMessage.value = "パスワードを再設定しました"
     feedbackKind.value = null
 
@@ -390,7 +395,7 @@ function cancelPasswordResetRecovery() {
   clearPasswordResetVerification()
   selectedPanelView.value = "signIn"
   clearFeedbackMessage()
-  emit("cancelPasswordRecovery")
+  props.actions.cancelPasswordRecovery()
 }
 
 function cancelPasswordChange() {
@@ -411,7 +416,7 @@ async function handleConfirmDeleteCloudSync() {
   isLoading.value = true
 
   try {
-    await props.deleteCloudSync()
+    await props.actions.deleteCloudSync()
     resetAuthFormState()
     feedbackMessage.value = "クラウド同期アカウントを削除しました"
     feedbackKind.value = "success"

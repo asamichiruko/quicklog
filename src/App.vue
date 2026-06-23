@@ -72,6 +72,7 @@ import type {
 } from "@/types"
 import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
+import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 
 const session = ref<Session | null>(null)
 
@@ -150,6 +151,21 @@ const cloudSyncScheduler = createCloudSyncScheduler({
   requestSync: () => cloudSyncQueue.request(),
   autoSyncDelayMs: 1_000,
 })
+
+const cloudSyncAccountActions = {
+  syncLogEntries: handleCloudSync,
+  signInWithEmail: handleSignInWithEmail,
+  signUpWithEmail: handleSignUpWithEmail,
+  signOut: handleSignOut,
+  deleteCloudSync,
+  sendPasswordResetCode: handleSendPasswordResetCode,
+  verifyPasswordResetCode: handleVerifyPasswordResetCode,
+  updatePasswordAfterRecovery: handleUpdatePasswordAfterRecovery,
+  changePassword: handleChangePassword,
+  verifySignUpCode: handleVerifySignUpCode,
+  resendSignUpCode: handleResendSignUpCode,
+  cancelPasswordRecovery: handleCancelPasswordRecovery,
+} satisfies CloudSyncAccountActions
 
 const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
 const calendarDialog = ref<InstanceType<typeof CalendarDialog> | null>(null)
@@ -662,21 +678,10 @@ async function handleCancelPasswordRecovery() {
     :session="session"
     :settings="settings"
     :log-entries="logEntries"
-    :sync-log-entries="handleCloudSync"
-    :sign-in-with-email="handleSignInWithEmail"
-    :sign-up-with-email="handleSignUpWithEmail"
-    :sign-out="handleSignOut"
     :runtime-session-state="runtimeSessionState"
     :anonymous-data-state="anonymousQuicklogDataState"
     :delete-anonymous-data="deleteAnonymousQuicklogData"
-    :delete-cloud-sync="deleteCloudSync"
-    :send-password-reset-code="handleSendPasswordResetCode"
-    :verify-password-reset-code="handleVerifyPasswordResetCode"
-    :update-password-after-recovery="handleUpdatePasswordAfterRecovery"
-    :change-password="handleChangePassword"
-    :verify-sign-up-code="handleVerifySignUpCode"
-    :resend-sign-up-code="handleResendSignUpCode"
-    @cancel-password-recovery="handleCancelPasswordRecovery"
+    :cloud-sync-account-actions="cloudSyncAccountActions"
     @save="handleSaveSettings"
     @export="handleExport"
     @import="handleImport"

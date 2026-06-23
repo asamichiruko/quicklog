@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import CloudSyncPanel from "@/components/CloudSyncAccountPanel.vue"
+import CloudSyncPanel, {
+  type CloudSyncAccountActions,
+} from "@/components/CloudSyncAccountPanel.vue"
 import LocalDataManagementPanel from "@/components/LocalDataManagementPanel.vue"
 import LogEntryCopyPanel from "@/components/LogEntryCopyPanel.vue"
 import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
-import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type {
   AnonymousDataState,
@@ -35,19 +36,9 @@ const props = defineProps<{
   runtimeSessionState: RuntimeSessionState
   logEntries: LogEntry[]
   settings: AppSettings
-  syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
-  signInWithEmail: (email: string, password: string) => Promise<void>
-  signUpWithEmail: (email: string, password: string) => Promise<void>
-  signOut: () => Promise<void>
   anonymousDataState: AnonymousDataState
   deleteAnonymousData: () => void
-  deleteCloudSync: () => Promise<void>
-  sendPasswordResetCode: (email: string) => Promise<void>
-  verifyPasswordResetCode: (email: string, code: string) => Promise<void>
-  updatePasswordAfterRecovery: (password: string) => Promise<void>
-  changePassword: (newPassword: string, currentPassword: string) => Promise<void>
-  verifySignUpCode: (email: string, code: string, password: string) => Promise<void>
-  resendSignUpCode: (email: string) => Promise<void>
+  cloudSyncAccountActions: CloudSyncAccountActions
 }>()
 
 const emit = defineEmits<{
@@ -142,18 +133,7 @@ defineExpose({ open })
               ref="cloudSyncPanel"
               :session="props.session"
               :runtime-session-state="props.runtimeSessionState"
-              :sync-log-entries="props.syncLogEntries"
-              :sign-in-with-email="props.signInWithEmail"
-              :sign-up-with-email="props.signUpWithEmail"
-              :sign-out="props.signOut"
-              :delete-cloud-sync="props.deleteCloudSync"
-              :send-password-reset-code="props.sendPasswordResetCode"
-              :verify-password-reset-code="props.verifyPasswordResetCode"
-              :update-password-after-recovery="props.updatePasswordAfterRecovery"
-              :change-password="props.changePassword"
-              :verify-sign-up-code="props.verifySignUpCode"
-              :resend-sign-up-code="props.resendSignUpCode"
-              @cancel-password-recovery="emit('cancelPasswordRecovery')"
+              :actions="props.cloudSyncAccountActions"
             />
           </div>
         </details>
