@@ -39,6 +39,7 @@ function handleCancel() {
 }
 
 function reset() {
+  passwordResetRequestEmail.value = ""
   passwordResetRequestEmailErrorMessage.value = ""
 }
 

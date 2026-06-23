@@ -173,8 +173,8 @@ async function handleSync(): Promise<void> {
     const result = await props.syncLogEntries()
     feedbackMessage.value = `同期しました（追加 ${result.addedCount} 件、削除 ${result.deletedCount} 件、アップロード ${result.uploadedCount} 件）`
     feedbackKind.value = "success"
-  } catch {
-    feedbackMessage.value = "同期に失敗しました"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
     isLoading.value = false
@@ -202,8 +202,8 @@ async function passwordResetRequest() {
 
     cloudSyncAccountOtpVerificationForm.value?.reset()
     passwordResetFlowStep.value = "awaitingCode"
-  } catch {
-    feedbackMessage.value = "パスワードリセット用のメールの送信に失敗しました"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
     isLoading.value = false
@@ -223,8 +223,8 @@ async function handleResendPasswordResetRequest() {
     feedbackKind.value = "success"
 
     cloudSyncAccountOtpVerificationForm.value?.reset()
-  } catch {
-    feedbackMessage.value = "パスワードリセット用のメールの送信に失敗しました"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
     isLoading.value = false
@@ -245,8 +245,8 @@ async function handleVerifyEmail(verificationCode: string) {
     feedbackKind.value = null
 
     passwordResetFlowStep.value = "settingPassword"
-  } catch {
-    feedbackMessage.value = "認証に失敗しました。確認コードが正しいかお確かめください"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
     cloudSyncAccountOtpVerificationForm.value?.reset()
@@ -269,8 +269,8 @@ async function handlePasswordReset(password: string) {
     clearPasswordResetVerification()
     passwordResetFlowStep.value = "idle"
     selectedPanelView.value = "signIn"
-  } catch {
-    feedbackMessage.value = "パスワードの再設定に失敗しました。時間をおいて再度お試しください"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
     isLoading.value = false
@@ -294,6 +294,7 @@ function cancelPasswordResetVerification() {
 function clearPasswordResetVerification() {
   cloudSyncAccountPasswordResetRequestForm.value?.reset()
   cloudSyncAccountPasswordResetForm.value?.reset()
+  cloudSyncAccountOtpVerificationForm.value?.reset()
   passwordResetFlowStep.value = "idle"
 }
 

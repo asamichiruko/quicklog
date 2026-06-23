@@ -258,7 +258,7 @@ describe("CloudSyncAccountPanel", () => {
 
     await user.click(screen.getByRole("button", { name: "同期" }))
 
-    expect(await screen.findByText("同期に失敗しました")).toBeInTheDocument()
+    expect(await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください")).toBeInTheDocument()
   })
 
   it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {
@@ -486,7 +486,7 @@ describe("CloudSyncAccountPanel", () => {
 
     expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "123456")
     expect(
-      await screen.findByText("認証に失敗しました。確認コードが正しいかお確かめください"),
+      await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください"),
     ).toBeInTheDocument()
     expect(updatePasswordAfterRecovery).not.toHaveBeenCalled()
     expect(await screen.findByRole("heading", { name: "メールアドレス確認" })).toBeInTheDocument()
@@ -534,7 +534,7 @@ describe("CloudSyncAccountPanel", () => {
 
     expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Passw0rd!")
     expect(
-      await screen.findByText("パスワードの再設定に失敗しました。時間をおいて再度お試しください"),
+      await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください"),
     ).toBeInTheDocument()
 
     await user.clear(passwordResetInput)

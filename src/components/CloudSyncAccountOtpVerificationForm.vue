@@ -52,6 +52,8 @@ defineExpose({ reset })
         <input
           v-model="verificationCode"
           type="text"
+          autocomplete="one-time-code"
+          maxlength="6"
           name="verification-code"
           class="verification-code-input"
           placeholder="確認コードを入力"
@@ -77,7 +79,7 @@ defineExpose({ reset })
       <button
         type="button"
         class="button-link change-mode-button"
-        :disabled="isLoading"
+        :disabled="props.isLoading"
         @click="emit('resend')"
       >
         確認メールを再送する

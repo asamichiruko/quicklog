@@ -85,6 +85,7 @@ defineExpose({ reset })
           v-model="signUpPassword"
           name="sign-up-password"
           type="password"
+          autocomplete="new-password"
           class="password-input"
           placeholder="パスワードを入力"
           aria-describedby="sign-up-password-error"

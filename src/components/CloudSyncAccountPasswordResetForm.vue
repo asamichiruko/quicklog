@@ -51,6 +51,7 @@ defineExpose({ reset })
         <input
           v-model="newPassword"
           type="password"
+          autocomplete="new-password"
           name="new-password-input"
           class="password-input"
           placeholder="パスワードを入力"
