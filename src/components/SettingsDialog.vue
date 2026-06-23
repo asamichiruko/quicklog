@@ -46,6 +46,8 @@ const props = defineProps<{
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
   updatePasswordAfterRecovery: (password: string) => Promise<void>
   changePassword: (newPassword: string, currentPassword: string) => Promise<void>
+  verifySignUpCode: (email: string, code: string, password: string) => Promise<void>
+  resendSignUpCode: (email: string) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -62,7 +64,9 @@ function open() {
 
   cloudSyncPanel.value?.prepareForDialogOpen()
   if (cloudSyncPanelDetails.value) {
-    cloudSyncPanelDetails.value.open = Boolean(cloudSyncPanel.value?.hasActivePasswordResetFlow)
+    cloudSyncPanelDetails.value.open = Boolean(
+      cloudSyncPanel.value?.hasActiveSignUpFlow || cloudSyncPanel.value?.hasActivePasswordResetFlow,
+    )
   }
 
   copyPanel.value?.reset()
@@ -147,6 +151,8 @@ defineExpose({ open })
               :verify-password-reset-code="props.verifyPasswordResetCode"
               :update-password-after-recovery="props.updatePasswordAfterRecovery"
               :change-password="props.changePassword"
+              :verify-sign-up-code="props.verifySignUpCode"
+              :resend-sign-up-code="props.resendSignUpCode"
               @cancel-password-recovery="emit('cancelPasswordRecovery')"
             />
           </div>

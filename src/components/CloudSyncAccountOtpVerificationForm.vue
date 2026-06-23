@@ -44,7 +44,7 @@ defineExpose({ reset })
 
 <template>
   <form class="form" @submit.prevent="handleSubmit">
-    <h4 class="heading">メールアドレス確認</h4>
+    <h4 class="heading">メールアドレスの確認</h4>
     <p class="email-verify-description">送信された確認コードを入力してください</p>
     <div class="field">
       <label class="label">
@@ -90,7 +90,7 @@ defineExpose({ reset })
         :disabled="props.isLoading"
         @click="emit('cancel')"
       >
-        パスワードリセットを中止
+        認証をキャンセル
       </button>
     </div>
   </form>

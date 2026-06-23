@@ -76,7 +76,7 @@ describe("CloudSyncAccountOtpVerificationForm", () => {
     expect(emitted().resend).toEqual([[]])
   })
 
-  it("パスワードリセットを中止 ボタンを押すと cancel を emit する", async () => {
+  it("認証をキャンセル ボタンを押すと cancel を emit する", async () => {
     const user = userEvent.setup()
     const { emitted } = render(CloudSyncAccountOtpVerificationForm, {
       props: {
@@ -84,7 +84,7 @@ describe("CloudSyncAccountOtpVerificationForm", () => {
       },
     })
 
-    await user.click(screen.getByRole("button", { name: "パスワードリセットを中止" }))
+    await user.click(screen.getByRole("button", { name: "認証をキャンセル" }))
 
     expect(emitted()).toHaveProperty("cancel")
     expect(emitted().cancel).toEqual([[]])

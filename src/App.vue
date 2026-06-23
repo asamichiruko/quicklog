@@ -9,12 +9,14 @@ import {
   clearLocalAuthSession,
   deleteCurrentAccount,
   getCurrentSession,
+  resendSignUpCode,
   sendPasswordResetCode,
   signInWithEmail,
   signOut,
   signUpWithEmail,
   updatePasswordAfterRecovery,
   verifyPasswordResetCode,
+  verifySignUpCode,
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { deleteCloudSyncData } from "@/lib/cloudSyncAccountDeletion"
@@ -540,7 +542,16 @@ async function startCloudSyncWithEmail(authenticate: () => Promise<void>) {
 }
 
 async function handleSignUpWithEmail(email: string, password: string) {
-  await startCloudSyncWithEmail(() => signUpWithEmail(email, password))
+  await signUpWithEmail(email, password)
+}
+
+async function handleVerifySignUpCode(email: string, code: string, password: string) {
+  await verifySignUpCode(email, code)
+  await startCloudSyncWithEmail(() => signInWithEmail(email, password))
+}
+
+async function handleResendSignUpCode(email: string) {
+  await resendSignUpCode(email)
 }
 
 async function handleSignInWithEmail(email: string, password: string) {
@@ -663,6 +674,8 @@ async function handleCancelPasswordRecovery() {
     :verify-password-reset-code="handleVerifyPasswordResetCode"
     :update-password-after-recovery="handleUpdatePasswordAfterRecovery"
     :change-password="handleChangePassword"
+    :verify-sign-up-code="handleVerifySignUpCode"
+    :resend-sign-up-code="handleResendSignUpCode"
     @cancel-password-recovery="handleCancelPasswordRecovery"
     @save="handleSaveSettings"
     @export="handleExport"

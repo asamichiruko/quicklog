@@ -56,6 +56,8 @@ const TestHost = defineComponent({
       verifyPasswordResetCode: vi.fn(),
       updatePasswordAfterRecovery: vi.fn(),
       changePassword: vi.fn(),
+      verifySignUpCode: vi.fn(),
+      resendSignUpCode: vi.fn(),
     }
   },
   template: `
@@ -80,6 +82,8 @@ const TestHost = defineComponent({
     :verify-password-reset-code="verifyPasswordResetCode"
     :update-password-after-recovery="updatePasswordAfterRecovery"
     :change-password="changePassword"
+    :verify-sign-up-code="verifySignUpCode"
+    :resend-sign-up-code="resendSignUpCode"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>
@@ -210,6 +214,31 @@ describe("SettingsDialog", () => {
     const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
     expect(cloudSyncPanel).toHaveAttribute("open")
     expect(screen.getByLabelText("新しいパスワード")).toBeInTheDocument()
+  })
+
+  it("アカウント作成の確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
+    expect(cloudSyncSummary).not.toBeNull()
+
+    await user.click(cloudSyncSummary as HTMLElement)
+    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+    await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
+
+    expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
+    expect(cloudSyncPanel).toHaveAttribute("open")
+    expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
   })
 
   it("開き直すと 記録のインポート パネルが閉じて入力状態がリセットされる", async () => {

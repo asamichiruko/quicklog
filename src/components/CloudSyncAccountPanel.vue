@@ -31,6 +31,8 @@ const props = defineProps<{
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
   updatePasswordAfterRecovery: (password: string) => Promise<void>
   changePassword: (newPassword: string, currentPassword: string) => Promise<void>
+  verifySignUpCode: (email: string, code: string, password: string) => Promise<void>
+  resendSignUpCode: (email: string) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -44,7 +46,8 @@ export type PanelView =
   | SignedInPanelView
   | "signedIn"
   | "authPending"
-  | "verifyEmail"
+  | "passwordResetVerifyEmail"
+  | "signUpVerifyEmail"
   | "resetPassword"
 type FeedbackKind = "success" | "error"
 
@@ -60,8 +63,11 @@ const selectedPanelView = ref<SelectablePanelView>("signIn")
 const signedInPanelView = ref<SignedInPanelView>("main")
 
 const panelView = computed<PanelView>(() => {
-  if (passwordResetFlowStep.value === "awaitingCode") return "verifyEmail"
+  if (passwordResetFlowStep.value === "awaitingCode") return "passwordResetVerifyEmail"
   if (passwordResetFlowStep.value === "settingPassword") return "resetPassword"
+
+  if (signUpFlowStep.value === "awaitingCode") return "signUpVerifyEmail"
+
   if (isAuthPending(props.runtimeSessionState)) return "authPending"
   if (canUseCloudSession.value) return signedInPanelView.value
   return selectedPanelView.value
@@ -72,6 +78,12 @@ const passwordResetFlowStep = ref<PasswordResetFlowStep>("idle")
 const passwordResetRequestEmail = ref("")
 const hasActivePasswordResetFlow = computed(() => passwordResetFlowStep.value !== "idle")
 
+type SignUpFlowStep = "idle" | "awaitingCode"
+const signUpFlowStep = ref<SignUpFlowStep>("idle")
+const signUpRequestEmail = ref("")
+const signUpRequestPassword = ref("") // アカウント作成後のサインインのために一時的に保持、必ず破棄する
+const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
+
 const cloudSyncAccountSignInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
 const cloudSyncAccountSignUpForm = ref<InstanceType<typeof CloudSyncAccountSignUpForm> | null>(null)
 const cloudSyncAccountSignedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(
@@ -80,7 +92,10 @@ const cloudSyncAccountSignedInView = ref<InstanceType<typeof CloudSyncAccountSig
 const cloudSyncAccountPasswordResetRequestForm = ref<InstanceType<
   typeof CloudSyncAccountPasswordResetRequestForm
 > | null>(null)
-const cloudSyncAccountOtpVerificationForm = ref<InstanceType<
+const passwordResetOtpVerificationForm = ref<InstanceType<
+  typeof CloudSyncAccountOtpVerificationForm
+> | null>(null)
+const signUpOtpVerificationForm = ref<InstanceType<
   typeof CloudSyncAccountOtpVerificationForm
 > | null>(null)
 const cloudSyncAccountPasswordResetForm = ref<InstanceType<
@@ -136,8 +151,70 @@ async function handleSignUp(email: string, password: string): Promise<void> {
 
   try {
     await props.signUpWithEmail(email.trim(), password)
-    feedbackMessage.value = "アカウントを作成しました"
+    signUpRequestEmail.value = email.trim()
+    signUpRequestPassword.value = password
+    signUpFlowStep.value = "awaitingCode"
+
+    feedbackMessage.value = "確認メールを送信しました"
     feedbackKind.value = "success"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
+    feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function handleVerifySignUpCode(code: string): Promise<void> {
+  if (isLoading.value) return
+  if (validateVerificationCode(code) !== "") return
+  if (!signUpRequestEmail.value) return
+
+  feedbackMessage.value = ""
+  isLoading.value = true
+
+  try {
+    await props.verifySignUpCode(signUpRequestEmail.value, code, signUpRequestPassword.value)
+    feedbackMessage.value = "認証に成功しました"
+    feedbackKind.value = null
+
+    clearSignUpVerification()
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
+    feedbackKind.value = "error"
+  } finally {
+    signUpOtpVerificationForm.value?.reset()
+    isLoading.value = false
+  }
+}
+
+function cancelSignUpVerification() {
+  selectedPanelView.value = "signUp"
+  clearSignUpVerification()
+  clearFeedbackMessage()
+}
+
+function clearSignUpVerification() {
+  cloudSyncAccountSignUpForm.value?.reset()
+  signUpRequestEmail.value = ""
+  signUpRequestPassword.value = ""
+  signUpFlowStep.value = "idle"
+  signUpOtpVerificationForm.value?.reset()
+}
+
+async function handleResendSignUpCode(): Promise<void> {
+  if (isLoading.value) return
+  if (!signUpRequestEmail.value) return
+
+  feedbackMessage.value = ""
+  isLoading.value = true
+
+  try {
+    await props.resendSignUpCode(signUpRequestEmail.value)
+    feedbackMessage.value = "アカウント作成用のメールを再送しました"
+    feedbackKind.value = "success"
+
+    signUpOtpVerificationForm.value?.reset()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -232,7 +309,7 @@ async function passwordResetRequest() {
     feedbackMessage.value = "パスワードリセット用のメールを送信しました"
     feedbackKind.value = "success"
 
-    cloudSyncAccountOtpVerificationForm.value?.reset()
+    passwordResetOtpVerificationForm.value?.reset()
     passwordResetFlowStep.value = "awaitingCode"
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
@@ -254,7 +331,7 @@ async function handleResendPasswordResetRequest() {
     feedbackMessage.value = "パスワードリセット用のメールを再送しました"
     feedbackKind.value = "success"
 
-    cloudSyncAccountOtpVerificationForm.value?.reset()
+    passwordResetOtpVerificationForm.value?.reset()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -263,16 +340,16 @@ async function handleResendPasswordResetRequest() {
   }
 }
 
-async function handleVerifyEmail(verificationCode: string) {
+async function handleVerifyPasswordResetCode(code: string) {
   if (isLoading.value) return
-  if (validateVerificationCode(verificationCode) !== "") return
+  if (validateVerificationCode(code) !== "") return
   if (!passwordResetRequestEmail.value) return
 
   feedbackMessage.value = ""
   isLoading.value = true
 
   try {
-    await props.verifyPasswordResetCode(passwordResetRequestEmail.value, verificationCode)
+    await props.verifyPasswordResetCode(passwordResetRequestEmail.value, code)
     feedbackMessage.value = "認証に成功しました"
     feedbackKind.value = null
 
@@ -281,7 +358,7 @@ async function handleVerifyEmail(verificationCode: string) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
-    cloudSyncAccountOtpVerificationForm.value?.reset()
+    passwordResetOtpVerificationForm.value?.reset()
     isLoading.value = false
   }
 }
@@ -323,7 +400,7 @@ function cancelPasswordChange() {
 function clearPasswordResetVerification() {
   cloudSyncAccountPasswordResetRequestForm.value?.reset()
   cloudSyncAccountPasswordResetForm.value?.reset()
-  cloudSyncAccountOtpVerificationForm.value?.reset()
+  passwordResetOtpVerificationForm.value?.reset()
   passwordResetFlowStep.value = "idle"
 }
 
@@ -359,7 +436,8 @@ function resetAuthFormState() {
   cloudSyncAccountSignInForm.value?.reset()
   cloudSyncAccountSignUpForm.value?.reset()
   cloudSyncAccountPasswordResetRequestForm.value?.reset()
-  cloudSyncAccountOtpVerificationForm.value?.reset()
+  passwordResetOtpVerificationForm.value?.reset()
+  signUpOtpVerificationForm.value?.reset()
 
   clearFeedbackMessage()
   isLoading.value = false
@@ -371,12 +449,7 @@ function reset() {
 }
 
 function prepareForDialogOpen() {
-  if (passwordResetFlowStep.value === "awaitingCode") {
-    clearFeedbackMessage()
-    isLoading.value = false
-    return
-  }
-  if (passwordResetFlowStep.value === "settingPassword") {
+  if (passwordResetFlowStep.value !== "idle" || signUpFlowStep.value !== "idle") {
     clearFeedbackMessage()
     isLoading.value = false
     return
@@ -387,6 +460,7 @@ function prepareForDialogOpen() {
 
 defineExpose({
   hasActivePasswordResetFlow,
+  hasActiveSignUpFlow,
   prepareForDialogOpen,
   reset,
 })
@@ -442,6 +516,17 @@ defineExpose({
       />
     </template>
 
+    <template v-else-if="panelView === 'signUpVerifyEmail'">
+      <CloudSyncAccountOtpVerificationForm
+        ref="signUpOtpVerificationForm"
+        :is-loading="isLoading"
+        @cancel="cancelSignUpVerification"
+        @submit="handleVerifySignUpCode"
+        @resend="handleResendSignUpCode"
+        @edit="clearFeedbackMessage"
+      />
+    </template>
+
     <template v-else-if="panelView === 'passwordResetRequest'">
       <CloudSyncAccountPasswordResetRequestForm
         ref="cloudSyncAccountPasswordResetRequestForm"
@@ -452,12 +537,12 @@ defineExpose({
       />
     </template>
 
-    <template v-else-if="panelView === 'verifyEmail'">
+    <template v-else-if="panelView === 'passwordResetVerifyEmail'">
       <CloudSyncAccountOtpVerificationForm
-        ref="cloudSyncAccountOtpVerificationForm"
+        ref="passwordResetOtpVerificationForm"
         :is-loading="isLoading"
         @cancel="cancelPasswordResetRecovery"
-        @submit="handleVerifyEmail"
+        @submit="handleVerifyPasswordResetCode"
         @resend="handleResendPasswordResetRequest"
         @edit="clearFeedbackMessage"
       />

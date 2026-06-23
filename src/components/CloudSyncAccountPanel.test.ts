@@ -26,6 +26,8 @@ function createDefaultProps() {
   const verifyPasswordResetCode = vi.fn()
   const updatePasswordAfterRecovery = vi.fn()
   const changePassword = vi.fn()
+  const verifySignUpCode = vi.fn()
+  const resendSignUpCode = vi.fn()
   const runtimeSessionState = {
     scope: { type: "anonymous" },
     syncStatus: "disabled",
@@ -42,6 +44,8 @@ function createDefaultProps() {
     verifyPasswordResetCode,
     updatePasswordAfterRecovery,
     changePassword,
+    verifySignUpCode,
+    resendSignUpCode,
   }
 }
 
@@ -376,6 +380,7 @@ describe("CloudSyncAccountPanel", () => {
   it("メールアドレスとパスワードを入力してアカウントを作成できる", async () => {
     const user = userEvent.setup()
     const signUpWithEmail = vi.fn()
+    const verifySignUpCode = vi.fn()
     const defaultProps = createDefaultProps()
 
     render(CloudSyncPanel, {
@@ -383,6 +388,7 @@ describe("CloudSyncAccountPanel", () => {
         ...defaultProps,
         session: null,
         signUpWithEmail,
+        verifySignUpCode,
       },
     })
 
@@ -396,7 +402,135 @@ describe("CloudSyncAccountPanel", () => {
     await user.click(signUpButton)
 
     expect(signUpWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
-    expect(await screen.findByText("アカウントを作成しました")).toBeInTheDocument()
+    expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText("確認コード"), "123456")
+
+    const verifyButton = screen.getByRole("button", { name: "認証する" })
+    expect(verifyButton).toBeEnabled()
+
+    await user.click(verifyButton)
+
+    expect(verifySignUpCode).toHaveBeenCalledWith("user@example.com", "123456", "Passw0rd!")
+    expect(screen.getByText("認証に成功しました")).toBeInTheDocument()
+  })
+
+  it("アカウント作成時のメールアドレス認証に失敗してもリトライできる", async () => {
+    const user = userEvent.setup()
+    const error = new Error("認証エラー")
+    const verifySignUpCode = vi.fn().mockRejectedValueOnce(error)
+    const defaultProps = createDefaultProps()
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: null,
+        verifySignUpCode,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+
+    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
+    expect(signUpButton).toBeEnabled()
+
+    await user.click(signUpButton)
+
+    expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+
+    const codeInput = screen.getByLabelText("確認コード")
+    await user.type(codeInput, "123456")
+
+    const verifyButton = screen.getByRole("button", { name: "認証する" })
+    expect(verifyButton).toBeEnabled()
+
+    await user.click(verifyButton)
+
+    expect(screen.getByText("認証処理に失敗しました。時間をおいて再度お試しください")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+    expect(codeInput).toHaveValue("")
+
+    await user.type(codeInput, "654321")
+    await user.click(verifyButton)
+
+    expect(screen.getByText("認証に成功しました")).toBeInTheDocument()
+    expect(verifySignUpCode).toHaveBeenLastCalledWith("user@example.com", "654321", "Passw0rd!")
+  })
+
+  it("アカウント作成で認証コードを再送できる", async () => {
+    const user = userEvent.setup()
+    const resendSignUpCode = vi.fn()
+    const defaultProps = createDefaultProps()
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: null,
+        resendSignUpCode,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+
+    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
+    expect(signUpButton).toBeEnabled()
+
+    await user.click(signUpButton)
+
+    expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+
+    const resendButton = screen.getByRole("button", { name: "確認メールを再送する" })
+    await user.click(resendButton)
+
+    expect(resendSignUpCode).toHaveBeenCalledWith("user@example.com")
+    expect(screen.getByText("アカウント作成用のメールを再送しました")).toBeInTheDocument()
+  })
+
+  it("アカウント作成をキャンセルすると state が破棄される", async () => {
+    const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
+    const signUpWithEmail = vi.fn()
+    const verifySignUpCode = vi.fn()
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: null,
+        signUpWithEmail,
+        verifySignUpCode,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+    await user.type(screen.getByLabelText("メールアドレス"), " first@example.com ")
+    await user.type(screen.getByLabelText("パスワード"), "First123!")
+    await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
+
+    expect(signUpWithEmail).toHaveBeenCalledWith("first@example.com", "First123!")
+    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "認証をキャンセル" }))
+
+    expect(screen.getByRole("heading", { name: "アカウント作成" })).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "メールアドレスの確認" })).not.toBeInTheDocument()
+
+    await user.type(screen.getByLabelText("メールアドレス"), " second@example.com ")
+    await user.type(screen.getByLabelText("パスワード"), "Second123!")
+    await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
+
+    expect(signUpWithEmail).toHaveBeenLastCalledWith("second@example.com", "Second123!")
+
+    await user.type(screen.getByLabelText("確認コード"), "123456")
+    await user.click(screen.getByRole("button", { name: "認証する" }))
+
+    expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith("second@example.com", "123456", "Second123!")
   })
 
   it("アカウントを削除できる", async () => {
@@ -531,7 +665,7 @@ describe("CloudSyncAccountPanel", () => {
       await screen.findByText("パスワードリセット用のメールを再送しました"),
     ).toBeInTheDocument()
 
-    expect(await screen.findByRole("heading", { name: "メールアドレス確認" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
   })
 
   it("OTP の確認失敗時にパスワード再設定画面へ進まない", async () => {
@@ -573,7 +707,7 @@ describe("CloudSyncAccountPanel", () => {
       await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください"),
     ).toBeInTheDocument()
     expect(updatePasswordAfterRecovery).not.toHaveBeenCalled()
-    expect(await screen.findByRole("heading", { name: "メールアドレス確認" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
 
     await user.type(screen.getByLabelText("確認コード"), "654321")
     await user.click(verifyButton)
