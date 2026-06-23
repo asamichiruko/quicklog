@@ -226,14 +226,6 @@ describe("auth", () => {
     await expect(updatePasswordAfterRecovery("NewPassw0rd!")).rejects.toThrow(error)
   })
 
-  it("パスワードを変更する", async () => {
-    supabaseMocks.updateUser.mockResolvedValue({ error: null })
-
-    await expect(changePassword("NewPassw0rd!")).resolves.toBeUndefined()
-
-    expect(supabaseMocks.updateUser).toHaveBeenCalledWith({ password: "NewPassw0rd!" })
-  })
-
   it("現在のパスワード付きでパスワードを変更する", async () => {
     supabaseMocks.updateUser.mockResolvedValue({ error: null })
 
@@ -241,7 +233,7 @@ describe("auth", () => {
 
     expect(supabaseMocks.updateUser).toHaveBeenCalledWith({
       password: "NewPassw0rd!",
-      currentPassword: "CurrentPassw0rd!",
+      current_password: "CurrentPassw0rd!",
     })
   })
 

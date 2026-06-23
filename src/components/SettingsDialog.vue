@@ -45,6 +45,7 @@ const props = defineProps<{
   sendPasswordResetCode: (email: string) => Promise<void>
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
   updatePasswordAfterRecovery: (password: string) => Promise<void>
+  changePassword: (newPassword: string, currentPassword: string) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -145,6 +146,7 @@ defineExpose({ open })
               :send-password-reset-code="props.sendPasswordResetCode"
               :verify-password-reset-code="props.verifyPasswordResetCode"
               :update-password-after-recovery="props.updatePasswordAfterRecovery"
+              :change-password="props.changePassword"
               @cancel-password-recovery="emit('cancelPasswordRecovery')"
             />
           </div>

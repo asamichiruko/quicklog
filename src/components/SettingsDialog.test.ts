@@ -55,6 +55,7 @@ const TestHost = defineComponent({
       sendPasswordResetCode: vi.fn(),
       verifyPasswordResetCode: vi.fn(),
       updatePasswordAfterRecovery: vi.fn(),
+      changePassword: vi.fn(),
     }
   },
   template: `
@@ -78,6 +79,7 @@ const TestHost = defineComponent({
     :send-password-reset-code="sendPasswordResetCode"
     :verify-password-reset-code="verifyPasswordResetCode"
     :update-password-after-recovery="updatePasswordAfterRecovery"
+    :change-password="changePassword"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>

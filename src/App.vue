@@ -5,6 +5,7 @@ import LogEntryList from "@/components/LogEntryList.vue"
 import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import {
+  changePassword,
   clearLocalAuthSession,
   deleteCurrentAccount,
   getCurrentSession,
@@ -551,6 +552,10 @@ async function handleSignOut() {
   activateAnonymousScope()
 }
 
+async function handleChangePassword(newPassword: string, currentPassword: string) {
+  await changePassword(newPassword, currentPassword)
+}
+
 async function handleSendPasswordResetCode(email: string) {
   await sendPasswordResetCode(email)
 }
@@ -657,6 +662,7 @@ async function handleCancelPasswordRecovery() {
     :send-password-reset-code="handleSendPasswordResetCode"
     :verify-password-reset-code="handleVerifyPasswordResetCode"
     :update-password-after-recovery="handleUpdatePasswordAfterRecovery"
+    :change-password="handleChangePassword"
     @cancel-password-recovery="handleCancelPasswordRecovery"
     @save="handleSaveSettings"
     @export="handleExport"

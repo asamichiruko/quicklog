@@ -105,10 +105,10 @@ export async function updatePasswordAfterRecovery(newPassword: string): Promise<
   }
 }
 
-export async function changePassword(newPassword: string, currentPassword?: string): Promise<void> {
+export async function changePassword(newPassword: string, currentPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
-    ...(currentPassword ? { currentPassword } : {}),
+    current_password: currentPassword,
   })
 
   if (error) {

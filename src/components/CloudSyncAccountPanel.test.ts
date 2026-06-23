@@ -25,6 +25,7 @@ function createDefaultProps() {
   const sendPasswordResetCode = vi.fn()
   const verifyPasswordResetCode = vi.fn()
   const updatePasswordAfterRecovery = vi.fn()
+  const changePassword = vi.fn()
   const runtimeSessionState = {
     scope: { type: "anonymous" },
     syncStatus: "disabled",
@@ -40,6 +41,7 @@ function createDefaultProps() {
     sendPasswordResetCode,
     verifyPasswordResetCode,
     updatePasswordAfterRecovery,
+    changePassword,
   }
 }
 
@@ -50,6 +52,7 @@ vi.mock("@/lib/auth", () => ({
   sendPasswordResetCode: vi.fn(),
   verifyPasswordResetCode: vi.fn(),
   updatePasswordAfterRecovery: vi.fn(),
+  changePassword: vi.fn(),
 }))
 
 describe("CloudSyncAccountPanel", () => {
@@ -258,7 +261,88 @@ describe("CloudSyncAccountPanel", () => {
 
     await user.click(screen.getByRole("button", { name: "同期" }))
 
-    expect(await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください")).toBeInTheDocument()
+    expect(
+      await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください"),
+    ).toBeInTheDocument()
+  })
+
+  it("サインイン中に パスワードを変更 ボタンを押すと ChangePasswordForm に遷移する", async () => {
+    const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: createSession("user1", "user@example.com"),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
+  })
+
+  it("パスワードの変更に成功すると changePassword が呼ばれてクラウド同期画面に遷移する", async () => {
+    const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: createSession("user1", "user@example.com"),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
+    await user.type(screen.getByLabelText("現在のパスワード"), "Current42@")
+    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+    expect(screen.getByRole("heading", { name: "クラウド同期" })).toBeInTheDocument()
+  })
+
+  it("パスワードの変更に失敗すると画面を遷移しない", async () => {
+    const user = userEvent.setup()
+    const defaultProps = createDefaultProps()
+    const error = new Error("パスワード変更エラー")
+    const changePassword = vi.fn().mockRejectedValue(error)
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session: createSession("user1", "user@example.com"),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+        changePassword,
+      },
+    })
+
+    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
+    await user.type(screen.getByLabelText("現在のパスワード"), "Current42@")
+
+    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+    expect(
+      screen.getByText("認証処理に失敗しました。時間をおいて再度お試しください"),
+    ).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
   })
 
   it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {

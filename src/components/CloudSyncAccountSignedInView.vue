@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SignedInPanelView } from "@/components/CloudSyncAccountPanel.vue"
 import { ref } from "vue"
 
 const props = defineProps<{
@@ -9,6 +10,7 @@ const emit = defineEmits<{
   sync: []
   signOut: []
   deleteCloudSync: []
+  changeView: [view: SignedInPanelView]
 }>()
 
 const isConfirmingCloudSyncDeletion = ref(false)
@@ -46,6 +48,14 @@ defineExpose({ reset })
       @click="emit('signOut')"
     >
       サインアウト
+    </button>
+    <button
+      type="button"
+      class="button-link change-view-button"
+      :disabled="props.isLoading"
+      @click="emit('changeView', 'changePassword')"
+    >
+      パスワードを変更
     </button>
     <button
       type="button"
