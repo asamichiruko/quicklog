@@ -6,12 +6,14 @@ import {
   deleteCurrentAccount,
   getCurrentSession,
   getCurrentUser,
+  resendSignUpCode,
   sendPasswordResetCode,
   signInWithEmail,
   signOut,
   signUpWithEmail,
   updatePasswordAfterRecovery,
   verifyPasswordResetCode,
+  verifySignUpCode,
 } from "./auth"
 
 const supabaseMocks = vi.hoisted(() => ({
@@ -22,6 +24,7 @@ const supabaseMocks = vi.hoisted(() => ({
   signOut: vi.fn(),
   resetPasswordForEmail: vi.fn(),
   verifyOtp: vi.fn(),
+  resend: vi.fn(),
   updateUser: vi.fn(),
   invoke: vi.fn(),
 }))
@@ -36,6 +39,7 @@ vi.mock("@/lib/supabase", () => ({
       signOut: supabaseMocks.signOut,
       resetPasswordForEmail: supabaseMocks.resetPasswordForEmail,
       verifyOtp: supabaseMocks.verifyOtp,
+      resend: supabaseMocks.resend,
       updateUser: supabaseMocks.updateUser,
     },
     functions: {
@@ -276,5 +280,42 @@ describe("auth", () => {
 
     expect(supabaseMocks.signInWithPassword).not.toHaveBeenCalled()
     expect(supabaseMocks.updateUser).not.toHaveBeenCalled()
+  })
+
+  it("アカウント作成用のコードを送信する", async () => {
+    supabaseMocks.verifyOtp.mockResolvedValue({ error: null })
+
+    await expect(verifySignUpCode("user@example.com", "123456")).resolves.toBeUndefined()
+
+    expect(supabaseMocks.verifyOtp).toHaveBeenCalledWith({
+      email: "user@example.com",
+      token: "123456",
+      type: "email",
+    })
+  })
+
+  it("アカウント作成用 OTP 検証時に error があれば throw する", async () => {
+    const error = new Error("verify otp failed")
+    supabaseMocks.verifyOtp.mockResolvedValue({ data: { session: null }, error })
+
+    await expect(verifySignUpCode("user@example.com", "123456")).rejects.toThrow(error)
+  })
+
+  it("アカウント作成用のコードを再送する", async () => {
+    supabaseMocks.resend.mockResolvedValue({ error: null })
+
+    await expect(resendSignUpCode("user@example.com")).resolves.toBeUndefined()
+
+    expect(supabaseMocks.resend).toHaveBeenCalledWith({
+      type: "signup",
+      email: "user@example.com",
+    })
+  })
+
+  it("アカウント作成用のコード再送時に error があれば throw する", async () => {
+    const error = new Error("resend failed")
+    supabaseMocks.resend.mockResolvedValue({ data: { session: null }, error })
+
+    await expect(resendSignUpCode("user@example.com")).rejects.toThrow(error)
   })
 })

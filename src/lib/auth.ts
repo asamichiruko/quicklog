@@ -132,3 +132,26 @@ export async function changePassword(newPassword: string, currentPassword: strin
     throw error
   }
 }
+
+export async function verifySignUpCode(email: string, code: string): Promise<void> {
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token: code,
+    type: "email",
+  })
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function resendSignUpCode(email: string): Promise<void> {
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+  })
+
+  if (error) {
+    throw error
+  }
+}
