@@ -2,7 +2,6 @@
 import CalendarDialog from "@/components/CalendarDialog.vue"
 import LogEntryForm from "@/components/LogEntryForm.vue"
 import LogEntryList from "@/components/LogEntryList.vue"
-import SettingsButton from "@/components/SettingsButton.vue"
 import SettingsDialog from "@/components/SettingsDialog.vue"
 import {
   changePassword,
@@ -623,15 +622,6 @@ async function handleCancelPasswordRecovery() {
   <main class="app">
     <header class="header">
       <h1 class="title">quicklog</h1>
-    </header>
-
-    <div class="content">
-      <p v-if="isSessionLost(runtimeSessionState)" class="session-lost-warn">
-        クラウド同期が停止しています。メモはこの端末に保存されています
-      </p>
-      <div ref="logEntryFormArea" class="log-entry-form-anchor">
-        <LogEntryForm ref="logEntryForm" @submit="handleSubmit" />
-      </div>
       <div class="app-actions">
         <p
           v-if="syncStatusMessage(runtimeSessionState)"
@@ -640,7 +630,39 @@ async function handleCancelPasswordRecovery() {
         >
           {{ syncStatusMessage(runtimeSessionState) }}
         </p>
-        <SettingsButton @click="openSettings" />
+        <button
+          class="button-icon settings-button"
+          type="button"
+          aria-label="設定"
+          title="設定"
+          @click="openSettings"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            fill="currentColor"
+            class="bi bi-gear"
+            viewBox="0 0 16 16"
+            aria-hidden="true"
+          >
+            <path
+              d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"
+            />
+            <path
+              d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"
+            />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+      <p v-if="isSessionLost(runtimeSessionState)" class="session-lost-warn">
+        クラウド同期が停止しています。メモはこの端末に保存されています
+      </p>
+      <div ref="logEntryFormArea" class="log-entry-form-anchor">
+        <LogEntryForm ref="logEntryForm" @submit="handleSubmit" />
       </div>
       <LogEntryList
         :log-entries="logEntries"
@@ -697,13 +719,17 @@ async function handleCancelPasswordRecovery() {
 
 <style lang="css" scoped>
 .app {
-  position: relative;
   max-width: 720px;
   margin: 0 auto;
   padding: var(--space-3) var(--space-2);
 }
 
 .header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
   margin-bottom: var(--space-3);
 }
 
@@ -714,11 +740,16 @@ async function handleCancelPasswordRecovery() {
 }
 
 .app-actions {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-2);
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  min-width: 0;
+  margin-inline-start: auto;
+}
+
+.settings-button svg {
+  flex: 0 0 auto;
 }
 
 .sync-status {
@@ -726,6 +757,8 @@ async function handleCancelPasswordRecovery() {
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .sync-status.session-lost {
