@@ -721,16 +721,16 @@ async function handleCancelPasswordRecovery() {
 .app {
   max-width: 720px;
   margin: 0 auto;
-  padding: var(--space-3) var(--space-2);
+  padding: var(--space-4) var(--space-3);
 }
 
 .header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
   flex-wrap: wrap;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .title {
@@ -743,7 +743,7 @@ async function handleCancelPasswordRecovery() {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--space-1);
+  gap: var(--space-2);
   min-width: 0;
   margin-inline-start: auto;
 }
@@ -762,33 +762,33 @@ async function handleCancelPasswordRecovery() {
 }
 
 .sync-status.session-lost {
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 
 .content {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .session-lost-warn {
   padding: 0;
   margin: 0;
-  color: var(--color-error);
+  color: var(--color-text-error);
   font-size: var(--font-size-small);
 }
 
 .log-entry-form-anchor {
-  scroll-margin-top: var(--space-2);
+  scroll-margin-top: var(--space-3);
 }
 
 .new-log-entry-button {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+  bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
   z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   transform: translateX(-50%);
 }
 </style>

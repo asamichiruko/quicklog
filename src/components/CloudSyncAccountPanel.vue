@@ -578,32 +578,32 @@ defineExpose({
 <style lang="css" scoped>
 .container {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .description {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
 
   margin: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-surface);
-  background: var(--color-page);
+  background: var(--color-output);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
 }
 
 .description.session-lost {
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 
 .feedback-message {
   display: block;
   margin: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
-  background: var(--color-page);
+  background: var(--color-output);
   color: var(--color-text);
   font-size: var(--font-size-small);
 }
@@ -613,6 +613,6 @@ defineExpose({
 }
 
 .feedback-message.error {
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 </style>

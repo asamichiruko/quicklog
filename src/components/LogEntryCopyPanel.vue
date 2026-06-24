@@ -166,12 +166,12 @@ defineExpose({ reset })
 <style lang="css" scoped>
 .container {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .copy-period {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   border: none;
   margin: 0;
   padding: 0;
@@ -181,7 +181,7 @@ defineExpose({ reset })
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .copy-date-label {
@@ -192,7 +192,7 @@ defineExpose({ reset })
   min-width: 0;
   min-height: var(--control-min-size);
   width: fit-content;
-  padding: var(--space-1);
+  padding: var(--space-2);
 }
 
 .copy-selection-status {
@@ -200,9 +200,9 @@ defineExpose({ reset })
   width: fit-content;
   max-width: 100%;
   margin: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-surface);
-  background: var(--color-page);
+  background: var(--color-output);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
 }
@@ -216,9 +216,9 @@ defineExpose({ reset })
   width: fit-content;
   max-width: 100%;
   margin: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-surface);
-  background: var(--color-page);
+  background: var(--color-output);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
 }
@@ -238,7 +238,7 @@ defineExpose({ reset })
   resize: vertical;
   min-height: 120px;
   line-height: 1.5;
-  padding: var(--space-1);
+  padding: var(--space-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   background: var(--color-surface);
@@ -246,6 +246,6 @@ defineExpose({ reset })
 }
 
 .copy-preview-panel[open] .copy-preview {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
 }
 </style>

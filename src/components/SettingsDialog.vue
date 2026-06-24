@@ -210,8 +210,8 @@ defineExpose({ open })
 
 .container {
   display: grid;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-3);
 }
 
 .dialog-heading {
@@ -224,7 +224,7 @@ defineExpose({ open })
 
 .section {
   display: grid;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .section-heading {
@@ -237,13 +237,13 @@ defineExpose({ open })
 
 .display-setting-body {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   min-height: var(--control-min-size);
   cursor: pointer;
 }
@@ -268,7 +268,7 @@ defineExpose({ open })
 
 .settings-panel-summary {
   min-height: var(--control-min-size);
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-3);
   align-content: center;
   color: var(--color-text);
   font-size: 1em;
@@ -278,19 +278,19 @@ defineExpose({ open })
 
 .settings-panel-body {
   display: grid;
-  gap: var(--space-2);
-  padding: 0 0 var(--space-1);
+  gap: var(--space-3);
+  padding: 0 0 var(--space-2);
 }
 
 .settings-panel[open] .settings-panel-body {
-  padding-top: var(--space-1);
+  padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
 }
 
 .confirm-actions {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 </style>

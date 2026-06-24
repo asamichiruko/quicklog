@@ -97,7 +97,7 @@ defineExpose({ reset })
 <style lang="css" scoped>
 .container {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .heading {
@@ -117,11 +117,11 @@ button {
 
 .confirm-message {
   margin: 0;
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 
 .confirm-actions {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 </style>

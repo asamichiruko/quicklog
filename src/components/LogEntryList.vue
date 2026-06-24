@@ -86,9 +86,9 @@ function formatDateHeading(date: Date) {
         <ul class="entries">
           <li v-for="logEntry in group.logEntries" :key="logEntry.id" class="entry">
             <div class="entry-header">
-              <time :datetime="logEntry.createdAt" class="entry-time">{{
-                formatDateTime(logEntry.createdAt)
-              }}</time>
+              <time :datetime="logEntry.createdAt" class="entry-time">
+                {{ formatDateTime(logEntry.createdAt) }}
+              </time>
               <button
                 class="button-icon delete-button"
                 type="button"
@@ -139,13 +139,13 @@ function formatDateHeading(date: Date) {
 .date-header {
   display: grid;
   grid-template-columns: var(--control-min-size) minmax(0, 1fr) var(--control-min-size);
-  gap: var(--space-1);
+  gap: var(--space-2);
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 1;
   background: var(--color-page);
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
 }
 
 .date-heading {
@@ -173,7 +173,7 @@ function formatDateHeading(date: Date) {
 
 .entries {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   padding: 0;
   margin: 0;
   list-style: none;
@@ -181,8 +181,8 @@ function formatDateHeading(date: Date) {
 
 .entry {
   display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-3);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
@@ -193,7 +193,7 @@ function formatDateHeading(date: Date) {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .entry-time {

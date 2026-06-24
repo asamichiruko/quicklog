@@ -197,15 +197,15 @@ defineExpose({ open })
 
 .container {
   display: grid;
-  gap: var(--space-1);
-  padding: var(--space-2);
+  gap: var(--space-2);
+  padding: var(--space-3);
 }
 
 .dialog-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--control-min-size);
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .dialog-heading {
@@ -220,7 +220,7 @@ defineExpose({ open })
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .month-label {
@@ -242,7 +242,7 @@ defineExpose({ open })
 .calendar {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .weekday {

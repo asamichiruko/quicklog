@@ -75,7 +75,7 @@ defineExpose({ reset })
 <style lang="css" scoped>
 .container {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .import-description {
@@ -86,7 +86,7 @@ defineExpose({ reset })
 .import-file-field {
   display: grid;
   min-width: 0;
-  gap: var(--space-1);
+  gap: var(--space-2);
   cursor: pointer;
 }
 
@@ -101,8 +101,8 @@ defineExpose({ reset })
   width: 100%;
   min-width: 0;
   min-height: var(--control-min-size);
-  gap: var(--space-2);
-  padding: var(--space-1);
+  gap: var(--space-3);
+  padding: var(--space-2);
   border-radius: var(--radius-surface);
   border: 1px solid var(--color-border);
 }

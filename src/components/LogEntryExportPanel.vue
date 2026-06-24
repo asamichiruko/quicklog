@@ -53,13 +53,13 @@ defineExpose({ reset })
 <style lang="css" scoped>
 .container {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .export-type-selector {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1) var(--space-2);
+  gap: var(--space-2) var(--space-3);
   border: none;
   margin: 0;
   padding: 0;
@@ -67,16 +67,16 @@ defineExpose({ reset })
 
 .export-type-selector-legend {
   width: 100%;
-  margin: var(--space-1) 0;
+  margin: var(--space-2) 0;
   font-weight: var(--font-weight-bold);
 }
 
 .export-type-option {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
   min-height: var(--control-min-size);
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   background: var(--color-surface);

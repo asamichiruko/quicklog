@@ -123,7 +123,7 @@ defineExpose({ reset })
 <style lang="css" scoped>
 .form {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .heading {
@@ -134,12 +134,12 @@ defineExpose({ reset })
 
 .field {
   display: grid;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .label {
   display: grid;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .label-text {
@@ -147,7 +147,7 @@ defineExpose({ reset })
 }
 
 .password-input {
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
 }
@@ -165,13 +165,13 @@ defineExpose({ reset })
 .field-error {
   margin: 0;
   padding: 0;
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 
 .actions {
   display: grid;
   justify-items: start;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 button {

@@ -62,7 +62,7 @@ defineExpose({ focus, clear })
 
 .label {
   font-weight: var(--font-weight-regular);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .textarea {
@@ -70,7 +70,7 @@ defineExpose({ focus, clear })
   resize: vertical;
   min-height: 120px;
   line-height: 1.5;
-  padding: var(--space-2);
+  padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   background: var(--color-surface);
@@ -82,7 +82,7 @@ defineExpose({ focus, clear })
 }
 
 .submit-button {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
   width: fit-content;
   justify-self: end;
 }

@@ -87,16 +87,16 @@ defineExpose({ reset })
 <style lang="css" scoped>
 .container {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .feedback-message {
   width: fit-content;
   max-width: 100%;
   margin: 0;
-  padding: var(--space-1) var(--space-2);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-surface);
-  background: var(--color-page);
+  background: var(--color-output);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
 }
@@ -108,12 +108,12 @@ defineExpose({ reset })
 
 .confirm-message {
   margin: 0;
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 
 .confirm-actions {
   display: flex;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
 .show-button,
