@@ -122,25 +122,41 @@ describe("SettingsDialog", () => {
     const { container } = render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("button", { name: "表示" }))
     await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
     await user.click(screen.getByRole("button", { name: "設定を保存" }))
 
     expect(screen.getByTestId("saved-settings")).toHaveTextContent(
       JSON.stringify({ showDailySummary: true }),
     )
-    expect(container.querySelector("dialog")).not.toHaveAttribute("open")
+    expect(container.querySelector("dialog")).toHaveAttribute("open")
   })
 
-  it("キャンセルを押すと設定が保存されずに dialog が閉じる", async () => {
+  it("閉じるボタンを押すと設定が保存されずに dialog が閉じる", async () => {
     const user = userEvent.setup()
     const { container } = render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("button", { name: "表示" }))
     await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
 
     expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
     expect(container.querySelector("dialog")).not.toHaveAttribute("open")
+  })
+
+  it("戻るボタンを押すと設定が保存されずに index に戻る", async () => {
+    const user = userEvent.setup()
+    const { container } = render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("button", { name: "表示" }))
+    await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
+    await user.click(screen.getByRole("button", { name: "戻る" }))
+
+    expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
+    expect(container.querySelector("dialog")).toHaveAttribute("open")
+    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
   })
 
   it("props で与えた初期値が UI に反映される", async () => {
@@ -149,6 +165,7 @@ describe("SettingsDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "settings を変更" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("button", { name: "表示" }))
 
     expect(screen.getByRole("checkbox", { name: "日別サマリーを表示" })).toBeChecked()
   })
@@ -159,10 +176,7 @@ describe("SettingsDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
-    expect(cloudSyncSummary).not.toBeNull()
-
-    await user.click(cloudSyncSummary as HTMLElement)
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
     await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
     await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
     await user.keyboard("{Enter}")
@@ -175,38 +189,31 @@ describe("SettingsDialog", () => {
 
   it("パスワードリセットの確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
     const user = userEvent.setup()
-    const { container } = render(TestHost)
+    render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
-    expect(cloudSyncSummary).not.toBeNull()
-
-    await user.click(cloudSyncSummary as HTMLElement)
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
     await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
     await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
     await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
     expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
-    expect(cloudSyncPanel).toHaveAttribute("open")
+    expect(screen.getByRole("heading", { name: "アカウントと同期", level: 2 })).toBeInTheDocument()
     expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
   })
 
   it("パスワードリセットの認証後なら開き直しても新しいパスワード設定画面を表示する", async () => {
     const user = userEvent.setup()
-    const { container } = render(TestHost)
+    render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
-    expect(cloudSyncSummary).not.toBeNull()
-
-    await user.click(cloudSyncSummary as HTMLElement)
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
     await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
     await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
     await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
@@ -215,24 +222,20 @@ describe("SettingsDialog", () => {
 
     expect(await screen.findByLabelText("新しいパスワード")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
-    expect(cloudSyncPanel).toHaveAttribute("open")
+    expect(screen.getByRole("heading", { name: "アカウントと同期", level: 2 })).toBeInTheDocument()
     expect(screen.getByLabelText("新しいパスワード")).toBeInTheDocument()
   })
 
   it("アカウント作成の確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
     const user = userEvent.setup()
-    const { container } = render(TestHost)
+    render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const cloudSyncSummary = container.querySelector("#settings-panel-cloud-sync")
-    expect(cloudSyncSummary).not.toBeNull()
-
-    await user.click(cloudSyncSummary as HTMLElement)
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
     await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
     await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
     await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
@@ -240,11 +243,10 @@ describe("SettingsDialog", () => {
 
     expect(screen.queryByLabelText("確認コード")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const cloudSyncPanel = container.querySelector("#settings-panel-cloud-sync")?.closest("details")
-    expect(cloudSyncPanel).toHaveAttribute("open")
+    expect(screen.getByRole("heading", { name: "アカウントと同期", level: 2 })).toBeInTheDocument()
     expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
   })
 
@@ -253,12 +255,8 @@ describe("SettingsDialog", () => {
     render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
-
-    const importPanel = screen.getByText("記録のインポート").closest("details")
-    expect(importPanel).not.toBeNull()
-
-    await user.click(screen.getByText("記録のインポート"))
-    expect(importPanel).toHaveAttribute("open")
+    await user.click(screen.getByRole("button", { name: "記録のインポート" }))
+    expect(screen.getByRole("heading", { name: "記録のインポート" })).toBeInTheDocument()
 
     const file = new File(
       [JSON.stringify([{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }])],
@@ -269,12 +267,11 @@ describe("SettingsDialog", () => {
 
     expect(screen.getByText("quicklog.json")).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
 
-    expect(importPanel).not.toHaveAttribute("open")
-
-    await user.click(screen.getByText("記録のインポート"))
+    await user.click(screen.getByRole("button", { name: "記録のインポート" }))
 
     expect(screen.getByText("選択されていません")).toBeInTheDocument()
   })
@@ -285,21 +282,17 @@ describe("SettingsDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const exportPanel = screen.getByText("記録のエクスポート").closest("details")
-    expect(exportPanel).not.toBeNull()
-
-    await user.click(screen.getByText("記録のエクスポート"))
-    expect(exportPanel).toHaveAttribute("open")
+    await user.click(screen.getByRole("button", { name: "記録のエクスポート" }))
+    expect(screen.getByRole("heading", { name: "記録のエクスポート" })).toBeInTheDocument()
 
     await user.click(screen.getByRole("radio", { name: "Markdown" }))
     expect(screen.getByRole("radio", { name: "Markdown" })).toBeChecked()
 
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
 
-    expect(exportPanel).not.toHaveAttribute("open")
-
-    await user.click(screen.getByText("記録のエクスポート"))
+    await user.click(screen.getByRole("button", { name: "記録のエクスポート" }))
 
     expect(screen.getByRole("radio", { name: "JSON" })).toBeChecked()
   })
@@ -313,11 +306,8 @@ describe("SettingsDialog", () => {
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const copyPanel = screen.getByText("記録のコピー").closest("details")
-    expect(copyPanel).not.toBeNull()
-
-    await user.click(screen.getByText("記録のコピー"))
-    expect(copyPanel).toHaveAttribute("open")
+    await user.click(screen.getByRole("button", { name: "記録のコピー" }))
+    expect(screen.getByRole("heading", { name: "記録のコピー" })).toBeInTheDocument()
 
     await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
     await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-22")
@@ -327,10 +317,9 @@ describe("SettingsDialog", () => {
     expect(screen.getByLabelText("開始日")).toHaveValue("2026-05-22")
     expect(screen.getByLabelText("終了日")).toHaveValue("2026-05-22")
 
-    await user.click(screen.getByRole("button", { name: "キャンセル" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
-
-    expect(copyPanel).not.toHaveAttribute("open")
+    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
 
     await user.click(screen.getByText("記録のコピー"))
 

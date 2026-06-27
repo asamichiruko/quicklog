@@ -18,6 +18,11 @@
   --color-on-control: #222222;
   --color-control-disabled: #f7f7f7;
 
+  --color-menu: #e8e8e8;
+  --color-menu-hover: #d0d0d0;
+  --color-on-menu: #222222;
+  --color-menu-disable: #f7f7f7;
+
   --color-danger: #f20d0d;
   --color-danger-hover: #c20a0a;
   --color-on-danger: #ffffff;
