@@ -103,7 +103,6 @@ defineExpose({ reset })
 
 .delete-anonymous-data-description {
   margin: 0;
-  font-size: var(--font-size-small);
 }
 
 .confirm-message {

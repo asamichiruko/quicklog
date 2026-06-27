@@ -32,7 +32,7 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
-    <h4 class="heading">クラウド同期</h4>
+    <h3 class="heading">クラウド同期</h3>
     <button
       type="button"
       class="button-secondary sync-button"
@@ -101,7 +101,7 @@ defineExpose({ reset })
 }
 
 .heading {
-  font-size: var(--font-size-medium);
+  font-size: 1.2em;
   padding: 0;
   margin: 0;
 }
@@ -112,7 +112,6 @@ button {
 
 .delete-cloud-sync-description {
   margin: 0;
-  font-size: var(--font-size-small);
 }
 
 .confirm-message {

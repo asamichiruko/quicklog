@@ -80,7 +80,6 @@ defineExpose({ reset })
 
 .import-description {
   margin: 0;
-  font-size: var(--font-size-small);
 }
 
 .import-file-field {

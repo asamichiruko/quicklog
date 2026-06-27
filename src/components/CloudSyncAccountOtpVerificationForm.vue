@@ -44,7 +44,7 @@ defineExpose({ reset })
 
 <template>
   <form class="form" @submit.prevent="handleSubmit">
-    <h4 class="heading">メールアドレスの確認</h4>
+    <h3 class="heading">メールアドレスの確認</h3>
     <p class="email-verify-description">送信された確認コードを入力してください</p>
     <div class="field">
       <label class="label">
@@ -103,7 +103,7 @@ defineExpose({ reset })
 }
 
 .heading {
-  font-size: var(--font-size-medium);
+  font-size: 1.2em;
   padding: 0;
   margin: 0;
 }
@@ -135,7 +135,6 @@ defineExpose({ reset })
 .email-verify-description {
   margin: 0;
   padding: 0;
-  font-size: var(--font-size-small);
 }
 
 .field-error {
