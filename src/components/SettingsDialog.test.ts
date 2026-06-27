@@ -51,6 +51,11 @@ const TestHost = defineComponent({
       settings.value = { showDailySummary: true }
     }
 
+    function saveSettings(nextSettings: { showDailySummary: boolean }) {
+      settings.value = nextSettings
+      savedSettings.value = nextSettings
+    }
+
     async function signInWithEmail(email: string, password: string) {
       signedInEmail.value = email
       signedInPassword.value = password
@@ -65,6 +70,7 @@ const TestHost = defineComponent({
       settings,
       logEntries,
       enableSummary,
+      saveSettings,
       savedSettings,
       exportType,
       importedFile,
@@ -83,7 +89,7 @@ const TestHost = defineComponent({
     ref="dialog"
     :settings="settings"
     :log-entries="logEntries"
-    @save="savedSettings = $event"
+    @save="saveSettings"
     @export="exportType = $event"
     @import="importedFile = $event"
     :session="null"
@@ -117,19 +123,44 @@ describe("SettingsDialog", () => {
     expect(container.querySelector("dialog")).toHaveAttribute("open")
   })
 
-  it("保存ボタンを押すと設定が保存されて dialog が閉じる", async () => {
+  it("設定を保存 ボタンを押すと設定が保存される", async () => {
     const user = userEvent.setup()
     const { container } = render(TestHost)
 
     await user.click(screen.getByRole("button", { name: "設定を開く" }))
     await user.click(screen.getByRole("button", { name: "表示" }))
+
+    const saveButton = screen.getByRole("button", { name: "設定を保存" })
+    expect(saveButton).toBeDisabled()
+
     await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
-    await user.click(screen.getByRole("button", { name: "設定を保存" }))
+
+    expect(saveButton).toBeEnabled()
+    await user.click(saveButton)
+    expect(saveButton).toBeDisabled()
 
     expect(screen.getByTestId("saved-settings")).toHaveTextContent(
       JSON.stringify({ showDailySummary: true }),
     )
     expect(container.querySelector("dialog")).toHaveAttribute("open")
+  })
+
+  it("リセット ボタンを押すと設定が初期化される", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("button", { name: "表示" }))
+
+    const showDailySummary = screen.getByRole("checkbox", { name: "日別サマリーを表示" })
+    expect(showDailySummary).not.toBeChecked()
+
+    await user.click(showDailySummary)
+    await user.click(screen.getByRole("button", { name: "リセット" }))
+
+    expect(showDailySummary).not.toBeChecked()
+    expect(screen.getByRole("button", { name: "設定を保存" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "リセット" })).toBeDisabled()
   })
 
   it("閉じるボタンを押すと設定が保存されずに dialog が閉じる", async () => {

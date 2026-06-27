@@ -56,6 +56,10 @@ const headingLabels: Record<SettingsView, string> = {
 const settingsView = ref<SettingsView>("index")
 const headingLabel = computed(() => headingLabels[settingsView.value])
 
+const hasDisplaySettingsChanges = computed(
+  () => !areSettingsEqual(nextSettings.value, props.settings),
+)
+
 function open() {
   if (!dialog.value || dialog.value.open) return
 
@@ -73,6 +77,14 @@ function open() {
   }
 
   dialog.value.showModal()
+}
+
+function areSettingsEqual(a: AppSettings, b: AppSettings) {
+  return a.showDailySummary === b.showDailySummary
+}
+
+function resetDisplaySettings() {
+  nextSettings.value = { ...props.settings }
 }
 
 function saveDisplaySettings() {
@@ -282,8 +294,21 @@ defineExpose({ open })
           </label>
         </div>
         <div class="confirm-actions">
-          <button class="button-primary" type="button" @click="saveDisplaySettings">
+          <button
+            class="button-primary"
+            type="button"
+            :disabled="!hasDisplaySettingsChanges"
+            @click="saveDisplaySettings"
+          >
             設定を保存
+          </button>
+          <button
+            class="button-secondary"
+            type="button"
+            :disabled="!hasDisplaySettingsChanges"
+            @click="resetDisplaySettings"
+          >
+            リセット
           </button>
         </div>
       </div>
