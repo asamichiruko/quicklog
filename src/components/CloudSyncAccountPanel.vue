@@ -85,6 +85,10 @@ const signUpRequestEmail = ref("")
 const signUpRequestPassword = ref("") // アカウント作成後のサインインのために一時的に保持、必ず破棄する
 const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
+const shouldOpenAccountView = computed<boolean>(
+  () => hasActivePasswordResetFlow.value || hasActiveSignUpFlow.value,
+)
+
 const cloudSyncAccountSignInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
 const cloudSyncAccountSignUpForm = ref<InstanceType<typeof CloudSyncAccountSignUpForm> | null>(null)
 const cloudSyncAccountSignedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(
@@ -454,18 +458,17 @@ function reset() {
 }
 
 function prepareForDialogOpen() {
-  if (passwordResetFlowStep.value !== "idle" || signUpFlowStep.value !== "idle") {
+  if (shouldOpenAccountView.value) {
     clearFeedbackMessage()
     isLoading.value = false
     return
+  } else {
+    reset()
   }
-
-  reset()
 }
 
 defineExpose({
-  hasActivePasswordResetFlow,
-  hasActiveSignUpFlow,
+  shouldOpenAccountView,
   prepareForDialogOpen,
   reset,
 })

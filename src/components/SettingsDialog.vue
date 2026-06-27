@@ -66,10 +66,7 @@ function open() {
   importPanel.value?.reset()
   localDataManagementPanel.value?.reset()
   cloudSyncPanel.value?.prepareForDialogOpen()
-  if (
-    cloudSyncPanel.value?.hasActivePasswordResetFlow ||
-    cloudSyncPanel.value?.hasActiveSignUpFlow
-  ) {
+  if (cloudSyncPanel.value?.shouldOpenAccountView) {
     settingsView.value = "account"
   } else {
     settingsView.value = "index"
@@ -150,7 +147,7 @@ defineExpose({ open })
           </svg>
         </button>
       </header>
-      <div v-if="settingsView === 'index'" class="index-body">
+      <div v-show="settingsView === 'index'" class="index-body">
         <section class="index-section">
           <h3 class="index-heading">表示</h3>
           <button
@@ -272,7 +269,7 @@ defineExpose({ open })
         </section>
       </div>
 
-      <div v-if="settingsView === 'display'" class="view-body">
+      <div v-show="settingsView === 'display'" class="view-body">
         <div class="display-setting-item">
           <label class="checkbox-label">
             <input
@@ -299,22 +296,22 @@ defineExpose({ open })
         :actions="props.cloudSyncAccountActions"
       />
       <LogEntryCopyPanel
-        v-if="settingsView === 'copy'"
+        v-show="settingsView === 'copy'"
         ref="copyPanel"
         :log-entries="props.logEntries"
       />
       <LogEntryExportPanel
-        v-if="settingsView === 'export'"
+        v-show="settingsView === 'export'"
         ref="exportPanel"
         @export="emit('export', $event)"
       />
       <LogEntryImportPanel
-        v-if="settingsView === 'import'"
+        v-show="settingsView === 'import'"
         ref="importPanel"
         @import="emit('import', $event)"
       />
       <LocalDataManagementPanel
-        v-if="settingsView === 'localData'"
+        v-show="settingsView === 'localData'"
         ref="localDataManagementPanel"
         :anonymous-data-state="props.anonymousDataState"
         :delete-anonymous-data="props.deleteAnonymousData"
