@@ -347,6 +347,10 @@ defineExpose({ open })
 <style lang="css" scoped>
 .dialog {
   width: min(90vw, 480px);
+  max-height: min(80dvh, 720px);
+  margin: 8dvh auto auto;
+  overflow: auto;
+
   border: none;
   border-radius: var(--radius-surface);
   background: var(--color-surface);
