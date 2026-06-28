@@ -272,7 +272,7 @@ describe("SettingsDialog", () => {
     await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
     await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
 
-    expect(screen.queryByLabelText("確認コード")).toBeInTheDocument()
+    expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
 
     await user.click(screen.getByRole("button", { name: "閉じる" }))
     await user.click(screen.getByRole("button", { name: "設定を開く" }))

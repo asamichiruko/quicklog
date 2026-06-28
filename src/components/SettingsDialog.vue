@@ -31,7 +31,6 @@ const emit = defineEmits<{
   save: [nextSettings: AppSettings]
   export: [exportType: ExportType]
   import: [file: File]
-  cancelPasswordRecovery: []
 }>()
 
 const dialog = ref<HTMLDialogElement | null>(null)
