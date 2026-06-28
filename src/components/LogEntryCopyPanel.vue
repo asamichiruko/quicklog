@@ -140,7 +140,7 @@ defineExpose({ reset })
       {{ selectionStatusMessage }}
     </output>
     <button
-      class="button-secondary copy-button"
+      class="button-primary copy-button"
       type="button"
       :disabled="!canCopy"
       @click="handleCopy"

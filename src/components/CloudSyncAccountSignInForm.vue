@@ -112,7 +112,7 @@ defineExpose({ reset })
       </p>
     </div>
     <div class="actions">
-      <button type="submit" class="button-secondary sign-in-button" :disabled="!canSignIn">
+      <button type="submit" class="button-primary sign-in-button" :disabled="!canSignIn">
         サインイン
       </button>
       <button

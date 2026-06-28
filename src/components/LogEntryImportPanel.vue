@@ -62,7 +62,7 @@ defineExpose({ reset })
       />
     </label>
     <button
-      class="button-secondary import-button"
+      class="button-primary import-button"
       :disabled="!importFile"
       type="button"
       @click="handleImport"

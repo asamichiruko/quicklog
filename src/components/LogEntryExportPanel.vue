@@ -44,7 +44,7 @@ defineExpose({ reset })
         <span class="export-type-label">Markdown</span>
       </label>
     </fieldset>
-    <button class="button-secondary export-button" type="button" @click="exportData">
+    <button class="button-primary export-button" type="button" @click="exportData">
       ファイルをダウンロード
     </button>
   </div>

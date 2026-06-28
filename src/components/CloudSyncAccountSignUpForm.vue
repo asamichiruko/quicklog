@@ -100,7 +100,7 @@ defineExpose({ reset })
       </p>
     </div>
     <div class="actions">
-      <button type="submit" class="button-secondary sign-up-button" :disabled="!canSignUp">
+      <button type="submit" class="button-primary sign-up-button" :disabled="!canSignUp">
         アカウントを作成
       </button>
       <button

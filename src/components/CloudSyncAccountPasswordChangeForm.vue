@@ -103,7 +103,7 @@ defineExpose({ reset })
     <div class="actions">
       <button
         type="submit"
-        class="button-secondary reset-password-button"
+        class="button-primary reset-password-button"
         :disabled="!canChangePassword"
       >
         パスワードを変更
