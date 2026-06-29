@@ -54,7 +54,7 @@ defineExpose({ reset })
           autocomplete="new-password"
           name="new-password-input"
           class="password-input"
-          placeholder="パスワードを入力"
+          placeholder="新しいパスワードを入力"
           aria-describedby="new-password-error"
           :aria-invalid="Boolean(newPasswordErrorMessage)"
           @input="emit('edit')"

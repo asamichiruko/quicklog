@@ -87,7 +87,7 @@ defineExpose({ reset })
           type="password"
           autocomplete="new-password"
           class="password-input"
-          placeholder="パスワードを入力"
+          placeholder="新しいパスワードを入力"
           aria-describedby="sign-up-password-error"
           :aria-invalid="Boolean(signUpPasswordErrorMessage)"
           @input="emit('edit')"
