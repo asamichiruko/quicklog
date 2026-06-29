@@ -18,7 +18,7 @@
   --color-on-control: #222222;
   --color-control-disabled: #f7f7f7;
 
-  --color-menu: #e8e8e8;
+  --color-menu: #dddddd;
   --color-menu-hover: #d0d0d0;
   --color-on-menu: #222222;
   --color-menu-disable: #f7f7f7;
@@ -193,6 +193,21 @@ button:disabled {
 @media (hover: none) {
   .button-link:not(:disabled):active {
     color: var(--color-primary);
+  }
+}
+
+.button-menu {
+  background: var(--color-menu);
+  color: var(--color-on-menu);
+}
+@media (hover: hover) {
+  .button-menu:not(:disabled):hover {
+    background: var(--color-menu-hover);
+  }
+}
+@media (hover: none) {
+  .button-menu:not(:disabled):active {
+    background: var(--color-menu-hover);
   }
 }
 

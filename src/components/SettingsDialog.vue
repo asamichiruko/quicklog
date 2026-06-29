@@ -163,10 +163,10 @@ defineExpose({ open })
           <h3 class="index-heading">表示</h3>
           <button
             type="button"
-            class="button-secondary menu-button"
+            class="button-menu list-item-button"
             @click="settingsView = 'display'"
           >
-            <span class="menu-button-label">表示</span>
+            <span class="list-item-button-label">表示</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -185,10 +185,10 @@ defineExpose({ open })
           <h3 class="index-heading">アカウントと同期</h3>
           <button
             type="button"
-            class="button-secondary menu-button"
+            class="button-menu list-item-button"
             @click="settingsView = 'account'"
           >
-            <span class="menu-button-label">アカウントと同期</span>
+            <span class="list-item-button-label">アカウントと同期</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -205,8 +205,8 @@ defineExpose({ open })
         </section>
         <section class="index-section">
           <h3 class="index-heading">データの管理</h3>
-          <button type="button" class="button-secondary menu-button" @click="settingsView = 'copy'">
-            <span class="menu-button-label">記録のコピー</span>
+          <button type="button" class="button-menu list-item-button" @click="settingsView = 'copy'">
+            <span class="list-item-button-label">記録のコピー</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -222,10 +222,10 @@ defineExpose({ open })
           </button>
           <button
             type="button"
-            class="button-secondary menu-button"
+            class="button-menu list-item-button"
             @click="settingsView = 'export'"
           >
-            <span class="menu-button-label">記録のエクスポート</span>
+            <span class="list-item-button-label">記録のエクスポート</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -241,10 +241,10 @@ defineExpose({ open })
           </button>
           <button
             type="button"
-            class="button-secondary menu-button"
+            class="button-menu list-item-button"
             @click="settingsView = 'import'"
           >
-            <span class="menu-button-label">記録のインポート</span>
+            <span class="list-item-button-label">記録のインポート</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -260,10 +260,10 @@ defineExpose({ open })
           </button>
           <button
             type="button"
-            class="button-secondary menu-button"
+            class="button-menu list-item-button"
             @click="settingsView = 'localData'"
           >
-            <span class="menu-button-label">ローカルデータの管理</span>
+            <span class="list-item-button-label">ローカルデータの管理</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -370,7 +370,6 @@ defineExpose({ open })
 .header {
   display: flex;
   align-items: center;
-  margin-block-end: var(--space-3);
 }
 
 .heading {
@@ -421,27 +420,14 @@ defineExpose({ open })
   gap: var(--space-2);
 }
 
-.menu-button {
+.list-item-button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--color-menu);
-  color: var(--color-on-menu);
-  border-radius: 0;
   border-radius: var(--radius-surface);
 }
-@media (hover: hover) {
-  .menu-button:not(:disabled):hover {
-    background: var(--color-menu-hover);
-  }
-}
-@media (hover: none) {
-  .menu-button:not(:disabled):active {
-    background: var(--color-menu-hover);
-  }
-}
 
-.menu-button svg {
+.list-item-button svg {
   margin-inline-start: auto;
 }
 
