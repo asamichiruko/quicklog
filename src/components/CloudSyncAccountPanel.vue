@@ -29,7 +29,7 @@ export type CloudSyncAccountActions = {
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
   updatePasswordAfterRecovery: (password: string) => Promise<void>
   changePassword: (newPassword: string, currentPassword: string) => Promise<void>
-  verifySignUpCode: (email: string, code: string, password: string) => Promise<void>
+  verifySignUpCode: (email: string, code: string) => Promise<void>
   resendSignUpCode: (email: string) => Promise<void>
   cancelPasswordRecovery: () => void
 }
@@ -82,7 +82,6 @@ const hasActivePasswordResetFlow = computed(() => passwordResetFlowStep.value !=
 type SignUpFlowStep = "idle" | "awaitingCode"
 const signUpFlowStep = ref<SignUpFlowStep>("idle")
 const signUpRequestEmail = ref("")
-const signUpRequestPassword = ref("") // アカウント作成後のサインインのために一時的に保持、必ず破棄する
 const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
 const shouldOpenAccountView = computed<boolean>(
@@ -157,7 +156,6 @@ async function handleSignUp(email: string, password: string): Promise<void> {
   try {
     await props.actions.signUpWithEmail(email.trim(), password)
     signUpRequestEmail.value = email.trim()
-    signUpRequestPassword.value = password
     signUpFlowStep.value = "awaitingCode"
 
     feedbackMessage.value = "確認メールを送信しました"
@@ -179,11 +177,7 @@ async function handleVerifySignUpCode(code: string): Promise<void> {
   isLoading.value = true
 
   try {
-    await props.actions.verifySignUpCode(
-      signUpRequestEmail.value,
-      code,
-      signUpRequestPassword.value,
-    )
+    await props.actions.verifySignUpCode(signUpRequestEmail.value, code)
     feedbackMessage.value = "認証に成功しました"
     feedbackKind.value = null
 
@@ -206,7 +200,6 @@ function cancelSignUpVerification() {
 function clearSignUpVerification() {
   cloudSyncAccountSignUpForm.value?.reset()
   signUpRequestEmail.value = ""
-  signUpRequestPassword.value = ""
   signUpFlowStep.value = "idle"
   signUpOtpVerificationForm.value?.reset()
 }

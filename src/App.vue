@@ -544,7 +544,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
   saveSettings(nextSettings)
 }
 
-async function startCloudSyncWithEmail(authenticate: () => Promise<void>) {
+async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
   await activateCloudSync({
     authenticate,
     reloadAuthState,
@@ -560,9 +560,8 @@ async function handleSignUpWithEmail(email: string, password: string) {
   await signUpWithEmail(email, password)
 }
 
-async function handleVerifySignUpCode(email: string, code: string, password: string) {
-  await verifySignUpCode(email, code)
-  await startCloudSyncWithEmail(() => signInWithEmail(email, password))
+async function handleVerifySignUpCode(email: string, code: string) {
+  await activateCloudSyncAfterAuth(() => verifySignUpCode(email, code))
 }
 
 async function handleResendSignUpCode(email: string) {
@@ -570,7 +569,7 @@ async function handleResendSignUpCode(email: string) {
 }
 
 async function handleSignInWithEmail(email: string, password: string) {
-  await startCloudSyncWithEmail(() => signInWithEmail(email, password))
+  await activateCloudSyncAfterAuth(() => signInWithEmail(email, password))
 }
 
 async function handleSignOut() {
