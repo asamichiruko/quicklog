@@ -102,7 +102,7 @@ npx supabase start
 実行後に APIs と Authentication Keys が表示されます。次の項目を確認してください。
 
 - APIs > Project URL (<http://127.0.0.1:54321> など)
-- Authentication Keys > Publishable (sb*publishable*\*\*\* など)
+- Authentication Keys > Publishable (sb\_publishable\_\*\*\* など)
 
 ### 環境変数ファイルの作成
 
@@ -123,6 +123,15 @@ npx supabase db reset
 ```
 
 この操作を実行すると、ローカル Supabase 上のデータがリセットされます。
+
+### Edge Function の起動
+
+quicklog ではアカウントの削除のために `delete-account` Edge Function を利用します。
+以下の操作を行って必要な Edge Function を起動します。
+
+```bash
+npx supabase functions serve
+```
 
 ### フロントエンド開発サーバー (Vite) の起動
 
