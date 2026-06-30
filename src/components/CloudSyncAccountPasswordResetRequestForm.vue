@@ -33,11 +33,6 @@ function handleSubmit() {
   emit("submit", passwordResetRequestEmail.value)
 }
 
-function handleCancel() {
-  reset()
-  emit("cancel")
-}
-
 function reset() {
   passwordResetRequestEmail.value = ""
   passwordResetRequestEmailErrorMessage.value = ""
@@ -79,14 +74,6 @@ defineExpose({ reset })
         :disabled="!canPasswordResetRequest"
       >
         パスワードリセット
-      </button>
-      <button
-        type="button"
-        class="button-link cancel-button"
-        :disabled="props.isLoading"
-        @click="handleCancel"
-      >
-        サインインに戻る
       </button>
     </div>
   </form>
@@ -132,12 +119,6 @@ defineExpose({ reset })
   margin: 0;
   padding: 0;
   color: var(--color-text-error);
-}
-
-.actions {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-2);
 }
 
 button {

@@ -35,10 +35,6 @@ function handleSubmit() {
   emit("submit", signUpEmail.value, signUpPassword.value)
 }
 
-function showSignInView() {
-  emit("changeView", "signIn")
-}
-
 function validateSignUpEmail() {
   signUpEmailErrorMessage.value = validateEmail(signUpEmail.value)
 }
@@ -103,14 +99,6 @@ defineExpose({ reset })
       <button type="submit" class="button-primary sign-up-button" :disabled="!canSignUp">
         アカウントを作成
       </button>
-      <button
-        type="button"
-        class="button-link change-mode-button"
-        :disabled="isLoading"
-        @click="showSignInView"
-      >
-        サインインに戻る
-      </button>
     </div>
   </form>
 </template>
@@ -163,12 +151,6 @@ defineExpose({ reset })
   margin: 0;
   padding: 0;
   color: var(--color-text-error);
-}
-
-.actions {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-2);
 }
 
 button {

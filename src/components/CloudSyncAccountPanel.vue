@@ -84,7 +84,7 @@ const signUpFlowStep = ref<SignUpFlowStep>("idle")
 const signUpRequestEmail = ref("")
 const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
-const shouldOpenAccountView = computed<boolean>(
+const shouldShowActiveFlow = computed<boolean>(
   () => hasActivePasswordResetFlow.value || hasActiveSignUpFlow.value,
 )
 
@@ -234,6 +234,7 @@ async function handleSignOut(): Promise<void> {
     await props.actions.signOut()
     feedbackMessage.value = "クラウド同期を停止しました"
     feedbackKind.value = "success"
+    selectedPanelView.value = "signIn"
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -395,10 +396,6 @@ function cancelPasswordResetRecovery() {
   props.actions.cancelPasswordRecovery()
 }
 
-function cancelPasswordChange() {
-  signedInPanelView.value = "main"
-}
-
 function clearPasswordResetVerification() {
   cloudSyncAccountPasswordResetRequestForm.value?.reset()
   cloudSyncAccountPasswordResetForm.value?.reset()
@@ -450,8 +447,27 @@ function reset() {
   resetAuthFormState()
 }
 
+function handleBack() {
+  if (panelView.value === "changePassword") {
+    signedInPanelView.value = "main"
+    return true
+  }
+
+  if (panelView.value === "signUp") {
+    selectedPanelView.value = "signIn"
+    return true
+  }
+
+  if (panelView.value === "passwordResetRequest") {
+    selectedPanelView.value = "signIn"
+    return true
+  }
+
+  return false
+}
+
 function prepareForDialogOpen() {
-  if (shouldOpenAccountView.value) {
+  if (shouldShowActiveFlow.value) {
     clearFeedbackMessage()
     isLoading.value = false
     return
@@ -461,9 +477,10 @@ function prepareForDialogOpen() {
 }
 
 defineExpose({
-  shouldOpenAccountView,
+  shouldShowActiveFlow,
   prepareForDialogOpen,
   reset,
+  handleBack,
 })
 </script>
 
@@ -492,7 +509,6 @@ defineExpose({
         ref="cloudSyncAccountPasswordChangeForm"
         :is-loading="isLoading"
         @submit="handleChangePassword"
-        @cancel="cancelPasswordChange"
         @edit="clearFeedbackMessage"
       />
     </template>

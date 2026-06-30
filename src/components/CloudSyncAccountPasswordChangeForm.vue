@@ -8,7 +8,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   submit: [newPassword: string, currentPassword: string]
-  cancel: []
   edit: []
 }>()
 
@@ -38,11 +37,6 @@ function handleSubmit() {
   if (!canChangePassword.value) return
 
   emit("submit", newPassword.value, currentPassword.value)
-}
-
-function handleCancel() {
-  reset()
-  emit("cancel")
 }
 
 function reset() {
@@ -108,14 +102,6 @@ defineExpose({ reset })
       >
         パスワードを変更
       </button>
-      <button
-        type="button"
-        class="button-link cancel-button"
-        :disabled="props.isLoading"
-        @click="handleCancel"
-      >
-        戻る
-      </button>
     </div>
   </form>
 </template>
@@ -166,12 +152,6 @@ defineExpose({ reset })
   margin: 0;
   padding: 0;
   color: var(--color-text-error);
-}
-
-.actions {
-  display: grid;
-  justify-items: start;
-  gap: var(--space-2);
 }
 
 button {

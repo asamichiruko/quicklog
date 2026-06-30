@@ -61,6 +61,7 @@ vi.mock("@/lib/auth", () => ({
 describe("CloudSyncAccountPanel", () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it("メールアドレスとパスワードを入力してサインインできる", async () => {
@@ -239,7 +240,7 @@ describe("CloudSyncAccountPanel", () => {
       },
     })
 
-    await user.click(screen.getByRole("button", { name: "同期" }))
+    await user.click(screen.getByRole("button", { name: "いますぐ同期" }))
 
     expect(syncLogEntries).toHaveBeenCalledOnce()
     expect(
@@ -269,7 +270,7 @@ describe("CloudSyncAccountPanel", () => {
       },
     })
 
-    await user.click(screen.getByRole("button", { name: "同期" }))
+    await user.click(screen.getByRole("button", { name: "いますぐ同期" }))
 
     expect(
       await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください"),
@@ -406,6 +407,7 @@ describe("CloudSyncAccountPanel", () => {
     expect(signUpWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
     expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText("確認コード"), "123456")
 
@@ -414,7 +416,7 @@ describe("CloudSyncAccountPanel", () => {
 
     await user.click(verifyButton)
 
-    expect(verifySignUpCode).toHaveBeenCalledWith("user@example.com", "123456", "Passw0rd!")
+    expect(verifySignUpCode).toHaveBeenCalledWith("user@example.com", "123456")
     expect(screen.getByText("認証に成功しました")).toBeInTheDocument()
   })
 
@@ -459,7 +461,7 @@ describe("CloudSyncAccountPanel", () => {
     await user.click(verifyButton)
 
     expect(screen.getByText("認証に成功しました")).toBeInTheDocument()
-    expect(verifySignUpCode).toHaveBeenLastCalledWith("user@example.com", "654321", "Passw0rd!")
+    expect(verifySignUpCode).toHaveBeenLastCalledWith("user@example.com", "654321")
   })
 
   it("アカウント作成で認証コードを再送できる", async () => {
@@ -528,13 +530,14 @@ describe("CloudSyncAccountPanel", () => {
     expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith(
       "second@example.com",
       "123456",
-      "Second123!",
     )
   })
 
   it("アカウントを削除できる", async () => {
     const user = userEvent.setup()
     const deleteCloudSync = vi.fn().mockResolvedValue(null)
+    const confirm = vi.fn(() => true)
+    vi.stubGlobal("confirm", confirm)
     const defaultProps = createDefaultProps({
       ...createActions(),
       deleteCloudSync,
@@ -551,7 +554,7 @@ describe("CloudSyncAccountPanel", () => {
       },
     })
 
-    await user.click(screen.getByRole("button", { name: "クラウド同期アカウントとデータを削除" }))
+    await user.click(screen.getByText("クラウド同期アカウントとデータを削除"))
     await user.click(screen.getByRole("button", { name: "削除する" }))
 
     expect(deleteCloudSync).toHaveBeenCalledOnce()
@@ -563,6 +566,8 @@ describe("CloudSyncAccountPanel", () => {
     const deleteCloudSync = vi
       .fn()
       .mockRejectedValue(new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした"))
+    const confirm = vi.fn(() => true)
+    vi.stubGlobal("confirm", confirm)
     const defaultProps = createDefaultProps({
       ...createActions(),
       deleteCloudSync,
@@ -579,7 +584,7 @@ describe("CloudSyncAccountPanel", () => {
       },
     })
 
-    await user.click(screen.getByRole("button", { name: "クラウド同期アカウントとデータを削除" }))
+    await user.click(screen.getByText("クラウド同期アカウントとデータを削除"))
     await user.click(screen.getByRole("button", { name: "削除する" }))
 
     expect(deleteCloudSync).toHaveBeenCalledOnce()
@@ -615,6 +620,7 @@ describe("CloudSyncAccountPanel", () => {
     expect(
       await screen.findByText("パスワードリセット用のメールを送信しました"),
     ).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText("確認コード"), "123456")
 
@@ -625,6 +631,7 @@ describe("CloudSyncAccountPanel", () => {
 
     expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "123456")
     expect(await screen.findByText("認証に成功しました")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
 
     await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
 

@@ -85,23 +85,6 @@ describe("CloudSyncAccountPasswordChangeForm", () => {
     expect(emitted().submit).toEqual([["Passw0rd!", "Current42@"]])
   })
 
-  it("戻る ボタンを押すと cancel が emit される", async () => {
-    const user = userEvent.setup()
-
-    const { emitted } = render(CloudSyncAccountPasswordChangeForm, {
-      props: {
-        isLoading: false,
-      },
-    })
-
-    const cancelButton = screen.getByRole("button", { name: "戻る" })
-
-    await user.click(cancelButton)
-
-    expect(emitted()).toHaveProperty("cancel")
-    expect(emitted().cancel).toEqual([[]])
-  })
-
   it("新しいパスワードを入力すると edit が emit される", async () => {
     const user = userEvent.setup()
 

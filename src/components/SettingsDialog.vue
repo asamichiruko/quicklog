@@ -69,7 +69,8 @@ function open() {
   importPanel.value?.reset()
   localDataManagementPanel.value?.reset()
   cloudSyncPanel.value?.prepareForDialogOpen()
-  if (cloudSyncPanel.value?.shouldOpenAccountView) {
+
+  if (cloudSyncPanel.value?.shouldShowActiveFlow) {
     settingsView.value = "account"
   } else {
     settingsView.value = "index"
@@ -94,8 +95,22 @@ function close() {
   dialog.value?.close()
 }
 
+const shouldShowBackButton = computed(() => {
+  return (
+    settingsView.value !== "index" &&
+    (cloudSyncPanel.value === null ||
+      (cloudSyncPanel.value && !cloudSyncPanel.value.shouldShowActiveFlow))
+  )
+})
+
 function handleBackView() {
-  settingsView.value = "index"
+  if (settingsView.value === "account") {
+    const backed = cloudSyncPanel.value?.handleBack()
+    if (backed) return
+    settingsView.value = "index"
+  } else {
+    settingsView.value = "index"
+  }
 }
 
 function handleDialogClick(event: MouseEvent) {
@@ -117,7 +132,7 @@ defineExpose({ open })
     <div class="container">
       <header class="header">
         <button
-          v-if="settingsView !== 'index'"
+          v-if="shouldShowBackButton"
           class="button-icon back-button"
           type="button"
           aria-label="戻る"
