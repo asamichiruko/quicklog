@@ -624,7 +624,6 @@ defineExpose({
   display: block;
   margin: 0;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
   border-radius: var(--radius-surface);
   background: var(--color-output);
   color: var(--color-text);
