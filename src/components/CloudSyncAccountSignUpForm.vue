@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { SelectablePanelView } from "@/components/CloudSyncAccountPanel.vue"
 import { validateCreatedPassword, validateEmail } from "@/lib/authFormValidation"
 import { computed, ref } from "vue"
 
@@ -9,7 +8,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   submit: [email: string, password: string]
-  changeView: [view: SelectablePanelView]
   edit: []
 }>()
 
@@ -42,14 +40,6 @@ function validateSignUpEmail() {
 function validateSignUpPassword() {
   signUpPasswordErrorMessage.value = validateCreatedPassword(signUpPassword.value)
 }
-
-function resetAuthFormState() {}
-
-function reset() {
-  resetAuthFormState()
-}
-
-defineExpose({ reset })
 </script>
 
 <template>

@@ -88,12 +88,9 @@ const shouldShowActiveFlow = computed<boolean>(
   () => hasActivePasswordResetFlow.value || hasActiveSignUpFlow.value,
 )
 
-const cloudSyncAccountSignInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
-const cloudSyncAccountSignUpForm = ref<InstanceType<typeof CloudSyncAccountSignUpForm> | null>(null)
-const cloudSyncAccountSignedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(
-  null,
-)
-const cloudSyncAccountPasswordResetRequestForm = ref<InstanceType<
+const signInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
+const signedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(null)
+const passwordResetRequestForm = ref<InstanceType<
   typeof CloudSyncAccountPasswordResetRequestForm
 > | null>(null)
 const passwordResetOtpVerificationForm = ref<InstanceType<
@@ -102,18 +99,11 @@ const passwordResetOtpVerificationForm = ref<InstanceType<
 const signUpOtpVerificationForm = ref<InstanceType<
   typeof CloudSyncAccountOtpVerificationForm
 > | null>(null)
-const cloudSyncAccountPasswordResetForm = ref<InstanceType<
-  typeof CloudSyncAccountPasswordResetForm
-> | null>(null)
+const passwordResetForm = ref<InstanceType<typeof CloudSyncAccountPasswordResetForm> | null>(null)
 
 const feedbackMessage = ref("")
 const feedbackKind = ref<FeedbackKind | null>(null)
 const isLoading = ref(false)
-
-function clearFeedbackMessage() {
-  feedbackMessage.value = ""
-  feedbackKind.value = null
-}
 
 const sessionStateMessage = computed(() => {
   if (isAuthenticated(props.runtimeSessionState)) {
@@ -126,6 +116,80 @@ const sessionStateMessage = computed(() => {
     return "クラウド同期を使うにはサインインしてください"
   }
 })
+
+function showSignInView() {
+  selectedPanelView.value = "signIn"
+}
+
+function showSignUpView() {
+  selectedPanelView.value = "signUp"
+}
+
+function showPasswordResetRequestView() {
+  selectedPanelView.value = "passwordResetRequest"
+}
+
+function showSignedInMainView() {
+  signedInPanelView.value = "main"
+}
+
+function showPasswordChangeView() {
+  signedInPanelView.value = "changePassword"
+}
+
+function showPasswordResetForm() {
+  passwordResetFlowStep.value = "settingPassword"
+}
+
+function startSignUpVerification(email: string) {
+  signUpRequestEmail.value = email
+  signUpFlowStep.value = "awaitingCode"
+}
+
+function startPasswordResetVerification(email: string) {
+  passwordResetRequestEmail.value = email
+  passwordResetFlowStep.value = "awaitingCode"
+}
+
+function clearFeedback() {
+  feedbackMessage.value = ""
+  feedbackKind.value = null
+}
+
+function resetAuthForms() {
+  signedInView.value?.reset()
+  signInForm.value?.reset()
+  passwordResetRequestForm.value?.reset()
+  passwordResetOtpVerificationForm.value?.reset()
+  signUpOtpVerificationForm.value?.reset()
+}
+
+function clearSignUpFlow() {
+  signUpOtpVerificationForm.value?.reset()
+  signUpRequestEmail.value = ""
+  signUpFlowStep.value = "idle"
+}
+
+function cancelSignUpFlow() {
+  clearSignUpFlow()
+  clearFeedback()
+  showSignUpView()
+}
+
+function clearPasswordResetFlow() {
+  passwordResetRequestForm.value?.reset()
+  passwordResetForm.value?.reset()
+  passwordResetOtpVerificationForm.value?.reset()
+  passwordResetRequestEmail.value = ""
+  passwordResetFlowStep.value = "idle"
+}
+
+function cancelPasswordResetFlow() {
+  clearPasswordResetFlow()
+  showSignInView()
+  clearFeedback()
+  props.actions.cancelPasswordRecovery()
+}
 
 async function handleSignIn(email: string, password: string): Promise<void> {
   if (isLoading.value) return
@@ -155,8 +219,7 @@ async function handleSignUp(email: string, password: string): Promise<void> {
 
   try {
     await props.actions.signUpWithEmail(email.trim(), password)
-    signUpRequestEmail.value = email.trim()
-    signUpFlowStep.value = "awaitingCode"
+    startSignUpVerification(email.trim())
 
     feedbackMessage.value = "確認メールを送信しました"
     feedbackKind.value = "success"
@@ -179,9 +242,9 @@ async function handleVerifySignUpCode(code: string): Promise<void> {
   try {
     await props.actions.verifySignUpCode(signUpRequestEmail.value, code)
     feedbackMessage.value = "認証に成功しました"
-    feedbackKind.value = null
+    feedbackKind.value = "success"
 
-    clearSignUpVerification()
+    clearSignUpFlow()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -189,19 +252,6 @@ async function handleVerifySignUpCode(code: string): Promise<void> {
     signUpOtpVerificationForm.value?.reset()
     isLoading.value = false
   }
-}
-
-function cancelSignUpVerification() {
-  selectedPanelView.value = "signUp"
-  clearSignUpVerification()
-  clearFeedbackMessage()
-}
-
-function clearSignUpVerification() {
-  cloudSyncAccountSignUpForm.value?.reset()
-  signUpRequestEmail.value = ""
-  signUpFlowStep.value = "idle"
-  signUpOtpVerificationForm.value?.reset()
 }
 
 async function handleResendSignUpCode(): Promise<void> {
@@ -234,7 +284,7 @@ async function handleSignOut(): Promise<void> {
     await props.actions.signOut()
     feedbackMessage.value = "クラウド同期を停止しました"
     feedbackKind.value = "success"
-    selectedPanelView.value = "signIn"
+    showSignInView()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -284,7 +334,7 @@ async function handleChangePassword(newPassword: string, currentPassword: string
     feedbackMessage.value = "パスワードを変更しました"
     feedbackKind.value = "success"
 
-    signedInPanelView.value = "main"
+    showSignedInMainView()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -295,25 +345,18 @@ async function handleChangePassword(newPassword: string, currentPassword: string
 
 async function handlePasswordResetRequest(email: string) {
   if (validateEmail(email) !== "") return
-  passwordResetRequestEmail.value = email
-
-  await passwordResetRequest()
-}
-
-async function passwordResetRequest() {
   if (isLoading.value) return
-  if (!passwordResetRequestEmail.value) return
 
   feedbackMessage.value = ""
   isLoading.value = true
 
   try {
-    await props.actions.sendPasswordResetCode(passwordResetRequestEmail.value)
+    await props.actions.sendPasswordResetCode(email)
     feedbackMessage.value = "パスワードリセット用のメールを送信しました"
     feedbackKind.value = "success"
 
     passwordResetOtpVerificationForm.value?.reset()
-    passwordResetFlowStep.value = "awaitingCode"
+    startPasswordResetVerification(email)
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -356,7 +399,7 @@ async function handleVerifyPasswordResetCode(code: string) {
     feedbackMessage.value = "認証に成功しました"
     feedbackKind.value = null
 
-    passwordResetFlowStep.value = "settingPassword"
+    showPasswordResetForm()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -378,29 +421,14 @@ async function handlePasswordReset(password: string) {
     feedbackMessage.value = "パスワードを再設定しました"
     feedbackKind.value = null
 
-    clearPasswordResetVerification()
-    passwordResetFlowStep.value = "idle"
-    selectedPanelView.value = "signIn"
+    clearPasswordResetFlow()
+    showSignInView()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
     isLoading.value = false
   }
-}
-
-function cancelPasswordResetRecovery() {
-  clearPasswordResetVerification()
-  selectedPanelView.value = "signIn"
-  clearFeedbackMessage()
-  props.actions.cancelPasswordRecovery()
-}
-
-function clearPasswordResetVerification() {
-  cloudSyncAccountPasswordResetRequestForm.value?.reset()
-  cloudSyncAccountPasswordResetForm.value?.reset()
-  passwordResetOtpVerificationForm.value?.reset()
-  passwordResetFlowStep.value = "idle"
 }
 
 async function handleConfirmDeleteCloudSync() {
@@ -411,7 +439,8 @@ async function handleConfirmDeleteCloudSync() {
 
   try {
     await props.actions.deleteCloudSync()
-    resetAuthFormState()
+    resetAuthForms()
+
     feedbackMessage.value = "クラウド同期アカウントを削除しました"
     feedbackKind.value = "success"
   } catch (error) {
@@ -422,44 +451,27 @@ async function handleConfirmDeleteCloudSync() {
   }
 }
 
-function handleChangeView(view: SelectablePanelView) {
-  selectedPanelView.value = view
-}
-
-function handleChangeSignedInView(view: SignedInPanelView) {
-  signedInPanelView.value = view
-}
-
-function resetAuthFormState() {
-  cloudSyncAccountSignedInView.value?.reset()
-  cloudSyncAccountSignInForm.value?.reset()
-  cloudSyncAccountSignUpForm.value?.reset()
-  cloudSyncAccountPasswordResetRequestForm.value?.reset()
-  passwordResetOtpVerificationForm.value?.reset()
-  signUpOtpVerificationForm.value?.reset()
-
-  clearFeedbackMessage()
-  isLoading.value = false
-}
-
 function reset() {
-  selectedPanelView.value = "signIn"
-  resetAuthFormState()
+  showSignInView()
+
+  resetAuthForms()
+  clearFeedback()
+  isLoading.value = false
 }
 
 function handleBack() {
   if (panelView.value === "changePassword") {
-    signedInPanelView.value = "main"
+    showSignedInMainView()
     return true
   }
 
   if (panelView.value === "signUp") {
-    selectedPanelView.value = "signIn"
+    showSignInView()
     return true
   }
 
   if (panelView.value === "passwordResetRequest") {
-    selectedPanelView.value = "signIn"
+    showSignInView()
     return true
   }
 
@@ -467,13 +479,13 @@ function handleBack() {
 }
 
 function prepareForDialogOpen() {
-  if (shouldShowActiveFlow.value) {
-    clearFeedbackMessage()
-    isLoading.value = false
-    return
-  } else {
-    reset()
+  if (!shouldShowActiveFlow.value) {
+    showSignInView()
+    resetAuthForms()
   }
+
+  clearFeedback()
+  isLoading.value = false
 }
 
 defineExpose({
@@ -500,7 +512,7 @@ defineExpose({
         @sync="handleSync"
         @sign-out="handleSignOut"
         @delete-cloud-sync="handleConfirmDeleteCloudSync"
-        @change-view="handleChangeSignedInView"
+        @show-password-change-view="showPasswordChangeView"
       />
     </template>
 
@@ -509,7 +521,7 @@ defineExpose({
         ref="cloudSyncAccountPasswordChangeForm"
         :is-loading="isLoading"
         @submit="handleChangePassword"
-        @edit="clearFeedbackMessage"
+        @edit="clearFeedback"
       />
     </template>
 
@@ -517,19 +529,18 @@ defineExpose({
       <CloudSyncAccountSignInForm
         ref="cloudSyncAccountSignInForm"
         :is-loading="isLoading"
-        @change-view="handleChangeView"
+        @show-password-reset-request="showPasswordResetRequestView"
+        @show-sign-up-view="showSignUpView"
         @submit="handleSignIn"
-        @edit="clearFeedbackMessage"
+        @edit="clearFeedback"
       />
     </template>
 
     <template v-else-if="panelView === 'signUp'">
       <CloudSyncAccountSignUpForm
-        ref="cloudSyncAccountSignUpForm"
         :is-loading="isLoading"
-        @change-view="handleChangeView"
         @submit="handleSignUp"
-        @edit="clearFeedbackMessage"
+        @edit="clearFeedback"
       />
     </template>
 
@@ -537,10 +548,10 @@ defineExpose({
       <CloudSyncAccountOtpVerificationForm
         ref="signUpOtpVerificationForm"
         :is-loading="isLoading"
-        @cancel="cancelSignUpVerification"
+        @cancel="cancelSignUpFlow"
         @submit="handleVerifySignUpCode"
         @resend="handleResendSignUpCode"
-        @edit="clearFeedbackMessage"
+        @edit="clearFeedback"
       />
     </template>
 
@@ -548,9 +559,9 @@ defineExpose({
       <CloudSyncAccountPasswordResetRequestForm
         ref="cloudSyncAccountPasswordResetRequestForm"
         :is-loading="isLoading"
-        @cancel="cancelPasswordResetRecovery"
+        @cancel="cancelPasswordResetFlow"
         @submit="handlePasswordResetRequest"
-        @edit="clearFeedbackMessage"
+        @edit="clearFeedback"
       />
     </template>
 
@@ -558,10 +569,10 @@ defineExpose({
       <CloudSyncAccountOtpVerificationForm
         ref="passwordResetOtpVerificationForm"
         :is-loading="isLoading"
-        @cancel="cancelPasswordResetRecovery"
+        @cancel="cancelPasswordResetFlow"
         @submit="handleVerifyPasswordResetCode"
         @resend="handleResendPasswordResetRequest"
-        @edit="clearFeedbackMessage"
+        @edit="clearFeedback"
       />
     </template>
 
@@ -569,9 +580,9 @@ defineExpose({
       <CloudSyncAccountPasswordResetForm
         ref="cloudSyncAccountPasswordResetForm"
         :is-loading="isLoading"
-        @cancel="cancelPasswordResetRecovery"
+        @cancel="cancelPasswordResetFlow"
         @submit="handlePasswordReset"
-        @edit="clearFeedbackMessage"
+        @edit="clearFeedback"
       />
     </template>
 

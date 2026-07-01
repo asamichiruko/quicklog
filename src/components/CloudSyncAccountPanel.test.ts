@@ -527,10 +527,7 @@ describe("CloudSyncAccountPanel", () => {
     await user.type(screen.getByLabelText("確認コード"), "123456")
     await user.click(screen.getByRole("button", { name: "認証する" }))
 
-    expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith(
-      "second@example.com",
-      "123456",
-    )
+    expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith("second@example.com", "123456")
   })
 
   it("アカウントを削除できる", async () => {

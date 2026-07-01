@@ -102,7 +102,7 @@ npx supabase start
 実行後に APIs と Authentication Keys が表示されます。次の項目を確認してください。
 
 - APIs > Project URL (<http://127.0.0.1:54321> など)
-- Authentication Keys > Publishable (sb\_publishable\_\*\*\* など)
+- Authentication Keys > Publishable (sb_publishable\_\*\*\* など)
 
 ### 環境変数ファイルの作成
 
