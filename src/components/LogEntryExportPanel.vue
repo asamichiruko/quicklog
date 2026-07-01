@@ -1,18 +1,47 @@
 <script setup lang="ts">
+import { SchemaValidationError, SizeError } from "@/errors"
 import type { ExportType } from "@/types"
 import { ref } from "vue"
 
-const emit = defineEmits<{
-  export: [exportType: ExportType]
+const props = defineProps<{
+  downloadLogEntries: (exportType: ExportType) => void
 }>()
 
 const exportType = ref<ExportType>("json")
 
-function exportData() {
-  emit("export", exportType.value)
+type FeedbackKind = "success" | "error"
+
+const feedbackKind = ref<FeedbackKind | null>(null)
+const feedbackMessage = ref("")
+
+function handleExport() {
+  feedbackMessage.value = ""
+  feedbackKind.value = null
+
+  try {
+    props.downloadLogEntries(exportType.value)
+
+    feedbackMessage.value = "エクスポートに成功しました"
+    feedbackKind.value = "success"
+  } catch (error) {
+    feedbackMessage.value = getExportErrorMessage(error)
+    feedbackKind.value = "error"
+  }
+}
+
+function getExportErrorMessage(error: unknown) {
+  if (error instanceof SizeError) {
+    return "エクスポートに失敗しました。エクスポートするデータのサイズが大きすぎます"
+  } else if (error instanceof SchemaValidationError) {
+    return "エクスポートに失敗しました。データの一部が破損しています"
+  } else {
+    return "エクスポートに失敗しました"
+  }
 }
 
 function reset() {
+  feedbackMessage.value = ""
+  feedbackKind.value = null
   exportType.value = "json"
 }
 
@@ -21,6 +50,10 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
+    <p class="description">
+      メモ全件をファイル形式を指定してダウンロードします。JSON
+      形式のファイルは記録のインポートに使用できます。
+    </p>
     <fieldset class="export-type-selector">
       <legend class="export-type-selector-legend">ファイル形式</legend>
       <label class="export-type-option">
@@ -44,9 +77,12 @@ defineExpose({ reset })
         <span class="export-type-label">Markdown</span>
       </label>
     </fieldset>
-    <button class="button-primary export-button" type="button" @click="exportData">
+    <button class="button-primary export-button" type="button" @click="handleExport">
       ファイルをダウンロード
     </button>
+    <output v-if="feedbackMessage !== ''" class="feedback" :class="feedbackKind">
+      {{ feedbackMessage }}
+    </output>
   </div>
 </template>
 
@@ -105,5 +141,21 @@ defineExpose({ reset })
 
 .export-button {
   width: fit-content;
+}
+
+.feedback {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-surface);
+  background: var(--color-output);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.feedback.error {
+  color: var(--color-text-error);
 }
 </style>

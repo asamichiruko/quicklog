@@ -471,25 +471,15 @@ async function handleRemove(id: string) {
   }
 }
 
-function handleExport(exportType: ExportType) {
-  try {
-    const exportFile = createQuicklogExportFile(quicklogData.value, exportType)
-    const dateKey = getLocalDateKey(new Date())
+function downloadLogEntries(exportType: ExportType) {
+  const exportFile = createQuicklogExportFile(quicklogData.value, exportType)
+  const dateKey = getLocalDateKey(new Date())
 
-    downloadTextFile({
-      content: exportFile.content,
-      mimeType: exportFile.mimeType,
-      filename: `quicklog-${dateKey}${exportFile.extension}`,
-    })
-  } catch (error) {
-    if (error instanceof SizeError) {
-      alert("エクスポートに失敗しました。エクスポートするデータのサイズが大きすぎます")
-    } else if (error instanceof SchemaValidationError) {
-      alert("エクスポートに失敗しました。データの一部が破損しています")
-    } else {
-      alert("エクスポートに失敗しました")
-    }
-  }
+  downloadTextFile({
+    content: exportFile.content,
+    mimeType: exportFile.mimeType,
+    filename: `quicklog-${dateKey}${exportFile.extension}`,
+  })
 }
 
 async function handleImport(file: File) {
@@ -703,8 +693,8 @@ async function handleCancelPasswordRecovery() {
     :anonymous-data-state="anonymousQuicklogDataState"
     :delete-anonymous-data="deleteAnonymousQuicklogData"
     :cloud-sync-account-actions="cloudSyncAccountActions"
+    :download-log-entries="downloadLogEntries"
     @save="handleSaveSettings"
-    @export="handleExport"
     @import="handleImport"
   />
 

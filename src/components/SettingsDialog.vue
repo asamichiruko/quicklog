@@ -25,11 +25,11 @@ const props = defineProps<{
   anonymousDataState: AnonymousDataState
   deleteAnonymousData: () => void
   cloudSyncAccountActions: CloudSyncAccountActions
+  downloadLogEntries: (exportType: ExportType) => void
 }>()
 
 const emit = defineEmits<{
   save: [nextSettings: AppSettings]
-  export: [exportType: ExportType]
   import: [file: File]
 }>()
 
@@ -102,6 +102,34 @@ const shouldShowBackButton = computed(() => {
       (cloudSyncPanel.value && !cloudSyncPanel.value.shouldShowActiveFlow))
   )
 })
+
+function handleShowDisplayView() {
+  settingsView.value = "display"
+}
+
+function handleShowAccountView() {
+  settingsView.value = "account"
+}
+
+function handleShowCopyView() {
+  copyPanel.value?.reset()
+  settingsView.value = "copy"
+}
+
+function handleShowExportView() {
+  exportPanel.value?.reset()
+  settingsView.value = "export"
+}
+
+function handleShowImportView() {
+  importPanel.value?.reset()
+  settingsView.value = "import"
+}
+
+function handleShowLocalDataManagementView() {
+  localDataManagementPanel.value?.reset()
+  settingsView.value = "localData"
+}
 
 function handleBackView() {
   if (settingsView.value === "account") {
@@ -176,11 +204,7 @@ defineExpose({ open })
       <div v-show="settingsView === 'index'" class="index-body">
         <section class="index-section">
           <h3 class="index-heading">表示</h3>
-          <button
-            type="button"
-            class="button-menu list-item-button"
-            @click="settingsView = 'display'"
-          >
+          <button type="button" class="button-menu list-item-button" @click="handleShowDisplayView">
             <span class="list-item-button-label">表示</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -198,11 +222,7 @@ defineExpose({ open })
         </section>
         <section class="index-section">
           <h3 class="index-heading">アカウントと同期</h3>
-          <button
-            type="button"
-            class="button-menu list-item-button"
-            @click="settingsView = 'account'"
-          >
+          <button type="button" class="button-menu list-item-button" @click="handleShowAccountView">
             <span class="list-item-button-label">アカウントと同期</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -220,7 +240,7 @@ defineExpose({ open })
         </section>
         <section class="index-section">
           <h3 class="index-heading">データの管理</h3>
-          <button type="button" class="button-menu list-item-button" @click="settingsView = 'copy'">
+          <button type="button" class="button-menu list-item-button" @click="handleShowCopyView">
             <span class="list-item-button-label">記録のコピー</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -235,11 +255,7 @@ defineExpose({ open })
               />
             </svg>
           </button>
-          <button
-            type="button"
-            class="button-menu list-item-button"
-            @click="settingsView = 'export'"
-          >
+          <button type="button" class="button-menu list-item-button" @click="handleShowExportView">
             <span class="list-item-button-label">記録のエクスポート</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -254,11 +270,7 @@ defineExpose({ open })
               />
             </svg>
           </button>
-          <button
-            type="button"
-            class="button-menu list-item-button"
-            @click="settingsView = 'import'"
-          >
+          <button type="button" class="button-menu list-item-button" @click="handleShowImportView">
             <span class="list-item-button-label">記録のインポート</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -276,7 +288,7 @@ defineExpose({ open })
           <button
             type="button"
             class="button-menu list-item-button"
-            @click="settingsView = 'localData'"
+            @click="handleShowLocalDataManagementView"
           >
             <span class="list-item-button-label">ローカルデータの管理</span>
             <svg
@@ -342,7 +354,7 @@ defineExpose({ open })
       <LogEntryExportPanel
         v-show="settingsView === 'export'"
         ref="exportPanel"
-        @export="emit('export', $event)"
+        :download-log-entries="props.downloadLogEntries"
       />
       <LogEntryImportPanel
         v-show="settingsView === 'import'"
