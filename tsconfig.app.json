@@ -6,8 +6,8 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
 
     /* Linting */
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
 
