@@ -9,6 +9,10 @@ export type AppSettings = {
 }
 
 export type ExportType = "json" | "markdown"
+export type QuicklogDataImportResult = {
+  addedCount: number
+  deletedCount: number
+}
 
 export type LogEntryDeletion = {
   logEntryId: string

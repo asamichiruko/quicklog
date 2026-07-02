@@ -24,7 +24,7 @@ import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
 import { activateCloudSync } from "@/lib/cloudSyncActivation"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
-import { CloudSyncDeletionError, SchemaValidationError, SizeError } from "@/errors"
+import { CloudSyncDeletionError, SizeError } from "@/errors"
 import { isValidLogEntryText } from "@/lib/logEntrySchema"
 import {
   appendLogEntry,
@@ -65,6 +65,7 @@ import type {
   AppSettings,
   DataScope,
   ExportType,
+  QuicklogDataImportResult,
   LogEntry,
   QuicklogData,
   RuntimeSessionState,
@@ -482,34 +483,19 @@ function downloadLogEntries(exportType: ExportType) {
   })
 }
 
-async function handleImport(file: File) {
-  if (file.type && file.type !== "application/json") {
-    alert("ファイル形式が JSON ではありません。JSON 形式のファイルを選択してください")
-    return
-  }
+async function importQuicklogDataFromFile(file: File): Promise<QuicklogDataImportResult> {
+  const data = await readQuicklogImportFile(file)
+  const result = mergeImportedQuicklogData(
+    quicklogData.value,
+    parseAsQuicklogData(data),
+    new Date(),
+  )
 
-  try {
-    const data = await readQuicklogImportFile(file)
-    const result = mergeImportedQuicklogData(
-      quicklogData.value,
-      parseAsQuicklogData(data),
-      new Date(),
-    )
-
-    applyLocalQuicklogDataChange(result.data)
-
-    alert(`${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`)
-  } catch (error) {
-    if (error instanceof SizeError) {
-      alert("インポートに失敗しました。ファイルサイズが大きすぎます")
-    } else if (error instanceof SyntaxError) {
-      alert("インポートに失敗しました。ファイル内容が JSON 形式であることを確認してください")
-    } else if (error instanceof SchemaValidationError) {
-      alert("インポートに失敗しました。異常なデータが含まれています")
-    } else {
-      alert("インポートに失敗しました")
-    }
-  }
+  applyLocalQuicklogDataChange(result.data)
+  return {
+    addedCount: result.addedCount,
+    deletedCount: result.deletedCount,
+  } satisfies QuicklogDataImportResult
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
@@ -694,8 +680,8 @@ async function handleCancelPasswordRecovery() {
     :delete-anonymous-data="deleteAnonymousQuicklogData"
     :cloud-sync-account-actions="cloudSyncAccountActions"
     :download-log-entries="downloadLogEntries"
+    :import-quicklog-data-from-file="importQuicklogDataFromFile"
     @save="handleSaveSettings"
-    @import="handleImport"
   />
 
   <CalendarDialog

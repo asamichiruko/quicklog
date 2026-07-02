@@ -80,6 +80,8 @@ const TestHost = defineComponent({
       signedInPassword,
       deleteAnonymousData: vi.fn(),
       cloudSyncAccountActions,
+      downloadLogEntries: vi.fn(),
+      importQuicklogDataFromFile: vi.fn(),
     }
   },
   template: `
@@ -90,13 +92,13 @@ const TestHost = defineComponent({
     :settings="settings"
     :log-entries="logEntries"
     @save="saveSettings"
-    @export="exportType = $event"
-    @import="importedFile = $event"
     :session="null"
     :runtime-session-state="runtimeSessionState"
     :anonymous-data-state="anonymousDataState"
     :delete-anonymous-data="deleteAnonymousData"
     :cloud-sync-account-actions="cloudSyncAccountActions"
+    :download-log-entries="downloadLogEntries"
+    :import-quicklog-data-from-file="importQuicklogDataFromFile"
   />
 
   <output data-testid="saved-settings">{{ JSON.stringify(savedSettings) }}</output>

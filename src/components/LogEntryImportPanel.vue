@@ -1,12 +1,60 @@
 <script setup lang="ts">
+import { SchemaValidationError, SizeError } from "@/errors"
+import type { QuicklogDataImportResult } from "@/types"
 import { ref } from "vue"
 
 const importFile = ref<File | null>(null)
 const importFileInput = ref<HTMLInputElement | null>(null)
+const feedbackMessage = ref("")
 
-const emit = defineEmits<{
-  import: [file: File]
+type FeedbackKind = "success" | "error" | null
+const feedbackKind = ref<FeedbackKind>(null)
+
+const props = defineProps<{
+  importQuicklogDataFromFile: (file: File) => Promise<QuicklogDataImportResult>
 }>()
+
+function getImportErrorMessage(error: unknown) {
+  if (error instanceof SizeError) {
+    return "インポートに失敗しました。ファイルサイズが大きすぎます"
+  } else if (error instanceof SyntaxError) {
+    return "インポートに失敗しました。ファイル内容が JSON 形式であることを確認してください"
+  } else if (error instanceof SchemaValidationError) {
+    return "インポートに失敗しました。異常なデータが含まれています"
+  } else {
+    return "インポートに失敗しました"
+  }
+}
+
+async function importSelectedFile(file: File): Promise<void> {
+  if (!file) return
+
+  feedbackMessage.value = ""
+  feedbackKind.value = null
+
+  if (file.type && file.type !== "application/json") {
+    feedbackMessage.value =
+      "ファイル形式が JSON ではありません。JSON 形式のファイルを選択してください"
+    feedbackKind.value = "error"
+    return
+  }
+
+  try {
+    const result = await props.importQuicklogDataFromFile(file)
+
+    feedbackMessage.value = `${result.addedCount} 件のメモを追加、${result.deletedCount} 件のメモを削除しました`
+    feedbackKind.value = "success"
+  } catch (error) {
+    feedbackMessage.value = getImportErrorMessage(error)
+    feedbackKind.value = "error"
+  }
+}
+
+function handleImportButtonClick() {
+  if (!importFile.value) return
+
+  void importSelectedFile(importFile.value)
+}
 
 function handleImportFileChange(event: Event) {
   const input = event.currentTarget as HTMLInputElement
@@ -20,16 +68,12 @@ function handleImportFileChange(event: Event) {
 }
 
 function reset() {
+  feedbackMessage.value = ""
+  feedbackKind.value = null
   importFile.value = null
 
   if (importFileInput.value) {
     importFileInput.value.value = ""
-  }
-}
-
-function handleImport() {
-  if (importFile.value) {
-    emit("import", importFile.value)
   }
 }
 
@@ -65,10 +109,13 @@ defineExpose({ reset })
       class="button-primary import-button"
       :disabled="!importFile"
       type="button"
-      @click="handleImport"
+      @click="handleImportButtonClick"
     >
       ファイルをインポート
     </button>
+    <output v-if="feedbackMessage !== ''" class="feedback" :class="feedbackKind">
+      {{ feedbackMessage }}
+    </output>
   </div>
 </template>
 
@@ -152,5 +199,21 @@ defineExpose({ reset })
 
 .import-button {
   width: fit-content;
+}
+
+.feedback {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-surface);
+  background: var(--color-output);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.feedback.error {
+  color: var(--color-text-error);
 }
 </style>

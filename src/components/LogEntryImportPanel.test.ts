@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import LogEntryImportPanel from "./LogEntryImportPanel.vue"
 
 describe("LogEntryImportPanel", () => {
   it("初期状態でファイルが選択されていない", () => {
-    render(LogEntryImportPanel)
+    render(LogEntryImportPanel, { props: { importQuicklogDataFromFile: vi.fn() } })
 
     const importButton = screen.getByRole("button", { name: "ファイルをインポート" })
     expect(importButton).toBeDisabled()
@@ -14,8 +14,11 @@ describe("LogEntryImportPanel", () => {
   })
 
   it("ファイルを選択して ファイルをインポート ボタンを押すと import される", async () => {
+    const importQuicklogDataFromFile = vi.fn(async () => {
+      return { addedCount: 1, deletedCount: 2 }
+    })
     const user = userEvent.setup()
-    const { emitted } = render(LogEntryImportPanel)
+    render(LogEntryImportPanel, { props: { importQuicklogDataFromFile } })
 
     const importButton = screen.getByRole("button", { name: "ファイルをインポート" })
     expect(importButton).toBeDisabled()
@@ -32,6 +35,33 @@ describe("LogEntryImportPanel", () => {
 
     await user.click(importButton)
 
-    expect(emitted("import")).toEqual([[file]])
+    expect(importQuicklogDataFromFile).toHaveBeenCalledWith(file)
+    expect(screen.getByText(`1 件のメモを追加、2 件のメモを削除しました`)).toBeInTheDocument()
+  })
+
+  it("不正なファイルを import しようとするとエラーが表示される", async () => {
+    const importQuicklogDataFromFile = vi.fn(async () => {
+      throw new SyntaxError()
+    })
+    const user = userEvent.setup()
+    render(LogEntryImportPanel, { props: { importQuicklogDataFromFile } })
+
+    const importButton = screen.getByRole("button", { name: "ファイルをインポート" })
+    expect(importButton).toBeDisabled()
+
+    const file = new File(["{ name: invalid json"], "quicklog.json", { type: "application/json" })
+    await user.upload(screen.getByLabelText("インポートする JSON ファイル"), file)
+
+    expect(importButton).toBeEnabled()
+    expect(screen.getByText("quicklog.json")).toBeInTheDocument()
+
+    await user.click(importButton)
+
+    expect(importQuicklogDataFromFile).toHaveBeenCalledWith(file)
+    expect(
+      screen.getByText(
+        "インポートに失敗しました。ファイル内容が JSON 形式であることを確認してください",
+      ),
+    ).toBeInTheDocument()
   })
 })

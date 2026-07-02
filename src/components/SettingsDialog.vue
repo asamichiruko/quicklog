@@ -11,6 +11,7 @@ import type {
   AnonymousDataState,
   AppSettings,
   ExportType,
+  QuicklogDataImportResult,
   LogEntry,
   RuntimeSessionState,
 } from "@/types"
@@ -26,11 +27,11 @@ const props = defineProps<{
   deleteAnonymousData: () => void
   cloudSyncAccountActions: CloudSyncAccountActions
   downloadLogEntries: (exportType: ExportType) => void
+  importQuicklogDataFromFile: (file: File) => Promise<QuicklogDataImportResult>
 }>()
 
 const emit = defineEmits<{
   save: [nextSettings: AppSettings]
-  import: [file: File]
 }>()
 
 const dialog = ref<HTMLDialogElement | null>(null)
@@ -103,30 +104,30 @@ const shouldShowBackButton = computed(() => {
   )
 })
 
-function handleShowDisplayView() {
+function showDisplayView() {
   settingsView.value = "display"
 }
 
-function handleShowAccountView() {
+function showAccountView() {
   settingsView.value = "account"
 }
 
-function handleShowCopyView() {
+function showCopyView() {
   copyPanel.value?.reset()
   settingsView.value = "copy"
 }
 
-function handleShowExportView() {
+function showExportView() {
   exportPanel.value?.reset()
   settingsView.value = "export"
 }
 
-function handleShowImportView() {
+function showImportView() {
   importPanel.value?.reset()
   settingsView.value = "import"
 }
 
-function handleShowLocalDataManagementView() {
+function showLocalDataManagementView() {
   localDataManagementPanel.value?.reset()
   settingsView.value = "localData"
 }
@@ -204,7 +205,7 @@ defineExpose({ open })
       <div v-show="settingsView === 'index'" class="index-body">
         <section class="index-section">
           <h3 class="index-heading">表示</h3>
-          <button type="button" class="button-menu list-item-button" @click="handleShowDisplayView">
+          <button type="button" class="button-menu list-item-button" @click="showDisplayView">
             <span class="list-item-button-label">表示</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -222,7 +223,7 @@ defineExpose({ open })
         </section>
         <section class="index-section">
           <h3 class="index-heading">アカウントと同期</h3>
-          <button type="button" class="button-menu list-item-button" @click="handleShowAccountView">
+          <button type="button" class="button-menu list-item-button" @click="showAccountView">
             <span class="list-item-button-label">アカウントと同期</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -240,7 +241,7 @@ defineExpose({ open })
         </section>
         <section class="index-section">
           <h3 class="index-heading">データの管理</h3>
-          <button type="button" class="button-menu list-item-button" @click="handleShowCopyView">
+          <button type="button" class="button-menu list-item-button" @click="showCopyView">
             <span class="list-item-button-label">記録のコピー</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -255,7 +256,7 @@ defineExpose({ open })
               />
             </svg>
           </button>
-          <button type="button" class="button-menu list-item-button" @click="handleShowExportView">
+          <button type="button" class="button-menu list-item-button" @click="showExportView">
             <span class="list-item-button-label">記録のエクスポート</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -270,7 +271,7 @@ defineExpose({ open })
               />
             </svg>
           </button>
-          <button type="button" class="button-menu list-item-button" @click="handleShowImportView">
+          <button type="button" class="button-menu list-item-button" @click="showImportView">
             <span class="list-item-button-label">記録のインポート</span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -288,7 +289,7 @@ defineExpose({ open })
           <button
             type="button"
             class="button-menu list-item-button"
-            @click="handleShowLocalDataManagementView"
+            @click="showLocalDataManagementView"
           >
             <span class="list-item-button-label">ローカルデータの管理</span>
             <svg
@@ -359,7 +360,7 @@ defineExpose({ open })
       <LogEntryImportPanel
         v-show="settingsView === 'import'"
         ref="importPanel"
-        @import="emit('import', $event)"
+        :import-quicklog-data-from-file="props.importQuicklogDataFromFile"
       />
       <LocalDataManagementPanel
         v-show="settingsView === 'localData'"
