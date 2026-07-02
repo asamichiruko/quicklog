@@ -13,10 +13,12 @@ type FeedbackKind = "success" | "error"
 
 const feedbackKind = ref<FeedbackKind | null>(null)
 const feedbackMessage = ref("")
+const isLoading = ref(false)
 
 function handleExport() {
   feedbackMessage.value = ""
   feedbackKind.value = null
+  isLoading.value = true
 
   try {
     props.downloadLogEntries(exportType.value)
@@ -26,6 +28,8 @@ function handleExport() {
   } catch (error) {
     feedbackMessage.value = getExportErrorMessage(error)
     feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -42,6 +46,7 @@ function getExportErrorMessage(error: unknown) {
 function reset() {
   feedbackMessage.value = ""
   feedbackKind.value = null
+  isLoading.value = false
   exportType.value = "json"
 }
 
@@ -77,10 +82,15 @@ defineExpose({ reset })
         <span class="export-type-label">Markdown</span>
       </label>
     </fieldset>
-    <button class="button-primary export-button" type="button" @click="handleExport">
+    <button
+      :disabled="isLoading"
+      class="button-primary export-button"
+      type="button"
+      @click="handleExport"
+    >
       ファイルをダウンロード
     </button>
-    <output v-if="feedbackMessage !== ''" class="feedback" :class="feedbackKind">
+    <output v-if="feedbackMessage" class="feedback" :class="feedbackKind">
       {{ feedbackMessage }}
     </output>
   </div>

@@ -6,8 +6,12 @@ const props = defineProps<{
   deleteAnonymousData: () => void
 }>()
 
+type FeedbackKind = "success" | "error" | null
+
 const feedbackMessage = ref("")
+const feedbackKind = ref<FeedbackKind>(null)
 const isConfirmingAnonymousDataDeletion = ref(false)
+const isLoading = ref(false)
 
 const canShowAnonymousDataDeletionConfirmation = computed(() => {
   return (
@@ -19,6 +23,8 @@ const canShowAnonymousDataDeletionConfirmation = computed(() => {
 
 function reset() {
   feedbackMessage.value = ""
+  feedbackKind.value = null
+  isLoading.value = false
   isConfirmingAnonymousDataDeletion.value = false
 }
 
@@ -33,9 +39,23 @@ function hideAnonymousDataDeletionConfirmation() {
 }
 
 function handleConfirmDeleteAnonymousData() {
-  props.deleteAnonymousData()
-  feedbackMessage.value = "この端末の匿名データを削除しました"
-  isConfirmingAnonymousDataDeletion.value = false
+  feedbackMessage.value = ""
+  feedbackKind.value = null
+  isLoading.value = true
+
+  try {
+    props.deleteAnonymousData()
+
+    feedbackMessage.value = "この端末の匿名データを削除しました"
+    feedbackKind.value = "success"
+    isConfirmingAnonymousDataDeletion.value = false
+  } catch (error) {
+    feedbackMessage.value = "匿名データの削除に失敗しました"
+    console.warn(error)
+    feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
+  }
 }
 
 defineExpose({ reset })
@@ -56,9 +76,8 @@ defineExpose({ reset })
     </button>
     <template v-if="isConfirmingAnonymousDataDeletion">
       <p class="confirm-message">
-        <template v-if="props.anonymousDataState.logEntryCount > 0">
-          {{ props.anonymousDataState.logEntryCount }} 件の記録を含む、
-        </template>
+        {{ props.anonymousDataState.logEntryCount }} 件の記録と
+        {{ props.anonymousDataState.logEntryDeletionCount }} 件の削除記録を含む、
         この端末の匿名データを削除します。この操作は元に戻せません。本当に削除しますか？
       </p>
       <div class="confirm-actions">
@@ -70,6 +89,7 @@ defineExpose({ reset })
           キャンセル
         </button>
         <button
+          :disabled="isLoading"
           type="button"
           class="button-danger delete-button"
           @click="handleConfirmDeleteAnonymousData"
@@ -78,7 +98,7 @@ defineExpose({ reset })
         </button>
       </div>
     </template>
-    <p v-if="feedbackMessage" class="feedback-message">
+    <p v-if="feedbackMessage" class="feedback" :class="feedbackKind">
       {{ feedbackMessage }}
     </p>
   </div>
@@ -90,7 +110,7 @@ defineExpose({ reset })
   gap: var(--space-3);
 }
 
-.feedback-message {
+.feedback {
   width: fit-content;
   max-width: 100%;
   margin: 0;
@@ -99,6 +119,10 @@ defineExpose({ reset })
   background: var(--color-output);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
+}
+
+.feedback.error {
+  color: var(--color-text-error);
 }
 
 .delete-anonymous-data-description {

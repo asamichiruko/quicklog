@@ -6,6 +6,7 @@ import { ref } from "vue"
 const importFile = ref<File | null>(null)
 const importFileInput = ref<HTMLInputElement | null>(null)
 const feedbackMessage = ref("")
+const isLoading = ref(false)
 
 type FeedbackKind = "success" | "error" | null
 const feedbackKind = ref<FeedbackKind>(null)
@@ -39,6 +40,8 @@ async function importSelectedFile(file: File): Promise<void> {
     return
   }
 
+  isLoading.value = true
+
   try {
     const result = await props.importQuicklogDataFromFile(file)
 
@@ -47,6 +50,8 @@ async function importSelectedFile(file: File): Promise<void> {
   } catch (error) {
     feedbackMessage.value = getImportErrorMessage(error)
     feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -70,6 +75,7 @@ function handleImportFileChange(event: Event) {
 function reset() {
   feedbackMessage.value = ""
   feedbackKind.value = null
+  isLoading.value = false
   importFile.value = null
 
   if (importFileInput.value) {
@@ -107,13 +113,13 @@ defineExpose({ reset })
     </label>
     <button
       class="button-primary import-button"
-      :disabled="!importFile"
+      :disabled="!importFile || isLoading"
       type="button"
       @click="handleImportButtonClick"
     >
       ファイルをインポート
     </button>
-    <output v-if="feedbackMessage !== ''" class="feedback" :class="feedbackKind">
+    <output v-if="feedbackMessage" class="feedback" :class="feedbackKind">
       {{ feedbackMessage }}
     </output>
   </div>
