@@ -111,6 +111,7 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
+    <p class="description">期間を指定して Markdown 形式のメモをクリップボードにコピーします。</p>
     <fieldset class="copy-period">
       <label class="copy-date-field">
         <span class="copy-date-label">開始日</span>
@@ -167,6 +168,11 @@ defineExpose({ reset })
 .container {
   display: grid;
   gap: var(--space-3);
+}
+
+.description {
+  margin: 0;
+  padding: 0;
 }
 
 .copy-period {
