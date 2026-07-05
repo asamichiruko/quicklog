@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from "vue"
+
 const props = defineProps<{
   isLoading: boolean
 }>()
@@ -10,16 +12,21 @@ const emit = defineEmits<{
   showPasswordChangeView: []
 }>()
 
-function handleDeleteCloudSync() {
-  const result = confirm(
-    "クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？",
-  )
-  if (!result) return
+const deleteCloudSyncConfirmation = ref<HTMLDetailsElement | null>(null)
 
+function handleDeleteCloudSync() {
   emit("deleteCloudSync")
 }
 
-function reset() {}
+function hideDeleteCloudSyncConfirmation() {
+  if (deleteCloudSyncConfirmation.value) {
+    deleteCloudSyncConfirmation.value.open = false
+  }
+}
+
+function reset() {
+  hideDeleteCloudSyncConfirmation()
+}
 
 defineExpose({ reset })
 </script>
@@ -65,13 +72,24 @@ defineExpose({ reset })
       サインアウト
     </button>
     <h3 class="heading">危険な操作</h3>
-    <details class="delete-cloud-sync-confirmation">
+    <details ref="deleteCloudSyncConfirmation" class="delete-cloud-sync-confirmation">
       <summary>クラウド同期アカウントとデータを削除</summary>
       <div class="delete-cloud-sync-body">
         <p class="delete-cloud-sync-description">
           現在サインインしているクラウド同期アカウントと、クラウド上の同期データを削除します。この端末に保存されている記録は、サインインしていない状態のデータとして残ります。
         </p>
+        <p class="confirm-message">
+          クラウド同期アカウントとクラウド上の同期データを削除します。この操作は元に戻せません。本当に削除しますか？
+        </p>
         <div class="confirm-actions">
+          <button
+            type="button"
+            class="button-secondary cancel-button"
+            :disabled="props.isLoading"
+            @click="hideDeleteCloudSyncConfirmation"
+          >
+            キャンセル
+          </button>
           <button
             type="button"
             class="button-danger delete-cloud-sync-button"

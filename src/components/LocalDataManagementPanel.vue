@@ -10,14 +10,12 @@ type FeedbackKind = "success" | "error" | null
 
 const feedbackMessage = ref("")
 const feedbackKind = ref<FeedbackKind>(null)
-const isConfirmingAnonymousDataDeletion = ref(false)
 const isLoading = ref(false)
 
+const deleteAnonymousDataConfirmation = ref<HTMLDetailsElement | null>(null)
 const canShowAnonymousDataDeletionConfirmation = computed(() => {
   return (
-    !isConfirmingAnonymousDataDeletion.value &&
-    (props.anonymousDataState.logEntryCount > 0 ||
-      props.anonymousDataState.logEntryDeletionCount > 0)
+    props.anonymousDataState.logEntryCount > 0 || props.anonymousDataState.logEntryDeletionCount > 0
   )
 })
 
@@ -25,17 +23,13 @@ function reset() {
   feedbackMessage.value = ""
   feedbackKind.value = null
   isLoading.value = false
-  isConfirmingAnonymousDataDeletion.value = false
-}
-
-function showAnonymousDataDeletionConfirmation() {
-  if (canShowAnonymousDataDeletionConfirmation.value) {
-    isConfirmingAnonymousDataDeletion.value = true
-  }
+  hideAnonymousDataDeletionConfirmation()
 }
 
 function hideAnonymousDataDeletionConfirmation() {
-  isConfirmingAnonymousDataDeletion.value = false
+  if (deleteAnonymousDataConfirmation.value) {
+    deleteAnonymousDataConfirmation.value.open = false
+  }
 }
 
 function handleConfirmDeleteAnonymousData() {
@@ -48,7 +42,7 @@ function handleConfirmDeleteAnonymousData() {
 
     feedbackMessage.value = "この端末の匿名データを削除しました"
     feedbackKind.value = "success"
-    isConfirmingAnonymousDataDeletion.value = false
+    hideAnonymousDataDeletionConfirmation()
   } catch (error) {
     feedbackMessage.value = "匿名データの削除に失敗しました"
     console.warn(error)
@@ -63,41 +57,44 @@ defineExpose({ reset })
 
 <template>
   <div class="container">
-    <p class="delete-anonymous-data-description">
-      サインインしていない状態でこの端末に記録したメモを削除します。サインイン中のユーザデータやクラウド上のデータは削除されません。
-    </p>
-    <button
-      type="button"
-      class="button-secondary show-button"
-      :disabled="!canShowAnonymousDataDeletionConfirmation"
-      @click="showAnonymousDataDeletionConfirmation"
-    >
-      この端末の匿名データを削除
-    </button>
-    <template v-if="isConfirmingAnonymousDataDeletion">
-      <p class="confirm-message">
-        {{ props.anonymousDataState.logEntryCount }} 件の記録と
-        {{ props.anonymousDataState.logEntryDeletionCount }} 件の削除記録を含む、
-        この端末の匿名データを削除します。この操作は元に戻せません。本当に削除しますか？
-      </p>
-      <div class="confirm-actions">
-        <button
-          type="button"
-          class="button-secondary hide-button"
-          @click="hideAnonymousDataDeletionConfirmation"
-        >
-          キャンセル
-        </button>
-        <button
-          :disabled="isLoading"
-          type="button"
-          class="button-danger delete-button"
-          @click="handleConfirmDeleteAnonymousData"
-        >
-          削除する
-        </button>
+    <details ref="deleteAnonymousDataConfirmation" class="delete-anonymous-data-confirmation">
+      <summary>この端末の匿名データを削除</summary>
+      <div class="delete-anonymous-data-body">
+        <p class="delete-anonymous-data-description">
+          サインインしていない状態でこの端末に記録したメモを削除します。サインイン中のユーザデータやクラウド上のデータは削除されません。
+        </p>
+        <template v-if="canShowAnonymousDataDeletionConfirmation">
+          <p class="confirm-message danger">
+            {{ props.anonymousDataState.logEntryCount }} 件の記録と
+            {{ props.anonymousDataState.logEntryDeletionCount }} 件の削除記録を含む、
+            この端末の匿名データを削除します。この操作は元に戻せません。本当に削除しますか？
+          </p>
+          <div class="confirm-actions">
+            <button
+              :disabled="isLoading || !canShowAnonymousDataDeletionConfirmation"
+              type="button"
+              class="button-secondary hide-button"
+              @click="hideAnonymousDataDeletionConfirmation"
+            >
+              キャンセル
+            </button>
+            <button
+              :disabled="isLoading || !canShowAnonymousDataDeletionConfirmation"
+              type="button"
+              class="button-danger delete-button"
+              @click="handleConfirmDeleteAnonymousData"
+            >
+              削除する
+            </button>
+          </div>
+        </template>
+        <template v-else>
+          <p class="empty-anonymous-data-message">
+            匿名データが存在しないため、削除操作は行えません。
+          </p>
+        </template>
       </div>
-    </template>
+    </details>
     <p v-if="feedbackMessage" class="feedback" :class="feedbackKind">
       {{ feedbackMessage }}
     </p>
@@ -106,6 +103,18 @@ defineExpose({ reset })
 
 <style lang="css" scoped>
 .container {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.delete-anonymous-data-confirmation {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-surface);
+  padding: var(--space-3);
+}
+
+.delete-anonymous-data-body {
+  margin-top: var(--space-3);
   display: grid;
   gap: var(--space-3);
 }
@@ -137,6 +146,11 @@ defineExpose({ reset })
 .confirm-actions {
   display: flex;
   gap: var(--space-3);
+}
+
+.empty-anonymous-data-message {
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 .show-button,
