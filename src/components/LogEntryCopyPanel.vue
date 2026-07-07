@@ -3,107 +3,135 @@ import { formatLogEntriesAsMarkdown } from "@/lib/createQuicklogExportFile"
 import { addDays, getLocalDateKey, parseLocalDateKey } from "@/lib/date"
 import { SchemaValidationError, SizeError } from "@/errors"
 import type { LogEntry } from "@/types"
-import { computed, ref } from "vue"
-
-const startDate = ref<string>(getLocalDateKey(new Date()))
-const endDate = ref<string>(getLocalDateKey(new Date()))
-const resultMessage = ref<string>("")
-const previewDetails = ref<HTMLDetailsElement | null>(null)
+import { computed, ref, watch } from "vue"
+import { isValidLogEntry } from "@/lib/logEntrySchema"
 
 const props = defineProps<{
   logEntries: LogEntry[]
 }>()
 
-const targetLogEntries = computed<LogEntry[]>(() => {
-  let start
-  let endExclusive
+const startDate = ref<string>(getLocalDateKey(new Date()))
+const endDate = ref<string>(getLocalDateKey(new Date()))
+const copyText = ref("")
+const feedbackMessage = ref("")
+
+type CopySelectionState =
+  | { status: "invalidDate" }
+  | { status: "invalidRange" }
+  | { status: "invalidData" }
+  | { status: "empty" }
+  | { status: "ready"; logEntries: LogEntry[] }
+
+const copySelectionState = computed<CopySelectionState>(() => {
+  let start: number
+  let endExclusive: number
 
   try {
     start = parseLocalDateKey(startDate.value).getTime()
     endExclusive = addDays(parseLocalDateKey(endDate.value), 1).getTime()
   } catch {
-    return []
+    return { status: "invalidDate" }
   }
 
-  if (endExclusive <= start) return []
+  if (endExclusive <= start) {
+    return { status: "invalidRange" }
+  }
+
+  if (props.logEntries.some((logEntry) => !isValidLogEntry(logEntry))) {
+    return { status: "invalidData" }
+  }
 
   const targets = props.logEntries.filter((logEntry) => {
     const createdAt = new Date(logEntry.createdAt).getTime()
     return start <= createdAt && createdAt < endExclusive
   })
 
-  return targets
+  if (targets.length === 0) {
+    return { status: "empty" }
+  }
+
+  return { status: "ready", logEntries: targets }
 })
 
 const targetCount = computed(() => {
-  return targetLogEntries.value.length
-})
-
-const copyTextResult = computed<{ text: string; errorMessage: string }>(() => {
-  if (targetCount.value === 0) {
-    return { text: "", errorMessage: "" }
+  if (copySelectionState.value.status === "ready") {
+    return copySelectionState.value.logEntries.length
+  } else {
+    return 0
   }
-
-  try {
-    return {
-      text: formatLogEntriesAsMarkdown(targetLogEntries.value),
-      errorMessage: "",
-    }
-  } catch (error) {
-    if (error instanceof SizeError) {
-      return { text: "", errorMessage: "記録のサイズが大きすぎます" }
-    }
-    if (error instanceof SchemaValidationError) {
-      return { text: "", errorMessage: "データが破損しています" }
-    }
-    return { text: "", errorMessage: "コピーテキストの生成に失敗しました" }
-  }
-})
-
-const copyText = computed(() => {
-  return copyTextResult.value.text
-})
-
-const canCopy = computed(() => {
-  return targetCount.value > 0 && copyText.value !== ""
 })
 
 const selectionStatusMessage = computed(() => {
-  let start
-  let endExclusive
+  switch (copySelectionState.value.status) {
+    case "invalidDate":
+      return "有効な日付を指定してください"
+    case "invalidRange":
+      return "開始日が終了日より後です"
+    case "invalidData":
+      return "データが破損しています"
+    case "empty":
+      return "指定範囲に記録がありません"
+    case "ready":
+      return `対象: ${targetCount.value} 件 / Markdown 形式`
+    default:
+      return ""
+  }
+})
+
+function getCopyTextErrorMessage(error: unknown) {
+  if (error instanceof SizeError) {
+    return "記録のサイズが大きすぎます"
+  }
+  if (error instanceof SchemaValidationError) {
+    return "データが破損しています"
+  }
+  return "コピーテキストの生成に失敗しました"
+}
+
+const canPrepareCopyText = computed(() => {
+  return copySelectionState.value.status === "ready"
+})
+
+function prepareCopyText() {
+  copyText.value = ""
+  feedbackMessage.value = ""
+
+  if (copySelectionState.value.status !== "ready") return false
 
   try {
-    start = parseLocalDateKey(startDate.value).getTime()
-    endExclusive = addDays(parseLocalDateKey(endDate.value), 1).getTime()
-  } catch {
-    return "有効な日付を指定してください"
+    copyText.value = formatLogEntriesAsMarkdown(copySelectionState.value.logEntries)
+    return true
+  } catch (error) {
+    feedbackMessage.value = getCopyTextErrorMessage(error)
+    return false
   }
-
-  if (endExclusive <= start) return "開始日が終了日より後です"
-  if (targetCount.value === 0) return "指定範囲に記録がありません"
-  return `対象: ${targetCount.value} 件 / Markdown 形式`
-})
-
-const feedbackMessage = computed(() => {
-  return copyTextResult.value.errorMessage || resultMessage.value
-})
+}
 
 async function handleCopy() {
-  if (!canCopy.value) return
+  if (!canPrepareCopyText.value) return
+  if (!prepareCopyText()) return
 
   try {
     await window.navigator.clipboard.writeText(copyText.value)
-    resultMessage.value = "クリップボードにコピーしました"
+    feedbackMessage.value = "クリップボードにコピーしました"
   } catch {
-    resultMessage.value = "クリップボードにコピーできません。下の内容を手動でコピーしてください"
+    feedbackMessage.value = "クリップボードにコピーできません。下の内容を手動でコピーしてください"
   }
 }
+
+function refreshCopyText() {
+  if (!prepareCopyText()) {
+    feedbackMessage.value = ""
+    copyText.value = ""
+  }
+}
+
+watch(copySelectionState, refreshCopyText, { immediate: true })
 
 function reset() {
   startDate.value = getLocalDateKey(new Date())
   endDate.value = getLocalDateKey(new Date())
-  resultMessage.value = ""
-  if (previewDetails.value) previewDetails.value.open = false
+  refreshCopyText()
 }
 
 defineExpose({ reset })
@@ -143,7 +171,7 @@ defineExpose({ reset })
     <button
       class="button-primary copy-button"
       type="button"
-      :disabled="!canCopy"
+      :disabled="targetCount === 0"
       @click="handleCopy"
     >
       クリップボードにコピー
@@ -151,7 +179,7 @@ defineExpose({ reset })
     <p v-if="feedbackMessage" class="feedback-message" role="status" aria-live="polite">
       {{ feedbackMessage }}
     </p>
-    <details v-if="canCopy" ref="previewDetails" class="copy-preview-panel">
+    <details v-if="copyText" class="copy-preview-panel">
       <summary class="copy-preview-toggle">コピー内容を確認</summary>
       <textarea
         class="copy-preview"
