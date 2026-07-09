@@ -7,7 +7,6 @@ import {
   changePassword,
   clearLocalAuthSession,
   deleteCurrentAccount,
-  getCurrentSession,
   resendSignUpCode,
   sendPasswordResetCode,
   signInWithEmail,
@@ -59,7 +58,6 @@ import {
   saveStoredDataScope,
 } from "@/lib/storage"
 import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
-import { supabase } from "@/lib/supabase"
 import type {
   AnonymousDataState,
   AppSettings,
@@ -74,12 +72,28 @@ import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import { usePendingTimeout } from "@/composables/usePendingTimeout"
+import { useSupabaseAuthSessionListener } from "@/composables/useSupabaseAuthSessionListener"
 
 const session = ref<Session | null>(null)
 
-let unsubscribeAuth: (() => void) | undefined
 const deletedCloudUserIds = new Set<string>()
+
+const runtimeSessionState = ref<RuntimeSessionState>({
+  scope: { type: "anonymous" },
+  syncStatus: "disabled",
+})
+
 let passwordRecoveryInProgress = false
+
+const authSessionListener = useSupabaseAuthSessionListener({
+  shouldIgnoreAuthEvent: () => passwordRecoveryInProgress,
+  onResolvedSession: applyResolvedSession,
+  onReloadFailed: (error) => {
+    console.warn("Failed to reload auth state", error)
+    applySessionTransition({ type: "authReloadFailed" }, null)
+  },
+})
+
 let quicklogDataRevision = 0
 let dataScopeRevision = 0
 
@@ -90,10 +104,6 @@ const quicklogData = ref<QuicklogData>({
 })
 const logEntries = computed<LogEntry[]>(() => quicklogData.value.logEntries)
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
-const runtimeSessionState = ref<RuntimeSessionState>({
-  scope: { type: "anonymous" },
-  syncStatus: "disabled",
-})
 
 const showNewLogEntryButton = ref(false)
 const newLogEntryButtonShowScrollY = 320
@@ -191,20 +201,11 @@ onMounted(() => {
   document.addEventListener("visibilitychange", handleVisibilityChange)
   window.addEventListener("online", handleOnline)
 
-  const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-    if (passwordRecoveryInProgress) return
-
-    applyResolvedSession(nextSession)
-  })
-  unsubscribeAuth = () => {
-    data.subscription.unsubscribe()
-  }
-
-  void reloadAuthState()
+  authSessionListener.start()
+  void authSessionListener.reload()
 })
 
 onUnmounted(() => {
-  unsubscribeAuth?.()
   cloudSyncScheduler.cancelScheduled()
   window.removeEventListener("scroll", updateNewLogEntryButtonVisibility)
   document.removeEventListener("visibilitychange", handleVisibilityChange)
@@ -310,15 +311,6 @@ function pruneActiveQuicklogData() {
   const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), new Date())
   setActiveQuicklogData(pruned)
   saveActiveQuicklogData(pruned)
-}
-
-async function reloadAuthState() {
-  try {
-    applyResolvedSession(await getCurrentSession())
-  } catch (error) {
-    console.warn("Failed to reload auth state", error)
-    applySessionTransition({ type: "authReloadFailed" }, null)
-  }
 }
 
 function activateAnonymousScope() {
@@ -511,7 +503,7 @@ function handleSaveSettings(nextSettings: AppSettings) {
 async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
   await activateCloudSync({
     authenticate,
-    reloadAuthState,
+    reloadAuthState: authSessionListener.reload,
     getActiveUser: getActiveCloudUser,
     moveAnonymousDataToUser,
     rollback: rollbackCloudSyncStart,
