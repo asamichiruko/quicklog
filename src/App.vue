@@ -73,6 +73,7 @@ import type {
 import { type Session, type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
+import { usePendingTimeout } from "@/composables/usePendingTimeout"
 
 const session = ref<Session | null>(null)
 
@@ -99,7 +100,13 @@ const newLogEntryButtonShowScrollY = 320
 const newLogEntryButtonHideScrollY = 120
 
 const authPendingTimeoutMs = 10_000
-let authPendingTimeoutId: ReturnType<typeof window.setTimeout> | undefined
+const authPendingTimeout = usePendingTimeout({
+  timeoutMs: authPendingTimeoutMs,
+  isPending: () => isAuthPending(runtimeSessionState.value),
+  onTimedOut: () => {
+    applySessionTransition({ type: "authCheckTimedOut" }, null)
+  },
+})
 
 const initialDate = ref<Date>(new Date())
 const logEntryCountsByDate = computed(() => {
@@ -198,7 +205,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   unsubscribeAuth?.()
-  clearAuthPendingTimeout()
   cloudSyncScheduler.cancelScheduled()
   window.removeEventListener("scroll", updateNewLogEntryButtonVisibility)
   document.removeEventListener("visibilitychange", handleVisibilityChange)
@@ -235,10 +241,10 @@ function applySessionTransition(event: SessionTransitionEvent, nextSession: Sess
 }
 
 function applySessionSideEffects(nextState: RuntimeSessionState) {
-  clearAuthPendingTimeout()
+  authPendingTimeout.clear()
 
   if (isAuthPending(nextState)) {
-    scheduleAuthPendingTimeout()
+    authPendingTimeout.schedule()
     return
   }
 
@@ -313,24 +319,6 @@ async function reloadAuthState() {
     console.warn("Failed to reload auth state", error)
     applySessionTransition({ type: "authReloadFailed" }, null)
   }
-}
-
-function scheduleAuthPendingTimeout() {
-  clearAuthPendingTimeout()
-  if (!isAuthPending(runtimeSessionState.value)) return
-
-  authPendingTimeoutId = window.setTimeout(() => {
-    if (!isAuthPending(runtimeSessionState.value)) return
-
-    applySessionTransition({ type: "authCheckTimedOut" }, null)
-  }, authPendingTimeoutMs)
-}
-
-function clearAuthPendingTimeout() {
-  if (authPendingTimeoutId === undefined) return
-
-  window.clearTimeout(authPendingTimeoutId)
-  authPendingTimeoutId = undefined
 }
 
 function activateAnonymousScope() {
