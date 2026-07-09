@@ -1,12 +1,10 @@
 import { onUnmounted } from "vue"
 
-type UsePendingTimeoutOptions = {
+export function usePendingTimeout(options: {
   timeoutMs: number
   isPending: () => boolean
   onTimedOut: () => void
-}
-
-export function usePendingTimeout(options: UsePendingTimeoutOptions) {
+}) {
   let timeoutId: ReturnType<typeof window.setTimeout> | undefined
 
   function schedule() {
