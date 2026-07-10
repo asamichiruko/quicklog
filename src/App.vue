@@ -73,6 +73,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import { usePendingTimeout } from "@/composables/usePendingTimeout"
 import { useSupabaseAuthSessionListener } from "@/composables/useSupabaseAuthSessionListener"
+import NewLogEntryButton from "@/components/NewLogEntryButton.vue"
 
 const session = ref<Session | null>(null)
 
@@ -104,10 +105,6 @@ const quicklogData = ref<QuicklogData>({
 })
 const logEntries = computed<LogEntry[]>(() => quicklogData.value.logEntries)
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
-
-const showNewLogEntryButton = ref(false)
-const newLogEntryButtonShowScrollY = 320
-const newLogEntryButtonHideScrollY = 120
 
 const authPendingTimeoutMs = 10_000
 const authPendingTimeout = usePendingTimeout({
@@ -196,8 +193,6 @@ onMounted(() => {
   pruneActiveQuicklogData()
   settings.value = loadSettings()
 
-  updateNewLogEntryButtonVisibility()
-  window.addEventListener("scroll", updateNewLogEntryButtonVisibility, { passive: true })
   document.addEventListener("visibilitychange", handleVisibilityChange)
   window.addEventListener("online", handleOnline)
 
@@ -207,7 +202,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   cloudSyncScheduler.cancelScheduled()
-  window.removeEventListener("scroll", updateNewLogEntryButtonVisibility)
   document.removeEventListener("visibilitychange", handleVisibilityChange)
   window.removeEventListener("online", handleOnline)
 })
@@ -320,17 +314,6 @@ function activateAnonymousScope() {
 function setActiveQuicklogData(nextData: QuicklogData) {
   quicklogData.value = nextData
   quicklogDataRevision += 1
-}
-
-function updateNewLogEntryButtonVisibility() {
-  const scrollY = window.scrollY
-
-  if (showNewLogEntryButton.value) {
-    showNewLogEntryButton.value = scrollY > newLogEntryButtonHideScrollY
-    return
-  }
-
-  showNewLogEntryButton.value = scrollY > newLogEntryButtonShowScrollY
 }
 
 function moveToLogEntryForm() {
@@ -628,27 +611,7 @@ async function handleCancelPasswordRecovery() {
     </div>
   </main>
 
-  <button
-    v-if="showNewLogEntryButton"
-    class="button-primary new-log-entry-button"
-    type="button"
-    @click="moveToLogEntryForm"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      fill="currentColor"
-      class="bi bi-pencil"
-      viewBox="0 0 16 16"
-      aria-hidden="true"
-    >
-      <path
-        d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"
-      />
-    </svg>
-    <span>メモを書く</span>
-  </button>
+  <NewLogEntryButton @click="moveToLogEntryForm" />
 
   <SettingsDialog
     ref="settingsDialog"
@@ -734,16 +697,5 @@ async function handleCancelPasswordRecovery() {
 
 .log-entry-form-anchor {
   scroll-margin-top: var(--space-3);
-}
-
-.new-log-entry-button {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  transform: translateX(-50%);
 }
 </style>
