@@ -56,12 +56,10 @@ import {
 } from "@/lib/storage"
 import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import type {
-  AnonymousDataState,
   AppSettings,
   DataScope,
   ExportType,
   QuicklogDataImportResult,
-  QuicklogData,
   RuntimeSessionState,
 } from "@/types"
 import { type Session, type User } from "@supabase/supabase-js"
@@ -71,6 +69,7 @@ import { usePendingTimeout } from "@/composables/usePendingTimeout"
 import { useSupabaseAuthSessionListener } from "@/composables/useSupabaseAuthSessionListener"
 import { useActiveQuicklogData } from "@/composables/useActiveQuicklogData"
 import NewLogEntryButton from "@/components/NewLogEntryButton.vue"
+import { useAnonymousQuicklogData } from "@/composables/useAnonymousQuicklogData"
 
 const session = ref<Session | null>(null)
 
@@ -131,9 +130,13 @@ const logEntryCountsByDate = computed(() => {
   return counts
 })
 
-const anonymousQuicklogDataState = ref<AnonymousDataState>({
-  logEntryCount: 0,
-  logEntryDeletionCount: 0,
+const {
+  anonymousQuicklogDataState,
+  refreshAnonymousQuicklogDataState,
+  deleteAnonymousQuicklogData,
+} = useAnonymousQuicklogData({
+  isAnonymousActive: () => isAnonymous(runtimeSessionState.value),
+  setActiveQuicklogData,
 })
 
 const cloudSyncQueue = createCloudSyncQueue({
@@ -253,26 +256,6 @@ function applySessionSideEffects(nextState: RuntimeSessionState) {
   }
 
   cloudSyncScheduler.requestIfDue()
-}
-
-function refreshAnonymousQuicklogDataState() {
-  const data = loadQuicklogData()
-  anonymousQuicklogDataState.value = {
-    logEntryCount: data.logEntries.length,
-    logEntryDeletionCount: data.logEntryDeletions.length,
-  }
-}
-
-function deleteAnonymousQuicklogData() {
-  clearQuicklogData()
-  if (isAnonymous(runtimeSessionState.value)) {
-    setActiveQuicklogData({
-      version: 3,
-      logEntries: [],
-      logEntryDeletions: [],
-    } satisfies QuicklogData)
-  }
-  refreshAnonymousQuicklogDataState()
 }
 
 function getActiveCloudUser(): User | null {
