@@ -31,10 +31,7 @@ import {
   createLogEntryDeletion,
   removeLogEntry,
 } from "@/lib/quicklogDataEditing"
-import {
-  mergeImportedQuicklogData,
-  pruneQuicklogDataLogEntryDeletions,
-} from "@/lib/quicklogDataMerge"
+import { mergeImportedQuicklogData } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import { moveAnonymousQuicklogDataToUser } from "@/lib/anonymousDataMigration"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
@@ -64,7 +61,6 @@ import type {
   DataScope,
   ExportType,
   QuicklogDataImportResult,
-  LogEntry,
   QuicklogData,
   RuntimeSessionState,
 } from "@/types"
@@ -73,6 +69,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import { usePendingTimeout } from "@/composables/usePendingTimeout"
 import { useSupabaseAuthSessionListener } from "@/composables/useSupabaseAuthSessionListener"
+import { useActiveQuicklogData } from "@/composables/useActiveQuicklogData"
 import NewLogEntryButton from "@/components/NewLogEntryButton.vue"
 
 const session = ref<Session | null>(null)
@@ -95,15 +92,22 @@ const authSessionListener = useSupabaseAuthSessionListener({
   },
 })
 
-let quicklogDataRevision = 0
 let dataScopeRevision = 0
 
-const quicklogData = ref<QuicklogData>({
-  version: 3,
-  logEntries: [],
-  logEntryDeletions: [],
+const {
+  quicklogData,
+  dataRevision: quicklogDataRevision,
+  setActiveQuicklogData,
+  loadActiveQuicklogData,
+  saveActiveQuicklogData,
+  pruneActiveQuicklogData,
+  applyLocalQuicklogDataChange,
+} = useActiveQuicklogData({
+  getDataUserId: () => getDataUserId(runtimeSessionState.value),
+  scheduleCloudSync: () => cloudSyncScheduler.scheduleAfterLocalChange(),
 })
-const logEntries = computed<LogEntry[]>(() => quicklogData.value.logEntries)
+const logEntries = computed(() => quicklogData.value.logEntries)
+
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 
 const authPendingTimeoutMs = 10_000
@@ -137,7 +141,7 @@ const cloudSyncQueue = createCloudSyncQueue({
     return {
       user: getActiveCloudUser(),
       data: quicklogData.value,
-      dataRevision: quicklogDataRevision,
+      dataRevision: quicklogDataRevision.value,
       scopeRevision: dataScopeRevision,
     }
   },
@@ -146,7 +150,7 @@ const cloudSyncQueue = createCloudSyncQueue({
     const currentUser = getActiveCloudUser()
 
     if (!currentUser || !context.user || currentUser.id !== context.user.id) return
-    if (context.dataRevision !== quicklogDataRevision) {
+    if (context.dataRevision !== quicklogDataRevision.value) {
       cloudSyncScheduler.scheduleAfterLocalChange()
       return
     }
@@ -190,7 +194,7 @@ onMounted(() => {
   migrateStorageLayout()
 
   applySessionTransition({ type: "startAuthCheck" }, null)
-  pruneActiveQuicklogData()
+  pruneActiveQuicklogData(new Date())
   settings.value = loadSettings()
 
   document.addEventListener("visibilitychange", handleVisibilityChange)
@@ -271,20 +275,6 @@ function deleteAnonymousQuicklogData() {
   refreshAnonymousQuicklogDataState()
 }
 
-function loadActiveQuicklogData(): QuicklogData {
-  return loadQuicklogData(getDataUserId(runtimeSessionState.value))
-}
-
-function saveActiveQuicklogData(data: QuicklogData) {
-  saveQuicklogData(data, getDataUserId(runtimeSessionState.value))
-}
-
-function applyLocalQuicklogDataChange(nextData: QuicklogData) {
-  saveActiveQuicklogData(nextData)
-  setActiveQuicklogData(nextData)
-  cloudSyncScheduler.scheduleAfterLocalChange()
-}
-
 function getActiveCloudUser(): User | null {
   if (session.value && canUseCloud(runtimeSessionState.value, session.value.user.id)) {
     return session.value.user
@@ -301,19 +291,8 @@ function applyResolvedSession(nextSession: Session | null) {
   applySessionTransition({ type: "authResolved", sessionUserId }, acceptedSession)
 }
 
-function pruneActiveQuicklogData() {
-  const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), new Date())
-  setActiveQuicklogData(pruned)
-  saveActiveQuicklogData(pruned)
-}
-
 function activateAnonymousScope() {
   applySessionTransition({ type: "signedOut" }, null)
-}
-
-function setActiveQuicklogData(nextData: QuicklogData) {
-  quicklogData.value = nextData
-  quicklogDataRevision += 1
 }
 
 function moveToLogEntryForm() {
