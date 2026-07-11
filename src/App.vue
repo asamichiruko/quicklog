@@ -36,33 +36,28 @@ import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import { moveAnonymousQuicklogDataToUser } from "@/lib/anonymousDataMigration"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import {
-  canUseCloud,
   getDataUserId,
   isAnonymous,
   isAuthPending,
   isSessionLost,
   syncStatusMessage,
 } from "@/lib/runtimeSessionState"
-import { resolveSessionTransition, type SessionTransitionEvent } from "@/lib/sessionTransition"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import {
   clearQuicklogData,
   loadQuicklogData,
   loadSettings,
-  loadStoredDataScope,
   saveQuicklogData,
   saveSettings,
-  saveStoredDataScope,
 } from "@/lib/storage"
 import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import type {
   AppSettings,
-  DataScope,
   ExportType,
   QuicklogDataImportResult,
   RuntimeSessionState,
 } from "@/types"
-import { type Session, type User } from "@supabase/supabase-js"
+import { type User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import { usePendingTimeout } from "@/composables/usePendingTimeout"
@@ -70,17 +65,23 @@ import { useSupabaseAuthSessionListener } from "@/composables/useSupabaseAuthSes
 import { useActiveQuicklogData } from "@/composables/useActiveQuicklogData"
 import NewLogEntryButton from "@/components/NewLogEntryButton.vue"
 import { useAnonymousQuicklogData } from "@/composables/useAnonymousQuicklogData"
-
-const session = ref<Session | null>(null)
-
-const deletedCloudUserIds = new Set<string>()
-
-const runtimeSessionState = ref<RuntimeSessionState>({
-  scope: { type: "anonymous" },
-  syncStatus: "disabled",
-})
+import { useRuntimeSession } from "@/composables/useRuntimeSession"
 
 let passwordRecoveryInProgress = false
+
+const {
+  session,
+  runtimeSessionState,
+  dataScopeRevision,
+  getActiveCloudUser,
+  applySessionTransition,
+  applyResolvedSession,
+  activateAnonymousScope,
+  applyDeletedAccount,
+} = useRuntimeSession({
+  reloadActiveQuicklogData: () => setActiveQuicklogData(loadActiveQuicklogData()),
+  onStateApplied: applySessionSideEffects,
+})
 
 const authSessionListener = useSupabaseAuthSessionListener({
   shouldIgnoreAuthEvent: () => passwordRecoveryInProgress,
@@ -90,8 +91,6 @@ const authSessionListener = useSupabaseAuthSessionListener({
     applySessionTransition({ type: "authReloadFailed" }, null)
   },
 })
-
-let dataScopeRevision = 0
 
 const {
   quicklogData,
@@ -145,7 +144,7 @@ const cloudSyncQueue = createCloudSyncQueue({
       user: getActiveCloudUser(),
       data: quicklogData.value,
       dataRevision: quicklogDataRevision.value,
-      scopeRevision: dataScopeRevision,
+      scopeRevision: dataScopeRevision.value,
     }
   },
   sync: syncQuicklogDataWithCloud,
@@ -157,7 +156,7 @@ const cloudSyncQueue = createCloudSyncQueue({
       cloudSyncScheduler.scheduleAfterLocalChange()
       return
     }
-    if (context.scopeRevision !== dataScopeRevision) return
+    if (context.scopeRevision !== dataScopeRevision.value) return
 
     saveActiveQuicklogData(result.data)
     setActiveQuicklogData(result.data)
@@ -218,30 +217,6 @@ function openSettings() {
   settingsDialog.value?.open()
 }
 
-function isSameDataScope(a: DataScope, b: DataScope): boolean {
-  if (a.type !== b.type) return false
-  if (a.type === "anonymous" || b.type === "anonymous") return true
-  return a.userId === b.userId
-}
-
-function applySessionTransition(event: SessionTransitionEvent, nextSession: Session | null) {
-  const previousScope = runtimeSessionState.value.scope
-  const nextState = resolveSessionTransition({
-    event,
-    storedDataScope: loadStoredDataScope(),
-    ignoredUserIds: deletedCloudUserIds,
-  })
-
-  session.value = nextSession
-  runtimeSessionState.value = nextState
-  if (!isSameDataScope(previousScope, nextState.scope)) dataScopeRevision += 1
-
-  saveStoredDataScope(nextState.scope)
-  setActiveQuicklogData(loadActiveQuicklogData())
-
-  applySessionSideEffects(nextState)
-}
-
 function applySessionSideEffects(nextState: RuntimeSessionState) {
   authPendingTimeout.clear()
 
@@ -256,26 +231,6 @@ function applySessionSideEffects(nextState: RuntimeSessionState) {
   }
 
   cloudSyncScheduler.requestIfDue()
-}
-
-function getActiveCloudUser(): User | null {
-  if (session.value && canUseCloud(runtimeSessionState.value, session.value.user.id)) {
-    return session.value.user
-  } else {
-    return null
-  }
-}
-
-function applyResolvedSession(nextSession: Session | null) {
-  const sessionUserId = nextSession?.user.id ?? null
-  const acceptedSession =
-    sessionUserId && deletedCloudUserIds.has(sessionUserId) ? null : nextSession
-
-  applySessionTransition({ type: "authResolved", sessionUserId }, acceptedSession)
-}
-
-function activateAnonymousScope() {
-  applySessionTransition({ type: "signedOut" }, null)
 }
 
 function moveToLogEntryForm() {
@@ -319,8 +274,7 @@ async function deleteCloudSync() {
     },
   })
 
-  deletedCloudUserIds.add(userId)
-  applySessionTransition({ type: "accountDeleted", userId }, null)
+  applyDeletedAccount(userId)
   refreshAnonymousQuicklogDataState()
 }
 
