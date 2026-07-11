@@ -18,8 +18,6 @@ import {
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { deleteCloudSyncData } from "@/lib/cloudSyncAccountDeletion"
-import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
-import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
 import { activateCloudSync } from "@/lib/cloudSyncActivation"
 import { createQuicklogExportFile } from "@/lib/createQuicklogExportFile"
 import { getDateGroupId, getLocalDateKey } from "@/lib/date"
@@ -34,7 +32,7 @@ import {
 import { mergeImportedQuicklogData } from "@/lib/quicklogDataMerge"
 import { parseAsQuicklogData } from "@/lib/quicklogDataMigration"
 import { moveAnonymousQuicklogDataToUser } from "@/lib/anonymousDataMigration"
-import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
+import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import {
   getDataUserId,
   isAnonymous,
@@ -58,7 +56,7 @@ import type {
   RuntimeSessionState,
 } from "@/types"
 import { type User } from "@supabase/supabase-js"
-import { computed, nextTick, onMounted, onUnmounted, ref, toRaw } from "vue"
+import { computed, nextTick, onMounted, ref, toRaw } from "vue"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import { usePendingTimeout } from "@/composables/usePendingTimeout"
 import { useSupabaseAuthSessionListener } from "@/composables/useSupabaseAuthSessionListener"
@@ -66,6 +64,7 @@ import { useActiveQuicklogData } from "@/composables/useActiveQuicklogData"
 import NewLogEntryButton from "@/components/NewLogEntryButton.vue"
 import { useAnonymousQuicklogData } from "@/composables/useAnonymousQuicklogData"
 import { useRuntimeSession } from "@/composables/useRuntimeSession"
+import { useCloudSync } from "@/composables/useCloudSync"
 
 let passwordRecoveryInProgress = false
 
@@ -102,7 +101,7 @@ const {
   applyLocalQuicklogDataChange,
 } = useActiveQuicklogData({
   getDataUserId: () => getDataUserId(runtimeSessionState.value),
-  scheduleCloudSync: () => cloudSyncScheduler.scheduleAfterLocalChange(),
+  scheduleCloudSync: () => scheduleAfterLocalChange(),
 })
 const logEntries = computed(() => quicklogData.value.logEntries)
 
@@ -138,39 +137,17 @@ const {
   setActiveQuicklogData,
 })
 
-const cloudSyncQueue = createCloudSyncQueue({
-  getContext() {
-    return {
-      user: getActiveCloudUser(),
-      data: quicklogData.value,
-      dataRevision: quicklogDataRevision.value,
-      scopeRevision: dataScopeRevision.value,
-    }
-  },
-  sync: syncQuicklogDataWithCloud,
-  applyResult: (result, context) => {
-    const currentUser = getActiveCloudUser()
-
-    if (!currentUser || !context.user || currentUser.id !== context.user.id) return
-    if (context.dataRevision !== quicklogDataRevision.value) {
-      cloudSyncScheduler.scheduleAfterLocalChange()
-      return
-    }
-    if (context.scopeRevision !== dataScopeRevision.value) return
-
-    saveActiveQuicklogData(result.data)
-    setActiveQuicklogData(result.data)
-  },
-  onError(error) {
-    console.warn("Failed to sync quicklog data", error)
-  },
-})
-
-const cloudSyncScheduler = createCloudSyncScheduler({
-  canSync: () => Boolean(getActiveCloudUser()),
-  requestSync: () => cloudSyncQueue.request(),
-  autoSyncDelayMs: 1_000,
-})
+const { requestNow, requestNowSilently, requestIfDue, scheduleAfterLocalChange, cancelScheduled } =
+  useCloudSync({
+    getActiveUser: getActiveCloudUser,
+    getData: () => quicklogData.value,
+    getDataRevision: () => quicklogDataRevision.value,
+    getScopeRevision: () => dataScopeRevision.value,
+    applySyncedData: (data) => {
+      saveActiveQuicklogData(data)
+      setActiveQuicklogData(data)
+    },
+  })
 
 const cloudSyncAccountActions = {
   syncLogEntries: handleCloudSync,
@@ -199,17 +176,8 @@ onMounted(() => {
   pruneActiveQuicklogData(new Date())
   settings.value = loadSettings()
 
-  document.addEventListener("visibilitychange", handleVisibilityChange)
-  window.addEventListener("online", handleOnline)
-
   authSessionListener.start()
   void authSessionListener.reload()
-})
-
-onUnmounted(() => {
-  cloudSyncScheduler.cancelScheduled()
-  document.removeEventListener("visibilitychange", handleVisibilityChange)
-  window.removeEventListener("online", handleOnline)
 })
 
 function openSettings() {
@@ -226,11 +194,11 @@ function applySessionSideEffects(nextState: RuntimeSessionState) {
   }
 
   if (isAnonymous(nextState) || isSessionLost(nextState)) {
-    cloudSyncScheduler.cancelScheduled()
+    cancelScheduled()
     return
   }
 
-  cloudSyncScheduler.requestIfDue()
+  requestIfDue()
 }
 
 function moveToLogEntryForm() {
@@ -243,7 +211,7 @@ function moveAnonymousDataToUser(user: User) {
   setActiveQuicklogData(result.data)
 
   if (result.moved) {
-    cloudSyncScheduler.scheduleAfterLocalChange()
+    scheduleAfterLocalChange()
   }
 }
 
@@ -279,11 +247,11 @@ async function deleteCloudSync() {
 }
 
 async function syncCloudDataBeforeDeletion(user: User) {
-  const scopeRevisionBeforeSync = dataScopeRevision
+  const scopeRevisionBeforeSync = dataScopeRevision.value
 
   let result: CloudQuicklogDataSyncResult | null
   try {
-    result = await cloudSyncScheduler.requestNow()
+    result = await requestNow()
   } catch (error) {
     console.warn("Failed to sync quicklog data before account deletion", error)
     throw new CloudSyncDeletionError("クラウド同期に失敗しました")
@@ -294,18 +262,12 @@ async function syncCloudDataBeforeDeletion(user: User) {
     throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
   }
 
-  if (scopeRevisionBeforeSync !== dataScopeRevision || toRaw(quicklogData.value) !== result.data) {
+  if (
+    scopeRevisionBeforeSync !== dataScopeRevision.value ||
+    toRaw(quicklogData.value) !== result.data
+  ) {
     throw new CloudSyncDeletionError("クラウド同期に失敗しました")
   }
-}
-
-function handleVisibilityChange() {
-  if (document.visibilityState !== "visible") return
-  cloudSyncScheduler.requestIfDue()
-}
-
-function handleOnline() {
-  cloudSyncScheduler.requestIfDue()
 }
 
 async function handleSubmit(text: string) {
@@ -378,15 +340,9 @@ async function importQuicklogDataFromFile(file: File): Promise<QuicklogDataImpor
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
-  const result = await cloudSyncScheduler.requestNow()
+  const result = await requestNow()
   if (!result) throw new Error("Cloud sync is not available.")
   return result
-}
-
-function requestCloudSyncNowSilently() {
-  void cloudSyncScheduler.requestNow().catch((error) => {
-    console.warn("Failed to sync quicklog data", error)
-  })
 }
 
 function handleSelectDate(selectedDate: Date) {
@@ -408,7 +364,7 @@ async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
     rollback: rollbackCloudSyncStart,
   })
 
-  requestCloudSyncNowSilently()
+  requestNowSilently()
 }
 
 async function handleSignUpWithEmail(email: string, password: string) {
