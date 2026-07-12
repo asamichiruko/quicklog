@@ -65,8 +65,7 @@ import NewLogEntryButton from "@/components/NewLogEntryButton.vue"
 import { useAnonymousQuicklogData } from "@/composables/useAnonymousQuicklogData"
 import { useRuntimeSession } from "@/composables/useRuntimeSession"
 import { useCloudSync } from "@/composables/useCloudSync"
-
-let passwordRecoveryInProgress = false
+import { createPasswordRecoveryFlow } from "@/lib/passwordRecovery"
 
 const {
   session,
@@ -82,8 +81,22 @@ const {
   onStateApplied: applySessionSideEffects,
 })
 
+const passwordRecoveryFlow = createPasswordRecoveryFlow({
+  verifyPasswordResetCode,
+  updatePasswordAfterRecovery,
+  clearLocalAuthSession,
+  activateAnonymousScope,
+  onLocalAuthSessionClearError: (error, reason) => {
+    if (reason === "completed") {
+      console.warn("Failed to clear local auth session after password recovery", error)
+    } else {
+      console.warn("Failed to clear local auth session when password recovery canceled", error)
+    }
+  },
+})
+
 const authSessionListener = useSupabaseAuthSessionListener({
-  shouldIgnoreAuthEvent: () => passwordRecoveryInProgress,
+  shouldIgnoreAuthEvent: passwordRecoveryFlow.isInProgress,
   onResolvedSession: applyResolvedSession,
   onReloadFailed: (error) => {
     console.warn("Failed to reload auth state", error)
@@ -156,12 +169,12 @@ const cloudSyncAccountActions = {
   signOut: handleSignOut,
   deleteCloudSync,
   sendPasswordResetCode: handleSendPasswordResetCode,
-  verifyPasswordResetCode: handleVerifyPasswordResetCode,
-  updatePasswordAfterRecovery: handleUpdatePasswordAfterRecovery,
+  verifyPasswordResetCode: passwordRecoveryFlow.verifyPasswordResetCode,
+  updatePasswordAfterRecovery: passwordRecoveryFlow.updatePasswordAfterRecovery,
   changePassword: handleChangePassword,
   verifySignUpCode: handleVerifySignUpCode,
   resendSignUpCode: handleResendSignUpCode,
-  cancelPasswordRecovery: handleCancelPasswordRecovery,
+  cancelPasswordRecovery: passwordRecoveryFlow.cancelPasswordRecovery,
 } satisfies CloudSyncAccountActions
 
 const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
@@ -394,37 +407,6 @@ async function handleChangePassword(newPassword: string, currentPassword: string
 
 async function handleSendPasswordResetCode(email: string) {
   await sendPasswordResetCode(email)
-}
-
-async function handleVerifyPasswordResetCode(email: string, code: string) {
-  passwordRecoveryInProgress = true
-  try {
-    await verifyPasswordResetCode(email, code)
-  } catch (error) {
-    passwordRecoveryInProgress = false
-    throw error
-  }
-}
-
-async function handleUpdatePasswordAfterRecovery(password: string) {
-  await updatePasswordAfterRecovery(password)
-  try {
-    await clearLocalAuthSession()
-  } catch (error) {
-    console.warn("Failed to clear local auth session after password recovery", error)
-  }
-  passwordRecoveryInProgress = false
-  activateAnonymousScope()
-}
-
-async function handleCancelPasswordRecovery() {
-  try {
-    await clearLocalAuthSession()
-  } catch (error) {
-    console.warn("Failed to clear local auth session when password recovery cancelled", error)
-  }
-  passwordRecoveryInProgress = false
-  activateAnonymousScope()
 }
 </script>
 

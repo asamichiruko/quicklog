@@ -31,7 +31,7 @@ export type CloudSyncAccountActions = {
   changePassword: (newPassword: string, currentPassword: string) => Promise<void>
   verifySignUpCode: (email: string, code: string) => Promise<void>
   resendSignUpCode: (email: string) => Promise<void>
-  cancelPasswordRecovery: () => void
+  cancelPasswordRecovery: () => Promise<void>
 }
 
 const props = defineProps<{
@@ -184,11 +184,11 @@ function clearPasswordResetFlow() {
   passwordResetFlowStep.value = "idle"
 }
 
-function cancelPasswordResetFlow() {
+async function cancelPasswordResetFlow() {
   clearPasswordResetFlow()
   showSignInView()
   clearFeedback()
-  props.actions.cancelPasswordRecovery()
+  await props.actions.cancelPasswordRecovery()
 }
 
 async function handleSignIn(email: string, password: string): Promise<void> {
