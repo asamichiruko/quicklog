@@ -226,6 +226,32 @@ quicklog はアカウント認証、クラウド同期、アカウント削除�
 
 本番環境で動作させる場合は別途 Supabase プロジェクトを作成し、マイグレーションと環境変数の設定、Edge Function のデプロイを行う必要があります。
 
+### 本番 Supabase プロジェクトの認証設定
+
+quicklog では現状 6 桁のメール OTP を使用します。
+本番 Supabase プロジェクトでは、Authentication の設定を次のように構成してください。
+
+- メールアドレスの確認 (Confirm email) を有効にする
+- メール OTP の長さ (Email OTP length) を 6 桁に設定する
+- URL Configuration から Site URL を本番 URL に設定する
+- Confirm sign up と Reset password のメールテンプレートに `{{ .Token }}` を含める
+
+ローカルのメールテンプレートは次のファイルを参照してください。
+
+- [メールアドレスの確認](supabase/templates/confirmation.html)
+- [パスワードの再設定](supabase/templates/recovery.html)
+
+ローカル設定やテンプレートは本番 Supabase プロジェクトへは自動的に反映されません。
+本番環境の認証設定は Dashboard などから行ってください。
+
+これらの設定は本番 Supabase プロジェクトに保存されるため、通常のデプロイごとに設定し直す必要はありません。
+認証設定やメールテンプレートを変更した場合は、本番環境にも変更を反映してください。
+
+設定後は、本番環境で次の動作確認を行ってください。
+
+- 新規アカウント作成時に 6 桁の確認コードが届き、認証できること
+- パスワード再設定時に 6 桁の確認コードが届き、新しいパスワードを設定できること
+
 ## 技術的な詳細ドキュメント
 
 - [データ構造と同期](docs/data-and-sync.md)
