@@ -111,7 +111,7 @@ const sessionStateMessage = computed(() => {
   } else if (isAuthPending(props.runtimeSessionState)) {
     return "クラウド同期の認証状態を確認しています"
   } else if (isSessionLost(props.runtimeSessionState)) {
-    return "クラウド同期が停止しています。現在のユーザデータはこの端末に保存されますが、クラウドには反映されません"
+    return "クラウド同期が停止しています。現在のユーザーデータはこの端末に保存されますが、クラウドには反映されません"
   } else {
     return "クラウド同期を使うにはサインインしてください"
   }

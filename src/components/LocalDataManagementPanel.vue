@@ -61,7 +61,7 @@ defineExpose({ reset })
       <summary>この端末の匿名データを削除</summary>
       <div class="delete-anonymous-data-body">
         <p class="delete-anonymous-data-description">
-          サインインしていない状態でこの端末に記録したメモを削除します。サインイン中のユーザデータやクラウド上のデータは削除されません。
+          サインインしていない状態でこの端末に記録したメモを削除します。サインイン中のユーザーデータやクラウド上のデータは削除されません。
         </p>
         <template v-if="canShowAnonymousDataDeletionConfirmation">
           <p class="confirm-message danger">
