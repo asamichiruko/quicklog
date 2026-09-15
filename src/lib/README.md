@@ -1,5 +1,7 @@
 # src/lib/
 
+以下の見出しは物理ディレクトリではなく責務別の分類です。
+
 ## auth/
 
 ### auth.ts
@@ -9,21 +11,26 @@
 
 ### authFeedbackMessage.ts
 
-- 認証エラータイプ・エラーコードからユーザ向けメッセージへの変換
+- 認証エラータイプ・エラーコードからユーザー向けメッセージへの変換
 
 ### authFormValidation.ts
 
 - email, password の validator
 
+### passwordRecovery.ts
+
+- パスワード再設定用の一時セッションのフローを管理
+- パスワード再設定完了またはキャンセル時の認証セッションのクリア、匿名データスコープへの復帰を順序付け
+
 ## cloudSync/
 
 ### cloudSyncAccountDeletion.ts
 
-- ユーザデータをローカル匿名データへ退避し、クラウド上から削除するよう要求
+- ユーザーデータをローカル匿名データへ退避し、クラウド上から削除するよう要求
 
 ### cloudSyncActivation.ts
 
-- ユーザ認証、local 下で匿名データをユーザデータへ合成・移動、失敗時の rollback までを順序付ける helper
+- ユーザー認証、local 下で匿名データをユーザーデータへ合成・移動、失敗時の rollback までを順序付ける helper
 
 ### cloudSyncQueue.ts
 
@@ -57,7 +64,7 @@
 
 ### dateFormat.ts
 
-- Date オブジェクトからユーザ向け文字列への format
+- Date オブジェクトからユーザー向け文字列への format
 
 ## export/
 
@@ -99,7 +106,7 @@
 
 ### anonymousDataMigration.ts
 
-- 匿名データをユーザデータへ合成・移動
+- 匿名データをユーザーデータへ合成・移動
 
 ### quicklogDataEditing.ts
 
@@ -122,7 +129,7 @@
 
 ### settings.ts
 
-- ユーザ設定オブジェクトの normalize
+- ユーザー設定オブジェクトの normalize
 
 ### storage.ts
 
