@@ -1,5 +1,53 @@
 import type { DataScope, RuntimeSessionState } from "@/types"
 
+export type ObservedSessionResolution = {
+  state: RuntimeSessionState
+  shouldClearSession: boolean
+}
+
+export function resolveObservedSessionState(
+  sessionUserId: string | null,
+  storedDataScope: DataScope,
+): ObservedSessionResolution {
+  if (storedDataScope.type === "anonymous") {
+    return {
+      state: {
+        scope: { type: "anonymous" },
+        syncStatus: "disabled",
+      },
+      shouldClearSession: sessionUserId !== null,
+    }
+  }
+
+  if (sessionUserId === null) {
+    return {
+      state: {
+        scope: storedDataScope,
+        syncStatus: "sessionLost",
+      },
+      shouldClearSession: false,
+    }
+  }
+
+  if (sessionUserId !== storedDataScope.userId) {
+    return {
+      state: {
+        scope: storedDataScope,
+        syncStatus: "sessionLost",
+      },
+      shouldClearSession: true,
+    }
+  }
+
+  return {
+    state: {
+      scope: storedDataScope,
+      syncStatus: "authenticated",
+    },
+    shouldClearSession: false,
+  }
+}
+
 export function resolveRuntimeSessionState(
   sessionUserId: string | null,
   storedDataScope: DataScope,
