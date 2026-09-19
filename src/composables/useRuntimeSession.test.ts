@@ -164,4 +164,75 @@ describe("useRuntimeSession", () => {
     expect(runtimeSession.runtimeSessionState.value).toEqual(anonymousState)
     expect(runtimeSession.getActiveCloudUser()).toBeNull()
   })
+
+  it("anonymous scope のとき null session が観測されたら受理する", () => {
+    const { runtimeSession } = setup()
+
+    const shouldClearSession = runtimeSession.applyObservedSession(null)
+
+    expect(shouldClearSession).toBe(false)
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual(anonymousState)
+  })
+
+  it("anonymous scope のとき user session が観測されても受理しない", () => {
+    const { runtimeSession } = setup()
+    const nextSession = createSession("user1")
+
+    const shouldClearSession = runtimeSession.applyObservedSession(nextSession)
+
+    expect(shouldClearSession).toBe(true)
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual(anonymousState)
+  })
+
+  it("user scope のとき null session が観測されたら受理して sessionLost とする", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "user", userId: "user1" })
+    const { runtimeSession } = setup()
+
+    const shouldClearSession = runtimeSession.applyObservedSession(null)
+
+    expect(shouldClearSession).toBe(false)
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: { type: "user", userId: "user1" },
+      syncStatus: "sessionLost",
+    })
+  })
+
+  it("user scope のとき同じ user の session が観測されたら受理する", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "user", userId: "user1" })
+    const { runtimeSession } = setup()
+    const nextSession = createSession("user1")
+
+    const shouldClearSession = runtimeSession.applyObservedSession(nextSession)
+
+    expect(shouldClearSession).toBe(false)
+    expect(runtimeSession.session.value).toEqual(nextSession)
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: {
+        type: "user",
+        userId: "user1",
+      },
+      syncStatus: "authenticated",
+    })
+  })
+
+  it("user scope のとき異なる user の session が観測されたら受理せず sessionLost とする", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "user", userId: "user1" })
+    const { runtimeSession } = setup()
+    const nextSession = createSession("user2")
+
+    const shouldClearSession = runtimeSession.applyObservedSession(nextSession)
+
+    expect(shouldClearSession).toBe(true)
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: {
+        type: "user",
+        userId: "user1",
+      },
+      syncStatus: "sessionLost",
+    })
+  })
 })

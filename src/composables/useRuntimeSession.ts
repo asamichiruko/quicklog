@@ -1,4 +1,4 @@
-import { canUseCloud } from "@/lib/runtimeSessionState"
+import { canUseCloud, resolveObservedSessionState } from "@/lib/runtimeSessionState"
 import { resolveSessionTransition, type SessionTransitionEvent } from "@/lib/sessionTransition"
 import { loadStoredDataScope, saveStoredDataScope } from "@/lib/storage"
 import { type RuntimeSessionState, type DataScope } from "@/types"
@@ -24,20 +24,13 @@ export function useRuntimeSession(options: {
   }
 
   function applySessionTransition(event: SessionTransitionEvent, nextSession: Session | null) {
-    const previousScope = runtimeSessionState.value.scope
     const nextState = resolveSessionTransition({
       event,
       storedDataScope: loadStoredDataScope(),
       ignoredUserIds: deletedCloudUserIds,
     })
 
-    session.value = nextSession
-    runtimeSessionState.value = nextState
-    if (!isSameDataScope(previousScope, nextState.scope)) dataScopeRevision.value += 1
-
-    saveStoredDataScope(nextState.scope)
-    options.reloadActiveQuicklogData()
-    options.onStateApplied(nextState)
+    applyRuntimeSessionState(nextState, nextSession)
   }
 
   function applyResolvedSession(nextSession: Session | null) {
@@ -65,6 +58,33 @@ export function useRuntimeSession(options: {
     applySessionTransition({ type: "accountDeleted", userId }, null)
   }
 
+  function applyRuntimeSessionState(nextState: RuntimeSessionState, nextSession: Session | null) {
+    const previousScope = runtimeSessionState.value.scope
+
+    runtimeSessionState.value = nextState
+    session.value = nextSession
+
+    if (!isSameDataScope(previousScope, nextState.scope)) {
+      dataScopeRevision.value += 1
+    }
+
+    saveStoredDataScope(nextState.scope)
+    options.reloadActiveQuicklogData()
+    options.onStateApplied(nextState)
+  }
+
+  function applyObservedSession(nextSession: Session | null) {
+    const resolution = resolveObservedSessionState(
+      nextSession?.user.id ?? null,
+      loadStoredDataScope(),
+    )
+    const acceptedSession = resolution.shouldClearSession ? null : nextSession
+
+    applyRuntimeSessionState(resolution.state, acceptedSession)
+
+    return resolution.shouldClearSession
+  }
+
   return {
     session,
     runtimeSessionState,
@@ -74,5 +94,6 @@ export function useRuntimeSession(options: {
     applyResolvedSession,
     activateAnonymousScope,
     applyDeletedAccount,
+    applyObservedSession,
   }
 }
