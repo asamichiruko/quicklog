@@ -7,6 +7,7 @@ import {
   changePassword,
   clearLocalAuthSession,
   deleteCurrentAccount,
+  getCurrentSession,
   resendSignUpCode,
   sendPasswordResetCode,
   signInWithEmail,
@@ -76,6 +77,7 @@ const {
   applyResolvedSession,
   activateAnonymousScope,
   applyDeletedAccount,
+  commitAuthenticatedSession,
 } = useRuntimeSession({
   reloadActiveQuicklogData: () => setActiveQuicklogData(loadActiveQuicklogData()),
   onStateApplied: applySessionSideEffects,
@@ -95,8 +97,11 @@ const passwordRecoveryFlow = createPasswordRecoveryFlow({
   },
 })
 
+let explicitAuthenticationInProgress = false
+
 const authSessionListener = useSupabaseAuthSessionListener({
-  shouldIgnoreAuthEvent: passwordRecoveryFlow.isInProgress,
+  shouldIgnoreAuthEvent: () =>
+    passwordRecoveryFlow.isInProgress() || explicitAuthenticationInProgress,
   onResolvedSession: applyResolvedSession,
   onReloadFailed: (error) => {
     console.warn("Failed to reload auth state", error)
@@ -369,13 +374,19 @@ function handleSaveSettings(nextSettings: AppSettings) {
 }
 
 async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
-  await activateCloudSync({
-    authenticate,
-    reloadAuthState: authSessionListener.reload,
-    getActiveUser: getActiveCloudUser,
-    moveAnonymousDataToUser,
-    rollback: rollbackCloudSyncStart,
-  })
+  explicitAuthenticationInProgress = true
+
+  try {
+    await activateCloudSync({
+      authenticate,
+      loadAuthenticatedSession: getCurrentSession,
+      moveAnonymousDataToUser,
+      commitAuthenticatedSession,
+      rollback: rollbackCloudSyncStart,
+    })
+  } finally {
+    explicitAuthenticationInProgress = false
+  }
 
   requestNowSilently()
 }

@@ -3,28 +3,28 @@ import {
   isQuotaExceededError,
   SizeError,
 } from "@/errors"
-import type { User } from "@supabase/supabase-js"
+import type { Session, User } from "@supabase/supabase-js"
 
 export async function activateCloudSync(options: {
   authenticate: () => Promise<void>
-  reloadAuthState: () => Promise<void>
-  getActiveUser: () => User | null
+  loadAuthenticatedSession: () => Promise<Session | null>
   moveAnonymousDataToUser: (user: User) => void | Promise<void>
+  commitAuthenticatedSession: (session: Session) => void
   rollback: () => Promise<void>
 }) {
   await options.authenticate()
 
   try {
-    await options.reloadAuthState()
+    const session = await options.loadAuthenticatedSession()
 
-    const user = options.getActiveUser()
-    if (!user) {
+    if (!session) {
       throw new CloudSyncActivationError(
         "サインイン状態を確認できませんでした。時間をおいて再度お試しください",
       )
     }
 
-    await options.moveAnonymousDataToUser(user)
+    await options.moveAnonymousDataToUser(session.user)
+    options.commitAuthenticatedSession(session)
   } catch (error) {
     await options.rollback()
 

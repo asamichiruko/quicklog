@@ -1,18 +1,18 @@
 import { activateCloudSync } from "@/lib/cloudSyncActivation"
 import { CloudSyncActivationError, SizeError } from "@/errors"
-import type { User } from "@supabase/supabase-js"
+import type { Session, User } from "@supabase/supabase-js"
 import { describe, expect, it, vi } from "vitest"
 
 function createOptions(overrides: Partial<Parameters<typeof activateCloudSync>[0]> = {}) {
-  const user = { id: "user1" } as User
+  const session = { user: { id: "user1" } as User } as Session
 
   return {
-    user,
+    session,
     options: {
       authenticate: vi.fn().mockResolvedValue(undefined),
-      reloadAuthState: vi.fn().mockResolvedValue(undefined),
-      getActiveUser: vi.fn(() => user),
+      loadAuthenticatedSession: vi.fn().mockResolvedValue(session),
       moveAnonymousDataToUser: vi.fn(),
+      commitAuthenticatedSession: vi.fn(),
       rollback: vi.fn().mockResolvedValue(undefined),
       ...overrides,
     },
@@ -20,15 +20,15 @@ function createOptions(overrides: Partial<Parameters<typeof activateCloudSync>[0
 }
 
 describe("activateCloudSync", () => {
-  it("認証、認証状態の再読み込み、匿名データ移行に成功すると rollback しない", async () => {
-    const { user, options } = createOptions()
+  it("認証、session の読み込み、匿名データ移行に成功すると rollback しない", async () => {
+    const { session, options } = createOptions()
 
     await expect(activateCloudSync(options)).resolves.toBeUndefined()
 
     expect(options.authenticate).toHaveBeenCalledOnce()
-    expect(options.reloadAuthState).toHaveBeenCalledOnce()
-    expect(options.getActiveUser).toHaveBeenCalledOnce()
-    expect(options.moveAnonymousDataToUser).toHaveBeenCalledWith(user)
+    expect(options.loadAuthenticatedSession).toHaveBeenCalledOnce()
+    expect(options.moveAnonymousDataToUser).toHaveBeenCalledWith(session.user)
+    expect(options.commitAuthenticatedSession).toHaveBeenCalledExactlyOnceWith(session)
     expect(options.rollback).not.toHaveBeenCalled()
   })
 
@@ -40,44 +40,42 @@ describe("activateCloudSync", () => {
 
     await expect(activateCloudSync(options)).rejects.toBe(authError)
 
-    expect(options.reloadAuthState).not.toHaveBeenCalled()
-    expect(options.getActiveUser).not.toHaveBeenCalled()
+    expect(options.loadAuthenticatedSession).not.toHaveBeenCalled()
     expect(options.moveAnonymousDataToUser).not.toHaveBeenCalled()
+    expect(options.commitAuthenticatedSession).not.toHaveBeenCalled()
     expect(options.rollback).not.toHaveBeenCalled()
   })
 
-  it("認証状態の再読み込みに失敗したら rollback して CloudSyncStartError を返す", async () => {
+  it("session が取得できなかった場合は rollback して CloudSyncStartError を返す", async () => {
     const { options } = createOptions({
-      reloadAuthState: vi.fn().mockRejectedValue(new Error("reload failed")),
+      loadAuthenticatedSession: vi.fn().mockResolvedValue(null),
     })
 
     await expect(activateCloudSync(options)).rejects.toThrow(CloudSyncActivationError)
 
     expect(options.authenticate).toHaveBeenCalledOnce()
-    expect(options.reloadAuthState).toHaveBeenCalledOnce()
-    expect(options.getActiveUser).not.toHaveBeenCalled()
+    expect(options.loadAuthenticatedSession).toHaveBeenCalledWith()
     expect(options.moveAnonymousDataToUser).not.toHaveBeenCalled()
+    expect(options.commitAuthenticatedSession).not.toHaveBeenCalled()
     expect(options.rollback).toHaveBeenCalledOnce()
   })
 
-  it("active user を確認できないと rollback して CloudSyncStartError を返す", async () => {
+  it("session の取得中に例外が発生したら rollback して CloudSyncStartError を返す", async () => {
     const { options } = createOptions({
-      getActiveUser: vi.fn(() => null),
+      loadAuthenticatedSession: vi.fn().mockRejectedValue(new Error("load failed")),
     })
 
-    await expect(activateCloudSync(options)).rejects.toThrow(
-      "サインイン状態を確認できませんでした。時間をおいて再度お試しください",
-    )
+    await expect(activateCloudSync(options)).rejects.toThrow(CloudSyncActivationError)
 
     expect(options.authenticate).toHaveBeenCalledOnce()
-    expect(options.reloadAuthState).toHaveBeenCalledOnce()
-    expect(options.getActiveUser).toHaveBeenCalledOnce()
+    expect(options.loadAuthenticatedSession).toHaveBeenCalledWith()
     expect(options.moveAnonymousDataToUser).not.toHaveBeenCalled()
+    expect(options.commitAuthenticatedSession).not.toHaveBeenCalled()
     expect(options.rollback).toHaveBeenCalledOnce()
   })
 
   it("匿名データ移行に失敗したら rollback して CloudSyncStartError を返す", async () => {
-    const { user, options } = createOptions({
+    const { session, options } = createOptions({
       moveAnonymousDataToUser: vi.fn(() => {
         throw new SizeError("too large")
       }),
@@ -88,9 +86,8 @@ describe("activateCloudSync", () => {
     )
 
     expect(options.authenticate).toHaveBeenCalledOnce()
-    expect(options.reloadAuthState).toHaveBeenCalledOnce()
-    expect(options.getActiveUser).toHaveBeenCalledOnce()
-    expect(options.moveAnonymousDataToUser).toHaveBeenCalledWith(user)
+    expect(options.moveAnonymousDataToUser).toHaveBeenCalledWith(session.user)
+    expect(options.commitAuthenticatedSession).not.toHaveBeenCalled()
     expect(options.rollback).toHaveBeenCalledOnce()
   })
 })
