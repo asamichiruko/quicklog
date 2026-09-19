@@ -85,6 +85,19 @@ export function useRuntimeSession(options: {
     return resolution.shouldClearSession
   }
 
+  function commitAuthenticatedSession(nextSession: Session) {
+    applyRuntimeSessionState(
+      {
+        scope: {
+          type: "user",
+          userId: nextSession.user.id,
+        },
+        syncStatus: "authenticated",
+      },
+      nextSession,
+    )
+  }
+
   return {
     session,
     runtimeSessionState,
@@ -95,5 +108,6 @@ export function useRuntimeSession(options: {
     activateAnonymousScope,
     applyDeletedAccount,
     applyObservedSession,
+    commitAuthenticatedSession,
   }
 }

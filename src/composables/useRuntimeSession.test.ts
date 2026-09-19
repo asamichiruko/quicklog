@@ -235,4 +235,23 @@ describe("useRuntimeSession", () => {
       syncStatus: "sessionLost",
     })
   })
+
+  it("認証済みセッションが commit された場合は現在の scope に関係なく受理する", () => {
+    const { runtimeSession } = setup()
+    const previousSession = createSession("user1")
+    const nextSession = createSession("user2")
+
+    runtimeSession.commitAuthenticatedSession(previousSession)
+    runtimeSession.commitAuthenticatedSession(nextSession)
+
+    expect(runtimeSession.session.value).toEqual(nextSession)
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: {
+        type: "user",
+        userId: "user2",
+      },
+      syncStatus: "authenticated",
+    })
+    expect(runtimeSession.dataScopeRevision.value).toBe(2)
+  })
 })
