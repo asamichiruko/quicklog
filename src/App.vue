@@ -76,7 +76,6 @@ const {
   getActiveCloudUser,
   applySessionTransition,
   activateAnonymousScope,
-  applyDeletedAccount,
   applyObservedSession,
   commitAuthenticatedSession,
 } = useRuntimeSession({
@@ -268,7 +267,7 @@ async function deleteCloudSync() {
     },
   })
 
-  applyDeletedAccount(userId)
+  activateAnonymousScope()
   refreshAnonymousQuicklogDataState()
 }
 

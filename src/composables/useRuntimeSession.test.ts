@@ -55,7 +55,7 @@ describe("useRuntimeSession", () => {
   it("anonymous から user への遷移では dataScopeRevision が増える", () => {
     const { runtimeSession } = setup()
 
-    runtimeSession.applyResolvedSession(createSession("user1"))
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
 
     expect(runtimeSession.dataScopeRevision.value).toBe(1)
   })
@@ -63,8 +63,8 @@ describe("useRuntimeSession", () => {
   it("user から同じ user への遷移では dataScopeRevision が増えない", () => {
     const { runtimeSession } = setup()
 
-    runtimeSession.applyResolvedSession(createSession("user1"))
-    runtimeSession.applyResolvedSession(createSession("user1"))
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
 
     expect(runtimeSession.dataScopeRevision.value).toBe(1)
   })
@@ -72,8 +72,8 @@ describe("useRuntimeSession", () => {
   it("user から異なる user への遷移では dataScopeRevision が増える", () => {
     const { runtimeSession } = setup()
 
-    runtimeSession.applyResolvedSession(createSession("user1"))
-    runtimeSession.applyResolvedSession(createSession("user2"))
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
+    runtimeSession.commitAuthenticatedSession(createSession("user2"))
 
     expect(runtimeSession.dataScopeRevision.value).toBe(2)
   })
@@ -82,7 +82,7 @@ describe("useRuntimeSession", () => {
     const { runtimeSession } = setup()
     const nextSession = createSession("user1")
 
-    runtimeSession.applyResolvedSession(nextSession)
+    runtimeSession.commitAuthenticatedSession(nextSession)
 
     expect(runtimeSession.session.value).toEqual(nextSession)
     expect(runtimeSession.runtimeSessionState.value).toEqual({
@@ -102,7 +102,7 @@ describe("useRuntimeSession", () => {
       expect(runtimeSession.runtimeSessionState.value).toEqual(expectedState)
     })
 
-    runtimeSession.applyResolvedSession(createSession("user1"))
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
 
     expect(saveStoredDataScope).toHaveBeenCalledExactlyOnceWith(expectedState.scope)
     expect(reloadActiveQuicklogData).toHaveBeenCalledOnce()
@@ -115,54 +115,30 @@ describe("useRuntimeSession", () => {
     )
   })
 
-  it("保存済み user scope で session が解決できない場合は sessionLost として扱う", () => {
-    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "user", userId: "user1" })
-    const { runtimeSession } = setup()
-
-    runtimeSession.applyResolvedSession(null)
-
-    expect(runtimeSession.session.value).toBeNull()
-    expect(runtimeSession.runtimeSessionState.value).toEqual({
-      scope: { type: "user", userId: "user1" },
-      syncStatus: "sessionLost",
-    })
-    expect(runtimeSession.dataScopeRevision.value).toBe(1)
-  })
-
   it("authenticated な現在の session user だけを active cloud user として返す", () => {
     const { runtimeSession } = setup()
     const nextSession = createSession("user1")
 
     expect(runtimeSession.getActiveCloudUser()).toBeNull()
 
-    runtimeSession.applyResolvedSession(nextSession)
+    runtimeSession.commitAuthenticatedSession(nextSession)
     expect(runtimeSession.getActiveCloudUser()).toEqual(nextSession.user)
 
     runtimeSession.activateAnonymousScope()
     expect(runtimeSession.getActiveCloudUser()).toBeNull()
   })
 
-  it("削除したアカウントを anonymous として適用する", () => {
-    const { runtimeSession } = setup()
-    runtimeSession.applyResolvedSession(createSession("user1"))
-
-    runtimeSession.applyDeletedAccount("user1")
-
-    expect(runtimeSession.session.value).toBeNull()
-    expect(runtimeSession.runtimeSessionState.value).toEqual(anonymousState)
-    expect(runtimeSession.dataScopeRevision.value).toBe(2)
-  })
-
   it("削除したアカウントの session が後から届いても受理しない", () => {
     const { runtimeSession } = setup()
-    runtimeSession.applyResolvedSession(createSession("user1"))
-    runtimeSession.applyDeletedAccount("user1")
 
-    runtimeSession.applyResolvedSession(createSession("user1"))
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
+    runtimeSession.activateAnonymousScope()
+    const shouldClearSession = runtimeSession.applyObservedSession(createSession("user1"))
 
     expect(runtimeSession.session.value).toBeNull()
     expect(runtimeSession.runtimeSessionState.value).toEqual(anonymousState)
     expect(runtimeSession.getActiveCloudUser()).toBeNull()
+    expect(shouldClearSession).toBe(true)
   })
 
   it("anonymous scope のとき null session が観測されたら受理する", () => {

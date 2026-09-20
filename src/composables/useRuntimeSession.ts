@@ -10,7 +10,6 @@ export function useRuntimeSession(options: {
   onStateApplied: (nextState: RuntimeSessionState) => void
 }) {
   const session = ref<Session | null>(null)
-  const deletedCloudUserIds = new Set<string>()
   const runtimeSessionState = ref<RuntimeSessionState>({
     scope: { type: "anonymous" },
     syncStatus: "disabled",
@@ -27,18 +26,9 @@ export function useRuntimeSession(options: {
     const nextState = resolveSessionTransition({
       event,
       storedDataScope: loadStoredDataScope(),
-      ignoredUserIds: deletedCloudUserIds,
     })
 
     applyRuntimeSessionState(nextState, nextSession)
-  }
-
-  function applyResolvedSession(nextSession: Session | null) {
-    const sessionUserId = nextSession?.user.id ?? null
-    const acceptedSession =
-      sessionUserId && deletedCloudUserIds.has(sessionUserId) ? null : nextSession
-
-    applySessionTransition({ type: "authResolved", sessionUserId }, acceptedSession)
   }
 
   function activateAnonymousScope() {
@@ -51,11 +41,6 @@ export function useRuntimeSession(options: {
     } else {
       return null
     }
-  }
-
-  function applyDeletedAccount(userId: string) {
-    deletedCloudUserIds.add(userId)
-    applySessionTransition({ type: "accountDeleted", userId }, null)
   }
 
   function applyRuntimeSessionState(nextState: RuntimeSessionState, nextSession: Session | null) {
@@ -104,9 +89,7 @@ export function useRuntimeSession(options: {
     dataScopeRevision: readonly(dataScopeRevision),
     getActiveCloudUser,
     applySessionTransition,
-    applyResolvedSession,
     activateAnonymousScope,
-    applyDeletedAccount,
     applyObservedSession,
     commitAuthenticatedSession,
   }

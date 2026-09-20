@@ -7,24 +7,10 @@ describe("resolveSessionTransition", () => {
       resolveSessionTransition({
         event: { type: "startAuthCheck" },
         storedDataScope: { type: "user", userId: "userA" },
-        ignoredUserIds: new Set(),
       }),
     ).toEqual({
       scope: { type: "user", userId: "userA" },
       syncStatus: "authPending",
-    })
-  })
-
-  it("削除済み user の session は匿名として扱う", () => {
-    expect(
-      resolveSessionTransition({
-        event: { type: "authResolved", sessionUserId: "deletedUser" },
-        storedDataScope: { type: "user", userId: "deletedUser" },
-        ignoredUserIds: new Set(["deletedUser"]),
-      }),
-    ).toEqual({
-      scope: { type: "anonymous" },
-      syncStatus: "disabled",
     })
   })
 
@@ -33,7 +19,6 @@ describe("resolveSessionTransition", () => {
       resolveSessionTransition({
         event: { type: "authCheckTimedOut" },
         storedDataScope: { type: "user", userId: "userA" },
-        ignoredUserIds: new Set(),
       }),
     ).toEqual({
       scope: { type: "user", userId: "userA" },
@@ -41,25 +26,13 @@ describe("resolveSessionTransition", () => {
     })
   })
 
-  it("サインアウトとアカウント削除は匿名として扱う", () => {
+  it("サインアウトは匿名として扱う", () => {
     const storedDataScope = { type: "user", userId: "userA" } as const
 
     expect(
       resolveSessionTransition({
         event: { type: "signedOut" },
         storedDataScope,
-        ignoredUserIds: new Set(),
-      }),
-    ).toEqual({
-      scope: { type: "anonymous" },
-      syncStatus: "disabled",
-    })
-
-    expect(
-      resolveSessionTransition({
-        event: { type: "accountDeleted", userId: "userA" },
-        storedDataScope,
-        ignoredUserIds: new Set(),
       }),
     ).toEqual({
       scope: { type: "anonymous" },
