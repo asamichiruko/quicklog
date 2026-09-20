@@ -46,11 +46,8 @@
 
 ### runtimeSessionState.ts
 
-- 最新の session と記録された session の比較から現在の同期状態と user scope を決定
-
-### sessionTransition.ts
-
-- auth/session イベント、使用しない userId 情報から RuntimeSessionState を解決する helper
+- 保存済みデータスコープと観測された認証セッションから RuntimeSessionState を解決
+- 認証確認中・セッション利用不能時の RuntimeSessionState を解決
 
 ## date/
 

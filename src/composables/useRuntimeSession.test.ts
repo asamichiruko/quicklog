@@ -49,7 +49,30 @@ describe("useRuntimeSession", () => {
 
     runtimeSession.activateAnonymousScope()
 
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: { type: "anonymous" },
+      syncStatus: "disabled",
+    })
     expect(runtimeSession.dataScopeRevision.value).toBe(0)
+  })
+
+  it("user から anonymous への遷移で dataScopeRevision が増える", () => {
+    const { runtimeSession } = setup()
+
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
+
+    expect(runtimeSession.dataScopeRevision.value).toBe(1)
+    expect(runtimeSession.session.value).not.toBeNull()
+
+    runtimeSession.activateAnonymousScope()
+
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: { type: "anonymous" },
+      syncStatus: "disabled",
+    })
+    expect(runtimeSession.dataScopeRevision.value).toBe(2)
   })
 
   it("anonymous から user への遷移では dataScopeRevision が増える", () => {
@@ -64,6 +87,9 @@ describe("useRuntimeSession", () => {
     const { runtimeSession } = setup()
 
     runtimeSession.commitAuthenticatedSession(createSession("user1"))
+
+    expect(runtimeSession.dataScopeRevision.value).toBe(1)
+
     runtimeSession.commitAuthenticatedSession(createSession("user1"))
 
     expect(runtimeSession.dataScopeRevision.value).toBe(1)
@@ -73,6 +99,9 @@ describe("useRuntimeSession", () => {
     const { runtimeSession } = setup()
 
     runtimeSession.commitAuthenticatedSession(createSession("user1"))
+
+    expect(runtimeSession.dataScopeRevision.value).toBe(1)
+
     runtimeSession.commitAuthenticatedSession(createSession("user2"))
 
     expect(runtimeSession.dataScopeRevision.value).toBe(2)
@@ -229,5 +258,37 @@ describe("useRuntimeSession", () => {
       syncStatus: "authenticated",
     })
     expect(runtimeSession.dataScopeRevision.value).toBe(2)
+  })
+
+  it("user scope のとき startAuthCheck で authPending 状態に移る", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "user", userId: "user1" })
+    const { runtimeSession } = setup()
+
+    runtimeSession.startAuthCheck()
+
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: {
+        type: "user",
+        userId: "user1",
+      },
+      syncStatus: "authPending",
+    })
+  })
+
+  it("user scope のとき applyAuthUnavailable で sessionLost 状態に移る", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "user", userId: "user1" })
+    const { runtimeSession } = setup()
+
+    runtimeSession.applyAuthUnavailable()
+
+    expect(runtimeSession.session.value).toBeNull()
+    expect(runtimeSession.runtimeSessionState.value).toEqual({
+      scope: {
+        type: "user",
+        userId: "user1",
+      },
+      syncStatus: "sessionLost",
+    })
   })
 })

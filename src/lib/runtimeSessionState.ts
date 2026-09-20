@@ -9,23 +9,20 @@ export function resolveObservedSessionState(
   sessionUserId: string | null,
   storedDataScope: DataScope,
 ): ObservedSessionResolution {
+  if (sessionUserId === null) {
+    return {
+      state: resolveUnavailableRuntimeSessionState(storedDataScope),
+      shouldClearSession: false,
+    }
+  }
+
   if (storedDataScope.type === "anonymous") {
     return {
       state: {
         scope: { type: "anonymous" },
         syncStatus: "disabled",
       },
-      shouldClearSession: sessionUserId !== null,
-    }
-  }
-
-  if (sessionUserId === null) {
-    return {
-      state: {
-        scope: storedDataScope,
-        syncStatus: "sessionLost",
-      },
-      shouldClearSession: false,
+      shouldClearSession: true,
     }
   }
 
@@ -48,27 +45,22 @@ export function resolveObservedSessionState(
   }
 }
 
-export function resolveRuntimeSessionState(
-  sessionUserId: string | null,
-  storedDataScope: DataScope,
-): RuntimeSessionState {
-  if (sessionUserId) {
-    return { scope: { type: "user", userId: sessionUserId }, syncStatus: "authenticated" }
-  }
-
-  if (storedDataScope.type === "anonymous") {
-    return { scope: { type: "anonymous" }, syncStatus: "disabled" }
-  }
-
-  return { scope: { type: "user", userId: storedDataScope.userId }, syncStatus: "sessionLost" }
-}
-
 export function resolvePendingRuntimeSessionState(storedDataScope: DataScope): RuntimeSessionState {
   if (storedDataScope.type === "anonymous") {
     return { scope: { type: "anonymous" }, syncStatus: "disabled" }
   }
 
   return { scope: { type: "user", userId: storedDataScope.userId }, syncStatus: "authPending" }
+}
+
+export function resolveUnavailableRuntimeSessionState(
+  storedDataScope: DataScope,
+): RuntimeSessionState {
+  if (storedDataScope.type === "anonymous") {
+    return { scope: { type: "anonymous" }, syncStatus: "disabled" }
+  }
+
+  return { scope: { type: "user", userId: storedDataScope.userId }, syncStatus: "sessionLost" }
 }
 
 export function isAuthenticated(runtimeSessionState: RuntimeSessionState) {

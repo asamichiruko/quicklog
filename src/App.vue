@@ -74,10 +74,11 @@ const {
   runtimeSessionState,
   dataScopeRevision,
   getActiveCloudUser,
-  applySessionTransition,
   activateAnonymousScope,
   applyObservedSession,
   commitAuthenticatedSession,
+  applyAuthUnavailable,
+  startAuthCheck,
 } = useRuntimeSession({
   reloadActiveQuicklogData: () => setActiveQuicklogData(loadActiveQuicklogData()),
   onStateApplied: applySessionSideEffects,
@@ -112,7 +113,7 @@ const authSessionListener = useSupabaseAuthSessionListener({
   onResolvedSession: handleObservedSession,
   onReloadFailed: (error) => {
     console.warn("Failed to reload auth state", error)
-    applySessionTransition({ type: "authReloadFailed" }, null)
+    applyAuthUnavailable()
   },
 })
 
@@ -137,7 +138,7 @@ const authPendingTimeout = usePendingTimeout({
   timeoutMs: authPendingTimeoutMs,
   isPending: () => isAuthPending(runtimeSessionState.value),
   onTimedOut: () => {
-    applySessionTransition({ type: "authCheckTimedOut" }, null)
+    applyAuthUnavailable()
   },
 })
 
@@ -197,7 +198,7 @@ const logEntryFormArea = ref<HTMLElement | null>(null)
 onMounted(() => {
   migrateStorageLayout()
 
-  applySessionTransition({ type: "startAuthCheck" }, null)
+  startAuthCheck()
   pruneActiveQuicklogData(new Date())
   settings.value = loadSettings()
 

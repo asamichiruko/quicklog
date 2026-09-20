@@ -1,5 +1,9 @@
-import { canUseCloud, resolveObservedSessionState } from "@/lib/runtimeSessionState"
-import { resolveSessionTransition, type SessionTransitionEvent } from "@/lib/sessionTransition"
+import {
+  canUseCloud,
+  resolveObservedSessionState,
+  resolvePendingRuntimeSessionState,
+  resolveUnavailableRuntimeSessionState,
+} from "@/lib/runtimeSessionState"
 import { loadStoredDataScope, saveStoredDataScope } from "@/lib/storage"
 import { type RuntimeSessionState, type DataScope } from "@/types"
 import type { Session, User } from "@supabase/supabase-js"
@@ -22,17 +26,14 @@ export function useRuntimeSession(options: {
     return a.userId === b.userId
   }
 
-  function applySessionTransition(event: SessionTransitionEvent, nextSession: Session | null) {
-    const nextState = resolveSessionTransition({
-      event,
-      storedDataScope: loadStoredDataScope(),
-    })
-
-    applyRuntimeSessionState(nextState, nextSession)
-  }
-
   function activateAnonymousScope() {
-    applySessionTransition({ type: "signedOut" }, null)
+    applyRuntimeSessionState(
+      {
+        scope: { type: "anonymous" },
+        syncStatus: "disabled",
+      },
+      null,
+    )
   }
 
   function getActiveCloudUser(): User | null {
@@ -83,14 +84,23 @@ export function useRuntimeSession(options: {
     )
   }
 
+  function startAuthCheck() {
+    applyRuntimeSessionState(resolvePendingRuntimeSessionState(loadStoredDataScope()), null)
+  }
+
+  function applyAuthUnavailable() {
+    applyRuntimeSessionState(resolveUnavailableRuntimeSessionState(loadStoredDataScope()), null)
+  }
+
   return {
     session,
     runtimeSessionState,
     dataScopeRevision: readonly(dataScopeRevision),
     getActiveCloudUser,
-    applySessionTransition,
     activateAnonymousScope,
     applyObservedSession,
     commitAuthenticatedSession,
+    startAuthCheck,
+    applyAuthUnavailable,
   }
 }
