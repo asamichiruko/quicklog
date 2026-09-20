@@ -56,7 +56,7 @@ import type {
   QuicklogDataImportResult,
   RuntimeSessionState,
 } from "@/types"
-import { type User } from "@supabase/supabase-js"
+import type { Session, User } from "@supabase/supabase-js"
 import { computed, nextTick, onMounted, ref, toRaw } from "vue"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import { usePendingTimeout } from "@/composables/usePendingTimeout"
@@ -67,6 +67,7 @@ import { useAnonymousQuicklogData } from "@/composables/useAnonymousQuicklogData
 import { useRuntimeSession } from "@/composables/useRuntimeSession"
 import { useCloudSync } from "@/composables/useCloudSync"
 import { createPasswordRecoveryFlow } from "@/lib/passwordRecovery"
+import { createUnexpectedAuthSessionClear } from "@/lib/unexpectedAuthSessionClear"
 
 const {
   session,
@@ -74,9 +75,9 @@ const {
   dataScopeRevision,
   getActiveCloudUser,
   applySessionTransition,
-  applyResolvedSession,
   activateAnonymousScope,
   applyDeletedAccount,
+  applyObservedSession,
   commitAuthenticatedSession,
 } = useRuntimeSession({
   reloadActiveQuicklogData: () => setActiveQuicklogData(loadActiveQuicklogData()),
@@ -99,10 +100,17 @@ const passwordRecoveryFlow = createPasswordRecoveryFlow({
 
 let explicitAuthenticationInProgress = false
 
+const unexpectedAuthSessionClear = createUnexpectedAuthSessionClear({
+  clearLocalAuthSession,
+  onError: (error) => {
+    console.warn("Failed to clear unexpected auth session", error)
+  },
+})
+
 const authSessionListener = useSupabaseAuthSessionListener({
   shouldIgnoreAuthEvent: () =>
     passwordRecoveryFlow.isInProgress() || explicitAuthenticationInProgress,
-  onResolvedSession: applyResolvedSession,
+  onResolvedSession: handleObservedSession,
   onReloadFailed: (error) => {
     console.warn("Failed to reload auth state", error)
     applySessionTransition({ type: "authReloadFailed" }, null)
@@ -355,6 +363,14 @@ async function importQuicklogDataFromFile(file: File): Promise<QuicklogDataImpor
     addedCount: result.addedCount,
     deletedCount: result.deletedCount,
   } satisfies QuicklogDataImportResult
+}
+
+function handleObservedSession(nextSession: Session | null) {
+  const shouldClearSession = applyObservedSession(nextSession)
+
+  if (shouldClearSession) {
+    unexpectedAuthSessionClear.request()
+  }
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
