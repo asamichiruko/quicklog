@@ -70,7 +70,7 @@ import { createPasswordRecoveryFlow } from "@/lib/passwordRecovery"
 import { createUnexpectedAuthSessionClear } from "@/lib/unexpectedAuthSessionClear"
 
 const runtimeSession = useRuntimeSession({
-  reloadActiveQuicklogData: () => setActiveQuicklogData(loadActiveQuicklogData()),
+  reloadActiveQuicklogData: () => activeQuicklogData.set(activeQuicklogData.load()),
   onStateApplied: applySessionSideEffects,
 })
 const { session, runtimeSessionState } = runtimeSession
@@ -108,19 +108,11 @@ const authSessionListener = useSupabaseAuthSessionListener({
   },
 })
 
-const {
-  quicklogData,
-  dataRevision: quicklogDataRevision,
-  setActiveQuicklogData,
-  loadActiveQuicklogData,
-  saveActiveQuicklogData,
-  initializeActiveQuicklogData,
-  applyLocalQuicklogDataChange,
-} = useActiveQuicklogData({
+const activeQuicklogData = useActiveQuicklogData({
   getDataUserId: () => getDataUserId(runtimeSessionState.value),
   scheduleCloudSync: () => scheduleAfterLocalChange(),
 })
-const logEntries = computed(() => quicklogData.value.logEntries)
+const logEntries = computed(() => activeQuicklogData.data.value.logEntries)
 
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
 
@@ -151,18 +143,18 @@ const {
   deleteAnonymousQuicklogData,
 } = useAnonymousQuicklogData({
   isAnonymousActive: () => isAnonymous(runtimeSessionState.value),
-  setActiveQuicklogData,
+  setActiveQuicklogData: activeQuicklogData.set,
 })
 
 const { requestNow, requestNowSilently, requestIfDue, scheduleAfterLocalChange, cancelScheduled } =
   useCloudSync({
     getActiveUser: runtimeSession.getActiveCloudUser,
-    getData: () => quicklogData.value,
-    getDataRevision: () => quicklogDataRevision.value,
+    getData: () => activeQuicklogData.data.value,
+    getDataRevision: () => activeQuicklogData.revision.value,
     getScopeRevision: () => runtimeSession.dataScopeRevision.value,
     applySyncedData: (data) => {
-      saveActiveQuicklogData(data)
-      setActiveQuicklogData(data)
+      activeQuicklogData.save(data)
+      activeQuicklogData.set(data)
     },
   })
 
@@ -190,7 +182,7 @@ onMounted(() => {
   migrateStorageLayout()
 
   runtimeSession.initialize()
-  initializeActiveQuicklogData(new Date())
+  activeQuicklogData.initialize(new Date())
   settings.value = loadSettings()
 
   authSessionListener.start()
@@ -226,7 +218,7 @@ function moveToLogEntryForm() {
 
 function moveAnonymousDataToUser(user: User) {
   const result = moveAnonymousQuicklogDataToUser(user.id, new Date())
-  setActiveQuicklogData(result.data)
+  activeQuicklogData.set(result.data)
 
   if (result.moved) {
     scheduleAfterLocalChange()
@@ -282,7 +274,7 @@ async function syncCloudDataBeforeDeletion(user: User) {
 
   if (
     scopeRevisionBeforeSync !== runtimeSession.dataScopeRevision.value ||
-    toRaw(quicklogData.value) !== result.data
+    toRaw(activeQuicklogData.data.value) !== result.data
   ) {
     throw new CloudSyncDeletionError("クラウド同期に失敗しました")
   }
@@ -297,7 +289,9 @@ async function handleSubmit(text: string) {
   const logEntry = createLogEntry(text, new Date(), crypto.randomUUID())
 
   try {
-    applyLocalQuicklogDataChange(appendLogEntry(quicklogData.value, logEntry))
+    activeQuicklogData.applyLocalChange(
+      appendLogEntry(activeQuicklogData.data.value, logEntry),
+    )
     logEntryForm.value?.clear()
   } catch (error) {
     if (error instanceof SizeError) {
@@ -321,7 +315,9 @@ async function handleRemove(id: string) {
   const logEntryDeletion = createLogEntryDeletion(id, new Date())
 
   try {
-    applyLocalQuicklogDataChange(removeLogEntry(quicklogData.value, logEntryDeletion))
+    activeQuicklogData.applyLocalChange(
+      removeLogEntry(activeQuicklogData.data.value, logEntryDeletion),
+    )
   } catch (error) {
     if (error instanceof SizeError) {
       alert("削除に失敗しました。削除履歴が多すぎます")
@@ -332,7 +328,7 @@ async function handleRemove(id: string) {
 }
 
 function downloadLogEntries(exportType: ExportType) {
-  const exportFile = createQuicklogExportFile(quicklogData.value, exportType)
+  const exportFile = createQuicklogExportFile(activeQuicklogData.data.value, exportType)
   const dateKey = getLocalDateKey(new Date())
 
   downloadTextFile({
@@ -345,12 +341,12 @@ function downloadLogEntries(exportType: ExportType) {
 async function importQuicklogDataFromFile(file: File): Promise<QuicklogDataImportResult> {
   const data = await readQuicklogImportFile(file)
   const result = mergeImportedQuicklogData(
-    quicklogData.value,
+    activeQuicklogData.data.value,
     parseAsQuicklogData(data),
     new Date(),
   )
 
-  applyLocalQuicklogDataChange(result.data)
+  activeQuicklogData.applyLocalChange(result.data)
   return {
     addedCount: result.addedCount,
     deletedCount: result.deletedCount,

@@ -45,27 +45,27 @@ describe("useActiveQuicklogData", () => {
     const { activeData } = setup()
     vi.mocked(loadQuicklogData).mockReturnValue(data)
 
-    expect(activeData.loadActiveQuicklogData()).toBe(data)
+    expect(activeData.load()).toBe(data)
     expect(loadQuicklogData).toHaveBeenCalledWith("user1")
   })
 
-  it("アクティブデータを変更すると quicklogData と revision を更新する", () => {
+  it("アクティブデータを変更すると data と revision を更新する", () => {
     const { activeData } = setup()
 
-    activeData.setActiveQuicklogData(data)
+    activeData.set(data)
 
-    expect(activeData.quicklogData.value).toEqual(data)
-    expect(activeData.dataRevision.value).toBe(1)
+    expect(activeData.data.value).toEqual(data)
+    expect(activeData.revision.value).toBe(1)
   })
 
   it("ローカル変更を保存してから表示へ反映し、クラウド同期を予約する", () => {
     const { activeData, scheduleCloudSync } = setup()
 
-    activeData.applyLocalQuicklogDataChange(data)
+    activeData.applyLocalChange(data)
 
     expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")
-    expect(activeData.quicklogData.value).toEqual(data)
-    expect(activeData.dataRevision.value).toBe(1)
+    expect(activeData.data.value).toEqual(data)
+    expect(activeData.revision.value).toBe(1)
     expect(scheduleCloudSync).toHaveBeenCalledOnce()
   })
 
@@ -75,9 +75,9 @@ describe("useActiveQuicklogData", () => {
       throw new Error("save failed")
     })
 
-    expect(() => activeData.applyLocalQuicklogDataChange(data)).toThrow("save failed")
-    expect(activeData.quicklogData.value).toEqual(emptyData)
-    expect(activeData.dataRevision.value).toBe(0)
+    expect(() => activeData.applyLocalChange(data)).toThrow("save failed")
+    expect(activeData.data.value).toEqual(emptyData)
+    expect(activeData.revision.value).toBe(0)
     expect(scheduleCloudSync).not.toHaveBeenCalled()
   })
 
@@ -86,11 +86,11 @@ describe("useActiveQuicklogData", () => {
     const now = new Date("2026-07-10T00:00:00.000Z")
     vi.mocked(pruneQuicklogDataLogEntryDeletions).mockReturnValue(data)
 
-    activeData.initializeActiveQuicklogData(now)
+    activeData.initialize(now)
 
     expect(pruneQuicklogDataLogEntryDeletions).toHaveBeenCalledWith(emptyData, now)
     expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")
-    expect(activeData.quicklogData.value).toEqual(data)
-    expect(activeData.dataRevision.value).toBe(1)
+    expect(activeData.data.value).toEqual(data)
+    expect(activeData.revision.value).toBe(1)
   })
 })

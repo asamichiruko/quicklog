@@ -7,45 +7,45 @@ export function useActiveQuicklogData(options: {
   getDataUserId: () => string | undefined
   scheduleCloudSync: () => void
 }) {
-  const quicklogData = ref<QuicklogData>({
+  const data = ref<QuicklogData>({
     version: 3,
     logEntries: [],
     logEntryDeletions: [],
   })
-  const dataRevision = ref(0)
+  const revision = ref(0)
 
-  function loadActiveQuicklogData(): QuicklogData {
+  function load(): QuicklogData {
     return loadQuicklogData(options.getDataUserId())
   }
 
-  function saveActiveQuicklogData(data: QuicklogData) {
+  function save(data: QuicklogData) {
     saveQuicklogData(data, options.getDataUserId())
   }
 
-  function setActiveQuicklogData(nextData: QuicklogData) {
-    quicklogData.value = nextData
-    dataRevision.value += 1
+  function set(nextData: QuicklogData) {
+    data.value = nextData
+    revision.value += 1
   }
 
-  function initializeActiveQuicklogData(now: Date) {
-    const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), now)
-    saveActiveQuicklogData(pruned)
-    setActiveQuicklogData(pruned)
+  function initialize(now: Date) {
+    const pruned = pruneQuicklogDataLogEntryDeletions(load(), now)
+    save(pruned)
+    set(pruned)
   }
 
-  function applyLocalQuicklogDataChange(nextData: QuicklogData) {
-    saveActiveQuicklogData(nextData)
-    setActiveQuicklogData(nextData)
+  function applyLocalChange(nextData: QuicklogData) {
+    save(nextData)
+    set(nextData)
     options.scheduleCloudSync()
   }
 
   return {
-    quicklogData,
-    dataRevision: readonly(dataRevision),
-    setActiveQuicklogData,
-    loadActiveQuicklogData,
-    saveActiveQuicklogData,
-    initializeActiveQuicklogData,
-    applyLocalQuicklogDataChange,
+    data,
+    revision: readonly(revision),
+    load,
+    save,
+    set,
+    initialize,
+    applyLocalChange,
   }
 }
