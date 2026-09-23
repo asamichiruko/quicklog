@@ -29,52 +29,47 @@ describe("useAnonymousQuicklogData", () => {
   })
 
   it("初期状態では logEntries, logEntryDeletions の件数が 0", () => {
-    const { anonymousQuicklogDataState } = useAnonymousQuicklogData({
+    const anonymousData = useAnonymousQuicklogData({
       isAnonymousActive: vi.fn(),
       setActiveQuicklogData: vi.fn(),
     })
 
-    expect(anonymousQuicklogDataState.value.logEntryCount).toBe(0)
-    expect(anonymousQuicklogDataState.value.logEntryDeletionCount).toBe(0)
+    expect(anonymousData.state.value.logEntryCount).toBe(0)
+    expect(anonymousData.state.value.logEntryDeletionCount).toBe(0)
   })
 
-  it("refreshAnonymousQuicklogDataState で anonymous data の件数を反映する", () => {
+  it("refresh で anonymous data の件数を反映する", () => {
     vi.mocked(loadQuicklogData).mockReturnValue(data)
 
-    const { anonymousQuicklogDataState, refreshAnonymousQuicklogDataState } =
-      useAnonymousQuicklogData({
-        isAnonymousActive: vi.fn(),
-        setActiveQuicklogData: vi.fn(),
-      })
+    const anonymousData = useAnonymousQuicklogData({
+      isAnonymousActive: vi.fn(),
+      setActiveQuicklogData: vi.fn(),
+    })
 
-    refreshAnonymousQuicklogDataState()
+    anonymousData.refresh()
 
     expect(loadQuicklogData).toHaveBeenCalledWith()
-    expect(anonymousQuicklogDataState.value.logEntryCount).toBe(2)
-    expect(anonymousQuicklogDataState.value.logEntryDeletionCount).toBe(1)
+    expect(anonymousData.state.value.logEntryCount).toBe(2)
+    expect(anonymousData.state.value.logEntryDeletionCount).toBe(1)
   })
 
-  it("deleteAnonymousQuicklogData で削除後の anonymous data の件数を反映する", () => {
+  it("delete で削除後の anonymous data の件数を反映する", () => {
     vi.mocked(loadQuicklogData).mockReturnValueOnce(data).mockReturnValueOnce(emptyData)
 
-    const {
-      anonymousQuicklogDataState,
-      refreshAnonymousQuicklogDataState,
-      deleteAnonymousQuicklogData,
-    } = useAnonymousQuicklogData({
+    const anonymousData = useAnonymousQuicklogData({
       isAnonymousActive: vi.fn(() => false),
       setActiveQuicklogData: vi.fn(),
     })
 
-    refreshAnonymousQuicklogDataState()
-    expect(anonymousQuicklogDataState.value).toEqual({
+    anonymousData.refresh()
+    expect(anonymousData.state.value).toEqual({
       logEntryCount: 2,
       logEntryDeletionCount: 1,
     })
 
-    deleteAnonymousQuicklogData()
+    anonymousData.delete()
 
-    expect(anonymousQuicklogDataState.value).toEqual({
+    expect(anonymousData.state.value).toEqual({
       logEntryCount: 0,
       logEntryDeletionCount: 0,
     })
@@ -84,12 +79,12 @@ describe("useAnonymousQuicklogData", () => {
     vi.mocked(loadQuicklogData).mockReturnValue(emptyData)
     const setActiveQuicklogData = vi.fn()
 
-    const { deleteAnonymousQuicklogData } = useAnonymousQuicklogData({
+    const anonymousData = useAnonymousQuicklogData({
       isAnonymousActive: vi.fn(() => true),
       setActiveQuicklogData,
     })
 
-    deleteAnonymousQuicklogData()
+    anonymousData.delete()
 
     expect(setActiveQuicklogData).toHaveBeenCalledExactlyOnceWith(emptyData)
   })
@@ -98,37 +93,33 @@ describe("useAnonymousQuicklogData", () => {
     vi.mocked(loadQuicklogData).mockReturnValue(emptyData)
     const setActiveQuicklogData = vi.fn()
 
-    const { deleteAnonymousQuicklogData } = useAnonymousQuicklogData({
+    const anonymousData = useAnonymousQuicklogData({
       isAnonymousActive: vi.fn(() => false),
       setActiveQuicklogData,
     })
 
-    deleteAnonymousQuicklogData()
+    anonymousData.delete()
 
     expect(setActiveQuicklogData).not.toHaveBeenCalled()
   })
 
-  it("clearQuicklogData が失敗した場合は anonymousQuicklogDataState の件数 と active な QuicklogData を変更しない", () => {
+  it("clearQuicklogData が失敗した場合は state の件数と active な QuicklogData を変更しない", () => {
     vi.mocked(loadQuicklogData).mockReturnValueOnce(data)
     const setActiveQuicklogData = vi.fn()
 
-    const {
-      anonymousQuicklogDataState,
-      refreshAnonymousQuicklogDataState,
-      deleteAnonymousQuicklogData,
-    } = useAnonymousQuicklogData({
+    const anonymousData = useAnonymousQuicklogData({
       isAnonymousActive: vi.fn(() => true),
       setActiveQuicklogData,
     })
 
-    refreshAnonymousQuicklogDataState()
+    anonymousData.refresh()
     vi.mocked(clearQuicklogData).mockImplementation(() => {
       throw new Error("Clear QuicklogData failed.")
     })
 
-    expect(() => deleteAnonymousQuicklogData()).toThrow("Clear QuicklogData failed.")
+    expect(() => anonymousData.delete()).toThrow("Clear QuicklogData failed.")
     expect(loadQuicklogData).toHaveBeenCalledOnce()
-    expect(anonymousQuicklogDataState.value).toEqual({
+    expect(anonymousData.state.value).toEqual({
       logEntryCount: 2,
       logEntryDeletionCount: 1,
     })

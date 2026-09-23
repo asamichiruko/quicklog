@@ -137,14 +137,11 @@ const logEntryCountsByDate = computed(() => {
   return counts
 })
 
-const {
-  anonymousQuicklogDataState,
-  refreshAnonymousQuicklogDataState,
-  deleteAnonymousQuicklogData,
-} = useAnonymousQuicklogData({
+const anonymousQuicklogData = useAnonymousQuicklogData({
   isAnonymousActive: () => isAnonymous(runtimeSessionState.value),
   setActiveQuicklogData: activeQuicklogData.set,
 })
+const { state: anonymousQuicklogDataState } = anonymousQuicklogData
 
 const { requestNow, requestNowSilently, requestIfDue, scheduleAfterLocalChange, cancelScheduled } =
   useCloudSync({
@@ -191,7 +188,7 @@ onMounted(() => {
 })
 
 function openSettings() {
-  refreshAnonymousQuicklogDataState()
+  anonymousQuicklogData.refresh()
   settingsDialog.value?.open()
 }
 
@@ -253,7 +250,7 @@ async function deleteCloudSync() {
   })
 
   runtimeSession.activateAnonymousScope()
-  refreshAnonymousQuicklogDataState()
+  anonymousQuicklogData.refresh()
 }
 
 async function syncCloudDataBeforeDeletion(user: User) {
@@ -489,7 +486,7 @@ async function handleSendPasswordResetCode(email: string) {
     :log-entries="logEntries"
     :runtime-session-state="runtimeSessionState"
     :anonymous-data-state="anonymousQuicklogDataState"
-    :delete-anonymous-data="deleteAnonymousQuicklogData"
+    :delete-anonymous-data="anonymousQuicklogData.delete"
     :cloud-sync-account-actions="cloudSyncAccountActions"
     :download-log-entries="downloadLogEntries"
     :import-quicklog-data-from-file="importQuicklogDataFromFile"

@@ -6,21 +6,21 @@ export function useAnonymousQuicklogData(options: {
   isAnonymousActive: () => boolean
   setActiveQuicklogData: (data: QuicklogData) => void
 }) {
-  const anonymousQuicklogDataState = ref<AnonymousDataState>({
+  const state = ref<AnonymousDataState>({
     logEntryCount: 0,
     logEntryDeletionCount: 0,
   })
 
-  function refreshAnonymousQuicklogDataState() {
+  function refresh() {
     const data = loadQuicklogData()
 
-    anonymousQuicklogDataState.value = {
+    state.value = {
       logEntryCount: data.logEntries.length,
       logEntryDeletionCount: data.logEntryDeletions.length,
     }
   }
 
-  function deleteAnonymousQuicklogData() {
+  function deleteData() {
     clearQuicklogData()
 
     if (options.isAnonymousActive()) {
@@ -31,12 +31,12 @@ export function useAnonymousQuicklogData(options: {
       })
     }
 
-    refreshAnonymousQuicklogDataState()
+    refresh()
   }
 
   return {
-    anonymousQuicklogDataState,
-    refreshAnonymousQuicklogDataState,
-    deleteAnonymousQuicklogData,
+    state,
+    refresh,
+    delete: deleteData,
   }
 }
