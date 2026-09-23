@@ -12,6 +12,33 @@ export default defineConfigWithVueTs(
   vueTsConfigs.recommended,
 
   {
+    files: ["**/*.ts", "**/*.vue"],
+    rules: {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+      "no-use-before-define": "off",
+      "@typescript-eslint/no-use-before-define": [
+        "error",
+        {
+          functions: false,
+          classes: true,
+          variables: true,
+          enums: true,
+          typedefs: false,
+          ignoreTypeReferences: true,
+        },
+      ],
+    },
+  },
+
+  {
     files: ["**/*.{test,spec}.ts", "**/__tests__/**/*.ts"],
     plugins: {
       vitest,
@@ -24,15 +51,6 @@ export default defineConfigWithVueTs(
     rules: {
       ...vitest.configs.recommended.rules,
       "vitest/no-focused-tests": "error",
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
-        },
-      ],
     },
   },
 

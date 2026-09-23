@@ -1,4 +1,4 @@
-import { createCloudSyncQueue } from "@/lib/cloudSyncQueue"
+import { createCloudSyncQueue, type CloudSyncContext } from "@/lib/cloudSyncQueue"
 import { createCloudSyncScheduler } from "@/lib/cloudSyncScheduler"
 import { syncQuicklogDataWithCloud, type CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import type { QuicklogData } from "@/types"
@@ -22,18 +22,7 @@ export function useCloudSync(options: {
       }
     },
     sync: syncQuicklogDataWithCloud,
-    applyResult: (result, context) => {
-      const currentUser = options.getActiveUser()
-
-      if (!currentUser || !context.user || currentUser.id !== context.user.id) return
-      if (context.dataRevision !== options.getDataRevision()) {
-        cloudSyncScheduler.scheduleAfterLocalChange()
-        return
-      }
-      if (context.scopeRevision !== options.getScopeRevision()) return
-
-      options.applySyncedData(result.data)
-    },
+    applyResult,
   })
 
   const cloudSyncScheduler = createCloudSyncScheduler({
@@ -42,6 +31,19 @@ export function useCloudSync(options: {
     onError: warnSyncError,
     autoSyncDelayMs: 1_000,
   })
+
+  function applyResult(result: CloudQuicklogDataSyncResult, context: CloudSyncContext) {
+    const currentUser = options.getActiveUser()
+
+    if (!currentUser || !context.user || currentUser.id !== context.user.id) return
+    if (context.dataRevision !== options.getDataRevision()) {
+      cloudSyncScheduler.scheduleAfterLocalChange()
+      return
+    }
+    if (context.scopeRevision !== options.getScopeRevision()) return
+
+    options.applySyncedData(result.data)
+  }
 
   function requestNow(): Promise<CloudQuicklogDataSyncResult | null> {
     return cloudSyncScheduler.requestNow()

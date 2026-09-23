@@ -63,6 +63,16 @@ const canUseCloudSession = computed<boolean>(() => {
 const selectedPanelView = ref<SelectablePanelView>("signIn")
 const signedInPanelView = ref<SignedInPanelView>("main")
 
+type PasswordResetFlowStep = "idle" | "awaitingCode" | "settingPassword"
+const passwordResetFlowStep = ref<PasswordResetFlowStep>("idle")
+const passwordResetRequestEmail = ref("")
+const hasActivePasswordResetFlow = computed(() => passwordResetFlowStep.value !== "idle")
+
+type SignUpFlowStep = "idle" | "awaitingCode"
+const signUpFlowStep = ref<SignUpFlowStep>("idle")
+const signUpRequestEmail = ref("")
+const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
+
 const panelView = computed<PanelView>(() => {
   if (passwordResetFlowStep.value === "awaitingCode") return "passwordResetVerifyEmail"
   if (passwordResetFlowStep.value === "settingPassword") return "resetPassword"
@@ -73,16 +83,6 @@ const panelView = computed<PanelView>(() => {
   if (canUseCloudSession.value) return signedInPanelView.value
   return selectedPanelView.value
 })
-
-type PasswordResetFlowStep = "idle" | "awaitingCode" | "settingPassword"
-const passwordResetFlowStep = ref<PasswordResetFlowStep>("idle")
-const passwordResetRequestEmail = ref("")
-const hasActivePasswordResetFlow = computed(() => passwordResetFlowStep.value !== "idle")
-
-type SignUpFlowStep = "idle" | "awaitingCode"
-const signUpFlowStep = ref<SignUpFlowStep>("idle")
-const signUpRequestEmail = ref("")
-const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
 const shouldShowActiveFlow = computed<boolean>(
   () => hasActivePasswordResetFlow.value || hasActiveSignUpFlow.value,
