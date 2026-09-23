@@ -273,4 +273,46 @@ describe("useRuntimeSession", () => {
       syncStatus: "sessionLost",
     })
   })
+
+  it("状態適用後に購読者へ適用済み状態を通知する", () => {
+    const { runtimeSession } = setup()
+    const listener = vi.fn()
+
+    runtimeSession.subscribeStateApplied(listener)
+    runtimeSession.commitAuthenticatedSession(createSession("user1"))
+
+    expect(listener).toHaveBeenCalledExactlyOnceWith({
+      scope: { type: "user", userId: "user1" },
+      syncStatus: "authenticated",
+    })
+  })
+
+  it("状態と scope を保存してから購読者へ通知する", () => {
+    const { runtimeSession } = setup()
+    const session = createSession("user1")
+    const listener = vi.fn(() => {
+      expect(runtimeSession.session.value).toEqual(session)
+      expect(runtimeSession.runtimeSessionState.value).toEqual({
+        scope: { type: "user", userId: "user1" },
+        syncStatus: "authenticated",
+      })
+      expect(saveStoredDataScope).toHaveBeenCalled()
+    })
+
+    runtimeSession.subscribeStateApplied(listener)
+    runtimeSession.commitAuthenticatedSession(session)
+
+    expect(listener).toHaveBeenCalledOnce()
+  })
+
+  it("購読解除後は状態適用を通知しない", () => {
+    const { runtimeSession } = setup()
+    const listener = vi.fn()
+    const unsubscribe = runtimeSession.subscribeStateApplied(listener)
+
+    unsubscribe()
+    runtimeSession.initialize()
+
+    expect(listener).not.toHaveBeenCalled()
+  })
 })

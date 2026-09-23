@@ -5,17 +5,28 @@ import {
   resolveUnavailableRuntimeSessionState,
 } from "@/lib/runtimeSessionState"
 import { loadStoredDataScope, saveStoredDataScope } from "@/lib/storage"
-import { type RuntimeSessionState, type DataScope } from "@/types"
+import type { RuntimeSessionState, DataScope } from "@/types"
 import type { Session, User } from "@supabase/supabase-js"
 import { readonly, ref } from "vue"
 
+type StateAppliedListener = (nextState: RuntimeSessionState) => void
+
 export function useRuntimeSession() {
+  const stateAppliedListeners = new Set<StateAppliedListener>()
   const session = ref<Session | null>(null)
   const runtimeSessionState = ref<RuntimeSessionState>({
     scope: { type: "anonymous" },
     syncStatus: "disabled",
   })
   const dataScopeRevision = ref(0)
+
+  function subscribeStateApplied(listener: StateAppliedListener) {
+    stateAppliedListeners.add(listener)
+
+    return () => {
+      stateAppliedListeners.delete(listener)
+    }
+  }
 
   function isSameDataScope(a: DataScope, b: DataScope) {
     if (a.type !== b.type) return false
@@ -52,6 +63,10 @@ export function useRuntimeSession() {
     }
 
     saveStoredDataScope(nextState.scope)
+
+    for (const listener of [...stateAppliedListeners]) {
+      listener(nextState)
+    }
   }
 
   function applyObservedSession(nextSession: Session | null) {
@@ -97,5 +112,6 @@ export function useRuntimeSession() {
     commitAuthenticatedSession,
     initialize,
     applyAuthUnavailable,
+    subscribeStateApplied,
   }
 }

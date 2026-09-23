@@ -89,4 +89,41 @@ describe("useActiveQuicklogData", () => {
     expect(activeData.data.value).toEqual(data)
     expect(activeData.revision.value).toBe(1)
   })
+
+  it("ローカル変更を保存・反映した後に購読者へ通知する", () => {
+    const { activeData } = setup("user1")
+    const listener = vi.fn(() => {
+      expect(activeData.data.value).toEqual(data)
+      expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")
+    })
+
+    activeData.subscribeLocalChangeApplied(listener)
+    activeData.applyLocalChange(data)
+
+    expect(listener).toHaveBeenCalledOnce()
+  })
+
+  it("保存に失敗した場合はローカル変更を通知しない", () => {
+    vi.mocked(saveQuicklogData).mockImplementation(() => {
+      throw new Error("save failed")
+    })
+    const { activeData } = setup("user1")
+    const listener = vi.fn()
+
+    activeData.subscribeLocalChangeApplied(listener)
+
+    expect(() => activeData.applyLocalChange(data)).toThrow("save failed")
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it("購読解除後はローカル変更を通知しない", () => {
+    const { activeData } = setup()
+    const listener = vi.fn()
+    const unsubscribe = activeData.subscribeLocalChangeApplied(listener)
+
+    unsubscribe()
+    activeData.applyLocalChange(data)
+
+    expect(listener).not.toHaveBeenCalled()
+  })
 })

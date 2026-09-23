@@ -3,13 +3,23 @@ import { loadQuicklogData, saveQuicklogData } from "@/lib/storage"
 import type { QuicklogData } from "@/types"
 import { readonly, ref } from "vue"
 
+type LocalChangeAppliedListener = () => void
+
 export function useActiveQuicklogData(options: { getDataUserId: () => string | undefined }) {
+  const localChangeAppliedListeners = new Set<LocalChangeAppliedListener>()
   const data = ref<QuicklogData>({
     version: 3,
     logEntries: [],
     logEntryDeletions: [],
   })
   const revision = ref(0)
+
+  function subscribeLocalChangeApplied(listener: LocalChangeAppliedListener) {
+    localChangeAppliedListeners.add(listener)
+    return () => {
+      localChangeAppliedListeners.delete(listener)
+    }
+  }
 
   function load(): QuicklogData {
     return loadQuicklogData(options.getDataUserId())
@@ -33,6 +43,10 @@ export function useActiveQuicklogData(options: { getDataUserId: () => string | u
   function applyLocalChange(nextData: QuicklogData) {
     save(nextData)
     set(nextData)
+
+    for (const listener of [...localChangeAppliedListeners]) {
+      listener()
+    }
   }
 
   return {
@@ -43,5 +57,6 @@ export function useActiveQuicklogData(options: { getDataUserId: () => string | u
     set,
     initialize,
     applyLocalChange,
+    subscribeLocalChangeApplied,
   }
 }
