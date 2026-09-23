@@ -26,14 +26,9 @@ describe("useRuntimeSession", () => {
   })
 
   function setup() {
-    const reloadActiveQuicklogData = vi.fn()
-    const onStateApplied = vi.fn()
-    const runtimeSession = useRuntimeSession({
-      reloadActiveQuicklogData,
-      onStateApplied,
-    })
+    const runtimeSession = useRuntimeSession()
 
-    return { runtimeSession, reloadActiveQuicklogData, onStateApplied }
+    return { runtimeSession }
   }
 
   it("初期状態は anonymous で session がない", () => {
@@ -120,28 +115,15 @@ describe("useRuntimeSession", () => {
     })
   })
 
-  it("遷移後の scope を保存してから active data を再読込し、適用済み状態を通知する", () => {
-    const { runtimeSession, reloadActiveQuicklogData, onStateApplied } = setup()
+  it("遷移後の scope を保存する", () => {
+    const { runtimeSession } = setup()
     const expectedState = {
       scope: { type: "user", userId: "user1" },
       syncStatus: "authenticated",
     } satisfies RuntimeSessionState
 
-    reloadActiveQuicklogData.mockImplementation(() => {
-      expect(runtimeSession.runtimeSessionState.value).toEqual(expectedState)
-    })
-
     runtimeSession.commitAuthenticatedSession(createSession("user1"))
-
     expect(saveStoredDataScope).toHaveBeenCalledExactlyOnceWith(expectedState.scope)
-    expect(reloadActiveQuicklogData).toHaveBeenCalledOnce()
-    expect(onStateApplied).toHaveBeenCalledExactlyOnceWith(expectedState)
-    expect(vi.mocked(saveStoredDataScope).mock.invocationCallOrder[0]).toBeLessThan(
-      reloadActiveQuicklogData.mock.invocationCallOrder[0]!,
-    )
-    expect(reloadActiveQuicklogData.mock.invocationCallOrder[0]).toBeLessThan(
-      onStateApplied.mock.invocationCallOrder[0]!,
-    )
   })
 
   it("authenticated な現在の session user だけを active cloud user として返す", () => {

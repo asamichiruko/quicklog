@@ -3,10 +3,7 @@ import { loadQuicklogData, saveQuicklogData } from "@/lib/storage"
 import type { QuicklogData } from "@/types"
 import { readonly, ref } from "vue"
 
-export function useActiveQuicklogData(options: {
-  getDataUserId: () => string | undefined
-  scheduleCloudSync: () => void
-}) {
+export function useActiveQuicklogData(options: { getDataUserId: () => string | undefined }) {
   const data = ref<QuicklogData>({
     version: 3,
     logEntries: [],
@@ -36,7 +33,6 @@ export function useActiveQuicklogData(options: {
   function applyLocalChange(nextData: QuicklogData) {
     save(nextData)
     set(nextData)
-    options.scheduleCloudSync()
   }
 
   return {

@@ -53,6 +53,7 @@ import { migrateStorageLayout } from "@/lib/storageLayoutMigration"
 import type {
   AppSettings,
   ExportType,
+  QuicklogData,
   QuicklogDataImportResult,
   RuntimeSessionState,
 } from "@/types"
@@ -69,17 +70,15 @@ import { useCloudSync } from "@/composables/useCloudSync"
 import { createPasswordRecoveryFlow } from "@/lib/passwordRecovery"
 import { createUnexpectedAuthSessionClear } from "@/lib/unexpectedAuthSessionClear"
 
-const runtimeSession = useRuntimeSession({
-  reloadActiveQuicklogData: () => activeQuicklogData.set(activeQuicklogData.load()),
-  onStateApplied: applySessionSideEffects,
-})
+const runtimeSession = useRuntimeSession()
+
 const { session, runtimeSessionState } = runtimeSession
 
 const passwordRecoveryFlow = createPasswordRecoveryFlow({
   verifyPasswordResetCode,
   updatePasswordAfterRecovery,
   clearLocalAuthSession,
-  activateAnonymousScope: runtimeSession.activateAnonymousScope,
+  activateAnonymousScope,
   onLocalAuthSessionClearError: (error, reason) => {
     if (reason === "completed") {
       console.warn("Failed to clear local auth session after password recovery", error)
@@ -104,14 +103,14 @@ const authSessionListener = useSupabaseAuthSessionListener({
   onResolvedSession: handleObservedSession,
   onCurrentSessionLoadFailed: (error) => {
     console.warn("Failed to load current auth session", error)
-    runtimeSession.applyAuthUnavailable()
+    applyAuthUnavailable()
   },
 })
 
 const activeQuicklogData = useActiveQuicklogData({
   getDataUserId: () => getDataUserId(runtimeSessionState.value),
-  scheduleCloudSync: () => cloudSync.scheduleAfterLocalChange(),
 })
+
 const logEntries = computed(() => activeQuicklogData.data.value.logEntries)
 
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
@@ -120,9 +119,7 @@ const authPendingTimeoutMs = 10_000
 const authPendingTimeout = usePendingTimeout({
   timeoutMs: authPendingTimeoutMs,
   isPending: () => isAuthPending(runtimeSessionState.value),
-  onTimedOut: () => {
-    runtimeSession.applyAuthUnavailable()
-  },
+  onTimedOut: applyAuthUnavailable,
 })
 
 const initialDate = ref<Date>(new Date())
@@ -177,7 +174,7 @@ const logEntryFormArea = ref<HTMLElement | null>(null)
 onMounted(() => {
   migrateStorageLayout()
 
-  runtimeSession.initialize()
+  initializeRuntimeSession()
   activeQuicklogData.initialize(new Date())
   settings.value = loadSettings()
 
@@ -189,6 +186,15 @@ onMounted(() => {
 function openSettings() {
   anonymousQuicklogData.refresh()
   settingsDialog.value?.open()
+}
+
+function applyRuntimeSessionTransition<T>(transition: () => T): T {
+  const result = transition()
+
+  activeQuicklogData.set(activeQuicklogData.load())
+  applySessionSideEffects(runtimeSession.runtimeSessionState.value)
+
+  return result
 }
 
 function applySessionSideEffects(nextState: RuntimeSessionState) {
@@ -207,6 +213,31 @@ function applySessionSideEffects(nextState: RuntimeSessionState) {
   cloudSync.requestIfDue()
 }
 
+function initializeRuntimeSession() {
+  applyRuntimeSessionTransition(() => runtimeSession.initialize())
+}
+
+function applyAuthUnavailable() {
+  applyRuntimeSessionTransition(() => runtimeSession.applyAuthUnavailable())
+}
+
+function activateAnonymousScope() {
+  applyRuntimeSessionTransition(() => runtimeSession.activateAnonymousScope())
+}
+
+function commitAuthenticatedSession(nextSession: Session) {
+  applyRuntimeSessionTransition(() => runtimeSession.commitAuthenticatedSession(nextSession))
+}
+
+function applyObservedSession(nextSession: Session | null) {
+  return applyRuntimeSessionTransition(() => runtimeSession.applyObservedSession(nextSession))
+}
+
+function applyLocalQuicklogDataChange(nextData: QuicklogData) {
+  activeQuicklogData.applyLocalChange(nextData)
+  cloudSync.scheduleAfterLocalChange()
+}
+
 function moveToLogEntryForm() {
   logEntryFormArea.value?.scrollIntoView({ behavior: "smooth", block: "start" })
   logEntryForm.value?.focus({ preventScroll: true }) // focus の副作用によるスクロールを抑える
@@ -223,7 +254,7 @@ function moveAnonymousDataToUser(user: User) {
 
 async function rollbackCloudSyncStart() {
   await signOut()
-  runtimeSession.activateAnonymousScope()
+  activateAnonymousScope()
 }
 
 async function deleteCloudSync() {
@@ -248,7 +279,7 @@ async function deleteCloudSync() {
     },
   })
 
-  runtimeSession.activateAnonymousScope()
+  activateAnonymousScope()
   anonymousQuicklogData.refresh()
 }
 
@@ -285,7 +316,7 @@ function handleSubmit(text: string) {
   const logEntry = createLogEntry(text, new Date(), crypto.randomUUID())
 
   try {
-    activeQuicklogData.applyLocalChange(appendLogEntry(activeQuicklogData.data.value, logEntry))
+    applyLocalQuicklogDataChange(appendLogEntry(activeQuicklogData.data.value, logEntry))
     logEntryForm.value?.clear()
   } catch (error) {
     if (error instanceof SizeError) {
@@ -309,9 +340,7 @@ function handleRemove(id: string) {
   const logEntryDeletion = createLogEntryDeletion(id, new Date())
 
   try {
-    activeQuicklogData.applyLocalChange(
-      removeLogEntry(activeQuicklogData.data.value, logEntryDeletion),
-    )
+    applyLocalQuicklogDataChange(removeLogEntry(activeQuicklogData.data.value, logEntryDeletion))
   } catch (error) {
     if (error instanceof SizeError) {
       alert("削除に失敗しました。削除履歴が多すぎます")
@@ -340,7 +369,7 @@ async function importQuicklogDataFromFile(file: File): Promise<QuicklogDataImpor
     new Date(),
   )
 
-  activeQuicklogData.applyLocalChange(result.data)
+  applyLocalQuicklogDataChange(result.data)
   return {
     addedCount: result.addedCount,
     deletedCount: result.deletedCount,
@@ -348,7 +377,7 @@ async function importQuicklogDataFromFile(file: File): Promise<QuicklogDataImpor
 }
 
 function handleObservedSession(nextSession: Session | null) {
-  const shouldClearSession = runtimeSession.applyObservedSession(nextSession)
+  const shouldClearSession = applyObservedSession(nextSession)
 
   if (shouldClearSession) {
     unexpectedAuthSessionClear.request()
@@ -379,7 +408,7 @@ async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
       authenticate,
       loadAuthenticatedSession: getCurrentSession,
       moveAnonymousDataToUser,
-      commitAuthenticatedSession: runtimeSession.commitAuthenticatedSession,
+      commitAuthenticatedSession,
       rollback: rollbackCloudSyncStart,
     })
   } finally {
@@ -399,7 +428,7 @@ async function handleSignInWithEmail(email: string, password: string) {
 
 async function handleSignOut() {
   await signOut()
-  runtimeSession.activateAnonymousScope()
+  activateAnonymousScope()
 }
 </script>
 

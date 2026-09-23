@@ -9,10 +9,7 @@ import { type RuntimeSessionState, type DataScope } from "@/types"
 import type { Session, User } from "@supabase/supabase-js"
 import { readonly, ref } from "vue"
 
-export function useRuntimeSession(options: {
-  reloadActiveQuicklogData: () => void
-  onStateApplied: (nextState: RuntimeSessionState) => void
-}) {
+export function useRuntimeSession() {
   const session = ref<Session | null>(null)
   const runtimeSessionState = ref<RuntimeSessionState>({
     scope: { type: "anonymous" },
@@ -55,8 +52,6 @@ export function useRuntimeSession(options: {
     }
 
     saveStoredDataScope(nextState.scope)
-    options.reloadActiveQuicklogData()
-    options.onStateApplied(nextState)
   }
 
   function applyObservedSession(nextSession: Session | null) {

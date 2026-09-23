@@ -32,13 +32,11 @@ describe("useActiveQuicklogData", () => {
   })
 
   function setup(userId: string | undefined = "user1") {
-    const scheduleCloudSync = vi.fn()
     const activeData = useActiveQuicklogData({
       getDataUserId: () => userId,
-      scheduleCloudSync,
     })
 
-    return { activeData, scheduleCloudSync }
+    return { activeData }
   }
 
   it("現在のデータスコープから QuicklogData を読み込む", () => {
@@ -58,19 +56,18 @@ describe("useActiveQuicklogData", () => {
     expect(activeData.revision.value).toBe(1)
   })
 
-  it("ローカル変更を保存してから表示へ反映し、クラウド同期を予約する", () => {
-    const { activeData, scheduleCloudSync } = setup()
+  it("ローカル変更を保存すると表示へ反映する", () => {
+    const { activeData } = setup()
 
     activeData.applyLocalChange(data)
 
     expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")
     expect(activeData.data.value).toEqual(data)
     expect(activeData.revision.value).toBe(1)
-    expect(scheduleCloudSync).toHaveBeenCalledOnce()
   })
 
-  it("ローカル変更の保存に失敗した場合は表示と revision を変更せず、同期も予約しない", () => {
-    const { activeData, scheduleCloudSync } = setup()
+  it("ローカル変更の保存に失敗した場合は表示と revision を変更しない", () => {
+    const { activeData } = setup()
     vi.mocked(saveQuicklogData).mockImplementation(() => {
       throw new Error("save failed")
     })
@@ -78,7 +75,6 @@ describe("useActiveQuicklogData", () => {
     expect(() => activeData.applyLocalChange(data)).toThrow("save failed")
     expect(activeData.data.value).toEqual(emptyData)
     expect(activeData.revision.value).toBe(0)
-    expect(scheduleCloudSync).not.toHaveBeenCalled()
   })
 
   it("削除履歴を整理したデータを保存してからアクティブデータへ反映する", () => {
