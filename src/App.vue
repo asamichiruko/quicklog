@@ -157,15 +157,15 @@ const cloudSync = useCloudSync({
 const cloudSyncAccountActions = {
   syncLogEntries: handleCloudSync,
   signInWithEmail: handleSignInWithEmail,
-  signUpWithEmail: handleSignUpWithEmail,
+  signUpWithEmail,
   signOut: handleSignOut,
   deleteCloudSync,
-  sendPasswordResetCode: handleSendPasswordResetCode,
+  sendPasswordResetCode,
   verifyPasswordResetCode: passwordRecoveryFlow.verifyPasswordResetCode,
   updatePasswordAfterRecovery: passwordRecoveryFlow.updatePasswordAfterRecovery,
-  changePassword: handleChangePassword,
+  changePassword,
   verifySignUpCode: handleVerifySignUpCode,
-  resendSignUpCode: handleResendSignUpCode,
+  resendSignUpCode,
   cancelPasswordRecovery: passwordRecoveryFlow.cancelPasswordRecovery,
 } satisfies CloudSyncAccountActions
 
@@ -233,7 +233,7 @@ async function deleteCloudSync() {
     throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
   }
 
-  await syncCloudDataBeforeDeletion(user)
+  await syncAndVerifyCloudDataBeforeDeletion(user)
   const userId = user.id
 
   await deleteCloudSyncData({
@@ -252,7 +252,7 @@ async function deleteCloudSync() {
   anonymousQuicklogData.refresh()
 }
 
-async function syncCloudDataBeforeDeletion(user: User) {
+async function syncAndVerifyCloudDataBeforeDeletion(user: User) {
   const scopeRevisionBeforeSync = runtimeSession.dataScopeRevision.value
 
   let result: CloudQuicklogDataSyncResult | null
@@ -276,7 +276,7 @@ async function syncCloudDataBeforeDeletion(user: User) {
   }
 }
 
-async function handleSubmit(text: string) {
+function handleSubmit(text: string) {
   if (!isValidLogEntryText(text)) {
     alert("メモの記録に失敗しました。メモ内容が長すぎます")
     return
@@ -285,9 +285,7 @@ async function handleSubmit(text: string) {
   const logEntry = createLogEntry(text, new Date(), crypto.randomUUID())
 
   try {
-    activeQuicklogData.applyLocalChange(
-      appendLogEntry(activeQuicklogData.data.value, logEntry),
-    )
+    activeQuicklogData.applyLocalChange(appendLogEntry(activeQuicklogData.data.value, logEntry))
     logEntryForm.value?.clear()
   } catch (error) {
     if (error instanceof SizeError) {
@@ -304,7 +302,7 @@ async function handleOpenCalendar(date: Date) {
   calendarDialog.value?.open()
 }
 
-async function handleRemove(id: string) {
+function handleRemove(id: string) {
   const ok = confirm("メモを削除しますか？")
   if (!ok) return
 
@@ -391,16 +389,8 @@ async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
   cloudSync.requestNowSilently()
 }
 
-async function handleSignUpWithEmail(email: string, password: string) {
-  await signUpWithEmail(email, password)
-}
-
 async function handleVerifySignUpCode(email: string, code: string) {
   await activateCloudSyncAfterAuth(() => verifySignUpCode(email, code))
-}
-
-async function handleResendSignUpCode(email: string) {
-  await resendSignUpCode(email)
 }
 
 async function handleSignInWithEmail(email: string, password: string) {
@@ -410,14 +400,6 @@ async function handleSignInWithEmail(email: string, password: string) {
 async function handleSignOut() {
   await signOut()
   runtimeSession.activateAnonymousScope()
-}
-
-async function handleChangePassword(newPassword: string, currentPassword: string) {
-  await changePassword(newPassword, currentPassword)
-}
-
-async function handleSendPasswordResetCode(email: string) {
-  await sendPasswordResetCode(email)
 }
 </script>
 
