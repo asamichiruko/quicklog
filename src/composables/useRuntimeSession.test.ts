@@ -260,11 +260,11 @@ describe("useRuntimeSession", () => {
     expect(runtimeSession.dataScopeRevision.value).toBe(2)
   })
 
-  it("user scope のとき startAuthCheck で authPending 状態に移る", () => {
+  it("保存済みの user scope から初期化すると authPending 状態に移る", () => {
     vi.mocked(loadStoredDataScope).mockReturnValue({ type: "user", userId: "user1" })
     const { runtimeSession } = setup()
 
-    runtimeSession.startAuthCheck()
+    runtimeSession.initialize()
 
     expect(runtimeSession.session.value).toBeNull()
     expect(runtimeSession.runtimeSessionState.value).toEqual({

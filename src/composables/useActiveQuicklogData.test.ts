@@ -86,7 +86,7 @@ describe("useActiveQuicklogData", () => {
     const now = new Date("2026-07-10T00:00:00.000Z")
     vi.mocked(pruneQuicklogDataLogEntryDeletions).mockReturnValue(data)
 
-    activeData.pruneActiveQuicklogData(now)
+    activeData.initializeActiveQuicklogData(now)
 
     expect(pruneQuicklogDataLogEntryDeletions).toHaveBeenCalledWith(emptyData, now)
     expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")

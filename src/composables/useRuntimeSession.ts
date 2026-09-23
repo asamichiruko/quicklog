@@ -84,7 +84,7 @@ export function useRuntimeSession(options: {
     )
   }
 
-  function startAuthCheck() {
+  function initialize() {
     applyRuntimeSessionState(resolvePendingRuntimeSessionState(loadStoredDataScope()), null)
   }
 
@@ -100,7 +100,7 @@ export function useRuntimeSession(options: {
     activateAnonymousScope,
     applyObservedSession,
     commitAuthenticatedSession,
-    startAuthCheck,
+    initialize,
     applyAuthUnavailable,
   }
 }

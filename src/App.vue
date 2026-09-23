@@ -69,26 +69,17 @@ import { useCloudSync } from "@/composables/useCloudSync"
 import { createPasswordRecoveryFlow } from "@/lib/passwordRecovery"
 import { createUnexpectedAuthSessionClear } from "@/lib/unexpectedAuthSessionClear"
 
-const {
-  session,
-  runtimeSessionState,
-  dataScopeRevision,
-  getActiveCloudUser,
-  activateAnonymousScope,
-  applyObservedSession,
-  commitAuthenticatedSession,
-  applyAuthUnavailable,
-  startAuthCheck,
-} = useRuntimeSession({
+const runtimeSession = useRuntimeSession({
   reloadActiveQuicklogData: () => setActiveQuicklogData(loadActiveQuicklogData()),
   onStateApplied: applySessionSideEffects,
 })
+const { session, runtimeSessionState } = runtimeSession
 
 const passwordRecoveryFlow = createPasswordRecoveryFlow({
   verifyPasswordResetCode,
   updatePasswordAfterRecovery,
   clearLocalAuthSession,
-  activateAnonymousScope,
+  activateAnonymousScope: runtimeSession.activateAnonymousScope,
   onLocalAuthSessionClearError: (error, reason) => {
     if (reason === "completed") {
       console.warn("Failed to clear local auth session after password recovery", error)
@@ -111,9 +102,9 @@ const authSessionListener = useSupabaseAuthSessionListener({
   shouldIgnoreAuthEvent: () =>
     passwordRecoveryFlow.isInProgress() || explicitAuthenticationInProgress,
   onResolvedSession: handleObservedSession,
-  onReloadFailed: (error) => {
-    console.warn("Failed to reload auth state", error)
-    applyAuthUnavailable()
+  onCurrentSessionLoadFailed: (error) => {
+    console.warn("Failed to load current auth session", error)
+    runtimeSession.applyAuthUnavailable()
   },
 })
 
@@ -123,7 +114,7 @@ const {
   setActiveQuicklogData,
   loadActiveQuicklogData,
   saveActiveQuicklogData,
-  pruneActiveQuicklogData,
+  initializeActiveQuicklogData,
   applyLocalQuicklogDataChange,
 } = useActiveQuicklogData({
   getDataUserId: () => getDataUserId(runtimeSessionState.value),
@@ -138,7 +129,7 @@ const authPendingTimeout = usePendingTimeout({
   timeoutMs: authPendingTimeoutMs,
   isPending: () => isAuthPending(runtimeSessionState.value),
   onTimedOut: () => {
-    applyAuthUnavailable()
+    runtimeSession.applyAuthUnavailable()
   },
 })
 
@@ -165,10 +156,10 @@ const {
 
 const { requestNow, requestNowSilently, requestIfDue, scheduleAfterLocalChange, cancelScheduled } =
   useCloudSync({
-    getActiveUser: getActiveCloudUser,
+    getActiveUser: runtimeSession.getActiveCloudUser,
     getData: () => quicklogData.value,
     getDataRevision: () => quicklogDataRevision.value,
-    getScopeRevision: () => dataScopeRevision.value,
+    getScopeRevision: () => runtimeSession.dataScopeRevision.value,
     applySyncedData: (data) => {
       saveActiveQuicklogData(data)
       setActiveQuicklogData(data)
@@ -198,12 +189,13 @@ const logEntryFormArea = ref<HTMLElement | null>(null)
 onMounted(() => {
   migrateStorageLayout()
 
-  startAuthCheck()
-  pruneActiveQuicklogData(new Date())
+  runtimeSession.initialize()
+  initializeActiveQuicklogData(new Date())
   settings.value = loadSettings()
 
   authSessionListener.start()
-  void authSessionListener.reload()
+  // syncStatus が disabled でも、ブラウザに残る予期しない Supabase セッションを検出・破棄する
+  void authSessionListener.reconcileCurrentSession()
 })
 
 function openSettings() {
@@ -243,12 +235,12 @@ function moveAnonymousDataToUser(user: User) {
 
 async function rollbackCloudSyncStart() {
   await signOut()
-  activateAnonymousScope()
+  runtimeSession.activateAnonymousScope()
 }
 
 async function deleteCloudSync() {
   // 削除フローを開始できるかの事前チェック
-  const user = getActiveCloudUser()
+  const user = runtimeSession.getActiveCloudUser()
   if (!user) {
     throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
   }
@@ -268,12 +260,12 @@ async function deleteCloudSync() {
     },
   })
 
-  activateAnonymousScope()
+  runtimeSession.activateAnonymousScope()
   refreshAnonymousQuicklogDataState()
 }
 
 async function syncCloudDataBeforeDeletion(user: User) {
-  const scopeRevisionBeforeSync = dataScopeRevision.value
+  const scopeRevisionBeforeSync = runtimeSession.dataScopeRevision.value
 
   let result: CloudQuicklogDataSyncResult | null
   try {
@@ -283,13 +275,13 @@ async function syncCloudDataBeforeDeletion(user: User) {
     throw new CloudSyncDeletionError("クラウド同期に失敗しました")
   }
 
-  const currentUser = getActiveCloudUser()
+  const currentUser = runtimeSession.getActiveCloudUser()
   if (!result || !currentUser || currentUser.id !== user.id) {
     throw new CloudSyncDeletionError("サインイン状態を確認できませんでした")
   }
 
   if (
-    scopeRevisionBeforeSync !== dataScopeRevision.value ||
+    scopeRevisionBeforeSync !== runtimeSession.dataScopeRevision.value ||
     toRaw(quicklogData.value) !== result.data
   ) {
     throw new CloudSyncDeletionError("クラウド同期に失敗しました")
@@ -366,7 +358,7 @@ async function importQuicklogDataFromFile(file: File): Promise<QuicklogDataImpor
 }
 
 function handleObservedSession(nextSession: Session | null) {
-  const shouldClearSession = applyObservedSession(nextSession)
+  const shouldClearSession = runtimeSession.applyObservedSession(nextSession)
 
   if (shouldClearSession) {
     unexpectedAuthSessionClear.request()
@@ -397,7 +389,7 @@ async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
       authenticate,
       loadAuthenticatedSession: getCurrentSession,
       moveAnonymousDataToUser,
-      commitAuthenticatedSession,
+      commitAuthenticatedSession: runtimeSession.commitAuthenticatedSession,
       rollback: rollbackCloudSyncStart,
     })
   } finally {
@@ -425,7 +417,7 @@ async function handleSignInWithEmail(email: string, password: string) {
 
 async function handleSignOut() {
   await signOut()
-  activateAnonymousScope()
+  runtimeSession.activateAnonymousScope()
 }
 
 async function handleChangePassword(newPassword: string, currentPassword: string) {

@@ -27,7 +27,7 @@ export function useActiveQuicklogData(options: {
     dataRevision.value += 1
   }
 
-  function pruneActiveQuicklogData(now: Date) {
+  function initializeActiveQuicklogData(now: Date) {
     const pruned = pruneQuicklogDataLogEntryDeletions(loadActiveQuicklogData(), now)
     saveActiveQuicklogData(pruned)
     setActiveQuicklogData(pruned)
@@ -45,7 +45,7 @@ export function useActiveQuicklogData(options: {
     setActiveQuicklogData,
     loadActiveQuicklogData,
     saveActiveQuicklogData,
-    pruneActiveQuicklogData,
+    initializeActiveQuicklogData,
     applyLocalQuicklogDataChange,
   }
 }

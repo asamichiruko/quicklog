@@ -6,7 +6,7 @@ import { onUnmounted } from "vue"
 export function useSupabaseAuthSessionListener(options: {
   shouldIgnoreAuthEvent: () => boolean
   onResolvedSession: (nextSession: Session | null) => void
-  onReloadFailed: (error: unknown) => void
+  onCurrentSessionLoadFailed: (error: unknown) => void
 }) {
   let unsubscribe: (() => void) | undefined
 
@@ -29,11 +29,11 @@ export function useSupabaseAuthSessionListener(options: {
     unsubscribe?.()
   }
 
-  async function reload() {
+  async function reconcileCurrentSession() {
     try {
       options.onResolvedSession(await getCurrentSession())
     } catch (error) {
-      options.onReloadFailed(error)
+      options.onCurrentSessionLoadFailed(error)
     }
   }
 
@@ -42,6 +42,6 @@ export function useSupabaseAuthSessionListener(options: {
   return {
     start,
     stop,
-    reload,
+    reconcileCurrentSession,
   }
 }

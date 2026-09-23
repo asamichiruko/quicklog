@@ -51,7 +51,7 @@ describe("useSupabaseAuthSessionListener", () => {
     const options: ListenerOptions = {
       shouldIgnoreAuthEvent: vi.fn(() => false),
       onResolvedSession: vi.fn(),
-      onReloadFailed: vi.fn(),
+      onCurrentSessionLoadFailed: vi.fn(),
       ...overrides,
     }
 
@@ -146,37 +146,37 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(mocks.unsubscribe).toHaveBeenCalledOnce()
   })
 
-  it("reload() 成功時に現在のセッションを onResolvedSession に渡す", async () => {
+  it("現在のセッションの調停に成功すると onResolvedSession に渡す", async () => {
     const session = createSession("user1")
     mocks.getCurrentSession.mockResolvedValue(session)
     const { listener, options } = setup()
 
-    await listener.reload()
+    await listener.reconcileCurrentSession()
 
     expect(mocks.getCurrentSession).toHaveBeenCalledOnce()
     expect(options.onResolvedSession).toHaveBeenCalledExactlyOnceWith(session)
-    expect(options.onReloadFailed).not.toHaveBeenCalled()
+    expect(options.onCurrentSessionLoadFailed).not.toHaveBeenCalled()
   })
 
-  it("reload() 失敗時に onReloadFailed を呼ぶ", async () => {
+  it("現在のセッションの取得に失敗すると onCurrentSessionLoadFailed を呼ぶ", async () => {
     const error = new Error("reload failed")
     mocks.getCurrentSession.mockRejectedValue(error)
     const { listener, options } = setup()
 
-    await listener.reload()
+    await listener.reconcileCurrentSession()
 
     expect(options.onResolvedSession).not.toHaveBeenCalled()
-    expect(options.onReloadFailed).toHaveBeenCalledExactlyOnceWith(error)
+    expect(options.onCurrentSessionLoadFailed).toHaveBeenCalledExactlyOnceWith(error)
   })
 
-  it("reload() で null が取得された場合も onResolvedSession にそれを渡す", async () => {
+  it("現在のセッションが null の場合も onResolvedSession にそれを渡す", async () => {
     mocks.getCurrentSession.mockResolvedValue(null)
     const { listener, options } = setup()
 
-    await listener.reload()
+    await listener.reconcileCurrentSession()
 
     expect(mocks.getCurrentSession).toHaveBeenCalledOnce()
     expect(options.onResolvedSession).toHaveBeenCalledExactlyOnceWith(null)
-    expect(options.onReloadFailed).not.toHaveBeenCalled()
+    expect(options.onCurrentSessionLoadFailed).not.toHaveBeenCalled()
   })
 })
