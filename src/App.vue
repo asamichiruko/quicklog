@@ -110,7 +110,7 @@ const authSessionListener = useSupabaseAuthSessionListener({
 
 const activeQuicklogData = useActiveQuicklogData({
   getDataUserId: () => getDataUserId(runtimeSessionState.value),
-  scheduleCloudSync: () => scheduleAfterLocalChange(),
+  scheduleCloudSync: () => cloudSync.scheduleAfterLocalChange(),
 })
 const logEntries = computed(() => activeQuicklogData.data.value.logEntries)
 
@@ -143,17 +143,16 @@ const anonymousQuicklogData = useAnonymousQuicklogData({
 })
 const { state: anonymousQuicklogDataState } = anonymousQuicklogData
 
-const { requestNow, requestNowSilently, requestIfDue, scheduleAfterLocalChange, cancelScheduled } =
-  useCloudSync({
-    getActiveUser: runtimeSession.getActiveCloudUser,
-    getData: () => activeQuicklogData.data.value,
-    getDataRevision: () => activeQuicklogData.revision.value,
-    getScopeRevision: () => runtimeSession.dataScopeRevision.value,
-    applySyncedData: (data) => {
-      activeQuicklogData.save(data)
-      activeQuicklogData.set(data)
-    },
-  })
+const cloudSync = useCloudSync({
+  getActiveUser: runtimeSession.getActiveCloudUser,
+  getData: () => activeQuicklogData.data.value,
+  getDataRevision: () => activeQuicklogData.revision.value,
+  getScopeRevision: () => runtimeSession.dataScopeRevision.value,
+  applySyncedData: (data) => {
+    activeQuicklogData.save(data)
+    activeQuicklogData.set(data)
+  },
+})
 
 const cloudSyncAccountActions = {
   syncLogEntries: handleCloudSync,
@@ -201,11 +200,11 @@ function applySessionSideEffects(nextState: RuntimeSessionState) {
   }
 
   if (isAnonymous(nextState) || isSessionLost(nextState)) {
-    cancelScheduled()
+    cloudSync.cancelScheduled()
     return
   }
 
-  requestIfDue()
+  cloudSync.requestIfDue()
 }
 
 function moveToLogEntryForm() {
@@ -218,7 +217,7 @@ function moveAnonymousDataToUser(user: User) {
   activeQuicklogData.set(result.data)
 
   if (result.moved) {
-    scheduleAfterLocalChange()
+    cloudSync.scheduleAfterLocalChange()
   }
 }
 
@@ -258,7 +257,7 @@ async function syncCloudDataBeforeDeletion(user: User) {
 
   let result: CloudQuicklogDataSyncResult | null
   try {
-    result = await requestNow()
+    result = await cloudSync.requestNow()
   } catch (error) {
     console.warn("Failed to sync quicklog data before account deletion", error)
     throw new CloudSyncDeletionError("クラウド同期に失敗しました")
@@ -359,7 +358,7 @@ function handleObservedSession(nextSession: Session | null) {
 }
 
 async function handleCloudSync(): Promise<CloudQuicklogDataSyncResult> {
-  const result = await requestNow()
+  const result = await cloudSync.requestNow()
   if (!result) throw new Error("Cloud sync is not available.")
   return result
 }
@@ -389,7 +388,7 @@ async function activateCloudSyncAfterAuth(authenticate: () => Promise<void>) {
     explicitAuthenticationInProgress = false
   }
 
-  requestNowSilently()
+  cloudSync.requestNowSilently()
 }
 
 async function handleSignUpWithEmail(email: string, password: string) {
