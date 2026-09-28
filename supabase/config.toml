@@ -244,6 +244,9 @@ content_path = "./supabase/templates/confirmation.html"
 subject = "パスワードの再設定"
 content_path = "./supabase/templates/recovery.html"
 
+[auth.email.template.email_change]
+subject = "メールアドレス変更の確認"
+content_path = "./supabase/templates/email_change.html"
 
 # Use a production-ready SMTP server
 # [auth.email.smtp]
