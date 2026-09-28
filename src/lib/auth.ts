@@ -155,3 +155,26 @@ export async function resendSignUpCode(email: string): Promise<void> {
     throw error
   }
 }
+
+export async function requestEmailChange(newEmail: string): Promise<void> {
+  const {
+    data: { user },
+    error: getUserError,
+  } = await supabase.auth.getUser()
+
+  if (getUserError) throw getUserError
+
+  if (!user?.email) throw new Error("ユーザーのメールアドレスを取得できません")
+
+  const redirectUrl = new URL(window.location.pathname, window.location.origin)
+  redirectUrl.searchParams.set("view", "email-change")
+
+  const { error } = await supabase.auth.updateUser(
+    { email: newEmail },
+    { emailRedirectTo: redirectUrl.href },
+  )
+
+  if (error) {
+    throw error
+  }
+}

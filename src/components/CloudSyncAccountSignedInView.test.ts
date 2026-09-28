@@ -20,6 +20,7 @@ describe("CloudSyncAccountSignedInView", () => {
     const { emitted } = render(CloudSyncAccountSignedInView, {
       props: {
         isLoading: false,
+        existsEmail: true,
       },
     })
 
@@ -46,6 +47,7 @@ describe("CloudSyncAccountSignedInView", () => {
     const { emitted } = render(CloudSyncAccountSignedInView, {
       props: {
         isLoading: false,
+        existsEmail: true,
       },
     })
 

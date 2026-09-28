@@ -3,6 +3,7 @@ import { ref } from "vue"
 
 const props = defineProps<{
   isLoading: boolean
+  existsEmail: boolean
 }>()
 
 const emit = defineEmits<{
@@ -10,6 +11,7 @@ const emit = defineEmits<{
   signOut: []
   deleteCloudSync: []
   showPasswordChangeView: []
+  showEmailChangeView: []
 }>()
 
 const deleteCloudSyncConfirmation = ref<HTMLDetailsElement | null>(null)
@@ -50,6 +52,27 @@ defineExpose({ reset })
       @click="emit('showPasswordChangeView')"
     >
       <span class="list-item-button-label">パスワードを変更</span>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="16"
+        height="16"
+        fill="currentColor"
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+      >
+        <path
+          d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"
+        />
+      </svg>
+    </button>
+    <button
+      v-if="existsEmail"
+      type="button"
+      class="button-menu change-view-button"
+      :disabled="props.isLoading"
+      @click="emit('showEmailChangeView')"
+    >
+      <span class="list-item-button-label">メールアドレスを変更</span>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="16"

@@ -29,6 +29,7 @@ function createActions() {
     verifySignUpCode: vi.fn(),
     resendSignUpCode: vi.fn(),
     cancelPasswordRecovery: vi.fn(),
+    requestEmailChange: vi.fn(),
   } satisfies CloudSyncAccountActions
 
   return actions

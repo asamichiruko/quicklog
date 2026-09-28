@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CloudSyncAccountEmailChangeForm from "@/components/CloudSyncAccountEmailChangeForm.vue"
 import CloudSyncAccountOtpVerificationForm from "@/components/CloudSyncAccountOtpVerificationForm.vue"
 import CloudSyncAccountPasswordChangeForm from "@/components/CloudSyncAccountPasswordChangeForm.vue"
 import CloudSyncAccountPasswordResetForm from "@/components/CloudSyncAccountPasswordResetForm.vue"
@@ -32,6 +33,7 @@ export type CloudSyncAccountActions = {
   verifySignUpCode: (email: string, code: string) => Promise<void>
   resendSignUpCode: (email: string) => Promise<void>
   cancelPasswordRecovery: () => Promise<void>
+  requestEmailChange: (newEmail: string) => Promise<void>
 }
 
 const props = defineProps<{
@@ -41,7 +43,7 @@ const props = defineProps<{
 }>()
 
 export type SelectablePanelView = "signIn" | "signUp" | "passwordResetRequest"
-export type SignedInPanelView = "main" | "changePassword"
+export type SignedInPanelView = "main" | "changePassword" | "changeEmail"
 export type PanelView =
   | SelectablePanelView
   | SignedInPanelView
@@ -100,6 +102,8 @@ const signUpOtpVerificationForm = ref<InstanceType<
   typeof CloudSyncAccountOtpVerificationForm
 > | null>(null)
 const passwordResetForm = ref<InstanceType<typeof CloudSyncAccountPasswordResetForm> | null>(null)
+const passwordChangeForm = ref<InstanceType<typeof CloudSyncAccountPasswordChangeForm> | null>(null)
+const emailChangeForm = ref<InstanceType<typeof CloudSyncAccountEmailChangeForm> | null>(null)
 
 const feedbackMessage = ref("")
 const feedbackKind = ref<FeedbackKind | null>(null)
@@ -115,6 +119,13 @@ const sessionStateMessage = computed(() => {
   } else {
     return "クラウド同期を使うにはサインインしてください"
   }
+})
+
+const currentEmail = computed(() => {
+  if (!isAuthenticated(props.runtimeSessionState) || !props.session || !props.session.user.email) {
+    return ""
+  }
+  return props.session.user.email
 })
 
 function showSignInView() {
@@ -135,6 +146,10 @@ function showSignedInMainView() {
 
 function showPasswordChangeView() {
   signedInPanelView.value = "changePassword"
+}
+
+function showEmailChangeView() {
+  signedInPanelView.value = "changeEmail"
 }
 
 function showPasswordResetForm() {
@@ -162,6 +177,8 @@ function resetAuthForms() {
   passwordResetRequestForm.value?.reset()
   passwordResetOtpVerificationForm.value?.reset()
   signUpOtpVerificationForm.value?.reset()
+  passwordChangeForm.value?.reset()
+  emailChangeForm.value?.reset()
 }
 
 function clearSignUpFlow() {
@@ -343,6 +360,25 @@ async function handleChangePassword(newPassword: string, currentPassword: string
   }
 }
 
+async function handleChangeEmail(newEmail: string) {
+  if (validateEmail(newEmail) !== "" || isLoading.value) return
+
+  isLoading.value = true
+  feedbackMessage.value = ""
+
+  try {
+    await props.actions.requestEmailChange(newEmail)
+
+    feedbackMessage.value = "メールアドレス変更用のメールを送信しました"
+    feedbackKind.value = "success"
+  } catch (error) {
+    feedbackMessage.value = getAuthFeedbackMessage(error)
+    feedbackKind.value = "error"
+  } finally {
+    isLoading.value = false
+  }
+}
+
 async function handlePasswordResetRequest(email: string) {
   if (validateEmail(email) !== "") return
   if (isLoading.value) return
@@ -460,7 +496,7 @@ function reset() {
 }
 
 function handleBack() {
-  if (panelView.value === "changePassword") {
+  if (panelView.value === "changePassword" || panelView.value === "changeEmail") {
     showSignedInMainView()
     return true
   }
@@ -501,33 +537,45 @@ defineExpose({
     <p class="description" :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }">
       <span>{{ sessionStateMessage }}</span>
       <span v-if="isAuthenticated(props.runtimeSessionState)">
-        サインイン中: {{ props.session?.user.email }}
+        サインイン中: {{ currentEmail === "" ? "メールアドレスなし" : currentEmail }}
       </span>
     </p>
 
     <template v-if="panelView === 'main'">
       <CloudSyncAccountSignedInView
-        ref="cloudSyncAccountSignedInView"
+        ref="signedInView"
         :is-loading="isLoading"
+        :exists-email="currentEmail !== ''"
         @sync="handleSync"
         @sign-out="handleSignOut"
         @delete-cloud-sync="handleConfirmDeleteCloudSync"
         @show-password-change-view="showPasswordChangeView"
+        @show-email-change-view="showEmailChangeView"
       />
     </template>
 
     <template v-else-if="panelView === 'changePassword'">
       <CloudSyncAccountPasswordChangeForm
-        ref="cloudSyncAccountPasswordChangeForm"
+        ref="passwordChangeForm"
         :is-loading="isLoading"
         @submit="handleChangePassword"
         @edit="clearFeedback"
       />
     </template>
 
+    <template v-else-if="panelView === 'changeEmail'">
+      <CloudSyncAccountEmailChangeForm
+        ref="emailChangeForm"
+        :is-loading="isLoading"
+        :current-email="currentEmail"
+        @submit="handleChangeEmail"
+        @edit="clearFeedback"
+      />
+    </template>
+
     <template v-else-if="panelView === 'signIn'">
       <CloudSyncAccountSignInForm
-        ref="cloudSyncAccountSignInForm"
+        ref="signInForm"
         :is-loading="isLoading"
         @show-password-reset-request="showPasswordResetRequestView"
         @show-sign-up-view="showSignUpView"
@@ -557,7 +605,7 @@ defineExpose({
 
     <template v-else-if="panelView === 'passwordResetRequest'">
       <CloudSyncAccountPasswordResetRequestForm
-        ref="cloudSyncAccountPasswordResetRequestForm"
+        ref="passwordResetRequestForm"
         :is-loading="isLoading"
         @cancel="cancelPasswordResetFlow"
         @submit="handlePasswordResetRequest"
@@ -578,7 +626,7 @@ defineExpose({
 
     <template v-else-if="panelView === 'resetPassword'">
       <CloudSyncAccountPasswordResetForm
-        ref="cloudSyncAccountPasswordResetForm"
+        ref="passwordResetForm"
         :is-loading="isLoading"
         @cancel="cancelPasswordResetFlow"
         @submit="handlePasswordReset"

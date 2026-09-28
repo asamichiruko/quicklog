@@ -22,6 +22,7 @@ function createCloudSyncAccountActions(
     verifySignUpCode: vi.fn(),
     resendSignUpCode: vi.fn(),
     cancelPasswordRecovery: vi.fn(),
+    requestEmailChange: vi.fn(),
     ...overrides,
   }
 }
