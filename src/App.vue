@@ -17,6 +17,7 @@ import {
   verifyPasswordResetCode,
   verifySignUpCode,
   requestEmailChange,
+  getCurrentUser,
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { deleteCloudSyncData } from "@/lib/cloudSyncAccountDeletion"
@@ -69,6 +70,7 @@ import { useRuntimeSession } from "@/composables/useRuntimeSession"
 import { useCloudSync } from "@/composables/useCloudSync"
 import { createPasswordRecoveryFlow } from "@/lib/passwordRecovery"
 import { createUnexpectedAuthSessionClear } from "@/lib/unexpectedAuthSessionClear"
+import { useAccountUser, type AccountUserView } from "@/composables/useAccountUser"
 
 const runtimeSession = useRuntimeSession()
 const { session, runtimeSessionState } = runtimeSession
@@ -120,6 +122,18 @@ const authSessionListener = useSupabaseAuthSessionListener({
     runtimeSession.applyAuthUnavailable()
   },
 })
+
+const accountUserState = useAccountUser({
+  getCurrentUser,
+  getCurrentSession: () => runtimeSession.session.value,
+  getActiveCloudUser: runtimeSession.getActiveCloudUser,
+})
+const accountUserView: AccountUserView = {
+  user: accountUserState.user,
+  isLoading: accountUserState.isLoading,
+  error: accountUserState.error,
+  refresh: accountUserState.refresh,
+}
 
 const logEntries = computed(() => activeQuicklogData.data.value.logEntries)
 const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
@@ -198,6 +212,7 @@ onUnmounted(() => {
 
 function openSettings() {
   anonymousQuicklogData.refresh()
+  accountUserState.refresh()
   settingsDialog.value?.open()
 }
 
@@ -473,6 +488,7 @@ async function handleSignOut() {
   <SettingsDialog
     ref="settingsDialog"
     :session="session"
+    :account-user="accountUserView"
     :settings="settings"
     :log-entries="logEntries"
     :runtime-session-state="runtimeSessionState"

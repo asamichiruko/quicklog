@@ -7,6 +7,7 @@ import CloudSyncAccountPasswordResetRequestForm from "@/components/CloudSyncAcco
 import CloudSyncAccountSignedInView from "@/components/CloudSyncAccountSignedInView.vue"
 import CloudSyncAccountSignInForm from "@/components/CloudSyncAccountSignInForm.vue"
 import CloudSyncAccountSignUpForm from "@/components/CloudSyncAccountSignUpForm.vue"
+import type { AccountUserView } from "@/composables/useAccountUser"
 import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
 import {
   validateRequiredPassword,
@@ -38,6 +39,7 @@ export type CloudSyncAccountActions = {
 
 const props = defineProps<{
   session: Session | null
+  accountUser: AccountUserView
   runtimeSessionState: RuntimeSessionState
   actions: CloudSyncAccountActions
 }>()
@@ -122,10 +124,26 @@ const sessionStateMessage = computed(() => {
 })
 
 const currentEmail = computed(() => {
-  if (!isAuthenticated(props.runtimeSessionState) || !props.session || !props.session.user.email) {
-    return ""
+  if (!canUseCloudSession.value) return ""
+  if (props.accountUser.user.value?.id !== props.session?.user.id) return ""
+  return props.accountUser.user.value?.email ?? ""
+})
+
+const accountUserDisplay = computed<{
+  message: string
+  actionLabel: string | null
+}>(() => {
+  if (props.accountUser.isLoading.value) {
+    return { message: "アカウント情報を取得しています…", actionLabel: null }
+  } else if (props.accountUser.error.value !== null) {
+    return { message: "アカウント情報を取得できませんでした", actionLabel: "再試行" }
+  } else if (props.accountUser.user.value === null) {
+    return { message: "アカウント情報を確認できていません", actionLabel: "取得" }
+  } else if (currentEmail.value === "") {
+    return { message: "サインイン中 (メールアドレス登録なし)", actionLabel: null }
+  } else {
+    return { message: "サインイン中: " + currentEmail.value, actionLabel: null }
   }
-  return props.session.user.email
 })
 
 function showSignInView() {
@@ -534,12 +552,25 @@ defineExpose({
 
 <template>
   <div class="container">
-    <p class="description" :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }">
-      <span>{{ sessionStateMessage }}</span>
-      <span v-if="isAuthenticated(props.runtimeSessionState)">
-        サインイン中: {{ currentEmail === "" ? "メールアドレスなし" : currentEmail }}
-      </span>
-    </p>
+    <div class="description">
+      <p class="sync-state" :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }">
+        {{ sessionStateMessage }}
+      </p>
+      <div v-if="canUseCloudSession">
+        <p class="sync-state">
+          {{ accountUserDisplay.message }}
+        </p>
+        <button
+          v-if="accountUserDisplay.actionLabel"
+          type="button"
+          class="button-secondary refresh-user-button"
+          :disabled="isLoading || props.accountUser.isLoading.value"
+          @click="props.accountUser.refresh()"
+        >
+          {{ accountUserDisplay.actionLabel }}
+        </button>
+      </div>
+    </div>
 
     <template v-if="panelView === 'main'">
       <CloudSyncAccountSignedInView
@@ -664,7 +695,15 @@ defineExpose({
   font-size: var(--font-size-small);
 }
 
-.description.session-lost {
+.sync-state {
+  margin: 0;
+}
+
+.refresh-user-button {
+  width: fit-content;
+}
+
+.sync-state.session-lost {
   color: var(--color-text-error);
 }
 

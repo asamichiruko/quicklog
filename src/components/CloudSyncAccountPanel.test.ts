@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
-import type { Session } from "@supabase/supabase-js"
+import type { Session, User } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
 import CloudSyncPanel, { type CloudSyncAccountActions } from "./CloudSyncAccountPanel.vue"
 import type { RuntimeSessionState } from "@/types.ts"
 import { CloudSyncDeletionError } from "@/errors.ts"
+import type { AccountUserView } from "@/composables/useAccountUser.ts"
+import { readonly, ref } from "vue"
 
 function createSession(userId: string, email: string): Session {
   return {
@@ -35,8 +37,30 @@ function createActions() {
   return actions
 }
 
+function createAccountUser(
+  options: {
+    isLoading?: boolean
+    error?: unknown
+    user?: User | null
+    refresh?: () => Promise<void>
+  } = {},
+) {
+  return {
+    isLoading: readonly(ref(options.isLoading ?? false)),
+    error: readonly(ref<unknown>(options.error ?? null)),
+    user: readonly(ref<User | null>(options.user ?? null)),
+    refresh: options.refresh ?? vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  } satisfies AccountUserView
+}
+
 function createDefaultProps(actions: CloudSyncAccountActions) {
   const session = null
+  const accountUser = createAccountUser({
+    isLoading: false,
+    error: null,
+    user: null,
+    refresh: vi.fn(),
+  })
   const runtimeSessionState = {
     scope: { type: "anonymous" },
     syncStatus: "disabled",
@@ -44,6 +68,7 @@ function createDefaultProps(actions: CloudSyncAccountActions) {
 
   return {
     session,
+    accountUser,
     runtimeSessionState,
     actions,
   }
@@ -111,7 +136,7 @@ describe("CloudSyncAccountPanel", () => {
     ).toBeInTheDocument()
   })
 
-  it("サインイン中にメールアドレスが表示されてサインアウトできる", async () => {
+  it("サインイン中にサインアウトできる", async () => {
     const user = userEvent.setup()
     const signOut = vi.fn()
     const defaultProps = createDefaultProps({
@@ -130,12 +155,139 @@ describe("CloudSyncAccountPanel", () => {
       },
     })
 
-    expect(screen.getByText(/user@example\.com/)).toBeInTheDocument()
-
     await user.click(screen.getByRole("button", { name: "サインアウト" }))
 
     expect(signOut).toHaveBeenCalledOnce()
     expect(await screen.findByText("クラウド同期を停止しました")).toBeInTheDocument()
+  })
+
+  it("サインイン中でメールアドレスが取得できているとき、そのメールアドレスが表示される", async () => {
+    const session = createSession("user1", "user@example.com")
+    const accountUser = createAccountUser({
+      user: session.user,
+    })
+    const defaultProps = createDefaultProps(createActions())
+
+    render(CloudSyncPanel, {
+      props: {
+        ...defaultProps,
+        session,
+        accountUser,
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    expect(screen.getByText(/user@example\.com/)).toBeInTheDocument()
+  })
+
+  it("アカウント情報の取得中のメッセージを表示し、取得・再試行ボタンは表示しない", () => {
+    render(CloudSyncPanel, {
+      props: {
+        ...createDefaultProps(createActions()),
+        session: createSession("user1", "user@example.com"),
+        accountUser: createAccountUser({ isLoading: true }),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    expect(screen.getByText("アカウント情報を取得しています…")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+    expect(screen.queryByText("アカウント情報を確認できていません")).not.toBeInTheDocument()
+  })
+
+  it("アカウント情報の取得失敗のメッセージと再試行ボタンを表示する", () => {
+    render(CloudSyncPanel, {
+      props: {
+        ...createDefaultProps(createActions()),
+        session: createSession("user1", "user@example.com"),
+        accountUser: createAccountUser({ error: new Error("network unavailable") }),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    expect(screen.getByText("アカウント情報を取得できませんでした")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "再試行" })).toBeEnabled()
+    expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("クラウド同期を使うにはサインインしてください"),
+    ).not.toBeInTheDocument()
+  })
+
+  it("未取得の案内と取得ボタンを表示し、メール未登録とは表示しない", () => {
+    render(CloudSyncPanel, {
+      props: {
+        ...createDefaultProps(createActions()),
+        session: createSession("user1", "user@example.com"),
+        accountUser: createAccountUser(),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    expect(screen.getByText("アカウント情報を確認できていません")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "取得" })).toBeEnabled()
+    expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+    expect(screen.queryByText("サインイン中 (メールアドレス登録なし)")).not.toBeInTheDocument()
+  })
+
+  it("取得したユーザーにメールがなければ未登録と表示し、メール変更の導線を出さない", () => {
+    const accountUser = createAccountUser({
+      user: { ...createSession("user1", "user@example.com").user, email: undefined },
+    })
+    render(CloudSyncPanel, {
+      props: {
+        ...createDefaultProps(createActions()),
+        session: createSession("user1", "user@example.com"),
+        accountUser,
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    expect(screen.getByText("サインイン中 (メールアドレス登録なし)")).toBeInTheDocument()
+    expect(screen.queryByText("サインイン中: user@example.com")).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "メールアドレスを変更" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    { buttonLabel: "取得", error: null },
+    { buttonLabel: "再試行", error: new Error("network unavailable") },
+  ])("$buttonLabel ボタンを押すと refresh を呼ぶ", async ({ buttonLabel, error }) => {
+    const user = userEvent.setup()
+    const refresh = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+    render(CloudSyncPanel, {
+      props: {
+        ...createDefaultProps(createActions()),
+        session: createSession("user1", "user@example.com"),
+        accountUser: createAccountUser({ error, refresh }),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user1" },
+          syncStatus: "authenticated",
+        },
+      },
+    })
+
+    expect(refresh).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole("button", { name: buttonLabel }))
+
+    expect(refresh).toHaveBeenCalledExactlyOnceWith()
   })
 
   it("サインアウト時にエラーが発生するとその旨が表示される", async () => {
@@ -177,7 +329,7 @@ describe("CloudSyncAccountPanel", () => {
       },
     })
 
-    expect(screen.getByText(/クラウド同期が停止しています/).closest(".description")).toHaveClass(
+    expect(screen.getByText(/クラウド同期が停止しています/).closest(".sync-state")).toHaveClass(
       "session-lost",
     )
   })

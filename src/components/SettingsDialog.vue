@@ -6,6 +6,7 @@ import LocalDataManagementPanel from "@/components/LocalDataManagementPanel.vue"
 import LogEntryCopyPanel from "@/components/LogEntryCopyPanel.vue"
 import LogEntryExportPanel from "@/components/LogEntryExportPanel.vue"
 import LogEntryImportPanel from "@/components/LogEntryImportPanel.vue"
+import type { AccountUserView } from "@/composables/useAccountUser"
 import { DEFAULT_SETTINGS } from "@/lib/settings"
 import type {
   AnonymousDataState,
@@ -20,6 +21,7 @@ import { computed, ref } from "vue"
 
 const props = defineProps<{
   session: Session | null
+  accountUser: AccountUserView
   runtimeSessionState: RuntimeSessionState
   logEntries: LogEntry[]
   settings: AppSettings
@@ -344,6 +346,7 @@ defineExpose({ open })
         v-show="settingsView === 'account'"
         ref="cloudSyncPanel"
         :session="props.session"
+        :account-user="props.accountUser"
         :runtime-session-state="props.runtimeSessionState"
         :actions="props.cloudSyncAccountActions"
       />

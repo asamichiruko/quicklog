@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
-import { defineComponent, ref } from "vue"
+import { defineComponent, readonly, ref } from "vue"
 import type { ExportType, RuntimeSessionState } from "@/types"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
+import type { AccountUserView } from "@/composables/useAccountUser.ts"
+import type { User } from "@supabase/supabase-js"
 
 function createCloudSyncAccountActions(
   overrides: Partial<CloudSyncAccountActions> = {},
@@ -38,6 +40,14 @@ const TestHost = defineComponent({
       { id: "id3", text: "text3", createdAt: "2026-05-22T12:00:00.000Z" },
     ])
     const savedSettings = ref<unknown>(null)
+
+    const accountUser = ref<AccountUserView>({
+      isLoading: readonly(ref(false)),
+      error: readonly(ref<unknown>(null)),
+      user: readonly(ref<User | null>(null)),
+      refresh: vi.fn(),
+    })
+
     const exportType = ref<ExportType | null>(null)
     const importedFile = ref<File | null>(null)
     const runtimeSessionState = ref<RuntimeSessionState>({
@@ -73,6 +83,7 @@ const TestHost = defineComponent({
       enableSummary,
       saveSettings,
       savedSettings,
+      accountUser,
       exportType,
       importedFile,
       runtimeSessionState,
@@ -94,6 +105,7 @@ const TestHost = defineComponent({
     :log-entries="logEntries"
     @save="saveSettings"
     :session="null"
+    :account-user="accountUser"
     :runtime-session-state="runtimeSessionState"
     :anonymous-data-state="anonymousDataState"
     :delete-anonymous-data="deleteAnonymousData"
