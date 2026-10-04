@@ -161,133 +161,122 @@ describe("CloudSyncAccountPanel", () => {
     expect(await screen.findByText("クラウド同期を停止しました")).toBeInTheDocument()
   })
 
-  it("サインイン中でメールアドレスが取得できているとき、そのメールアドレスが表示される", async () => {
-    const session = createSession("user1", "user@example.com")
-    const accountUser = createAccountUser({
-      user: session.user,
-    })
-    const defaultProps = createDefaultProps(createActions())
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session,
-        accountUser,
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+  describe("アカウント情報の表示と再取得", () => {
+    // 認証状態は固定し、各テストでは表示用の情報と取得状況を指定する。
+    function renderAccountUser(options: Parameters<typeof createAccountUser>[0] = {}) {
+      return render(CloudSyncPanel, {
+        props: {
+          ...createDefaultProps(createActions()),
+          session: createSession("user1", "session@example.com"),
+          accountUser: createAccountUser(options),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
+      })
+    }
+
+    const account = createSession("user1", "user@example.com").user
+
+    describe("通常時", () => {
+      it("未取得: 案内と取得ボタンを表示し、メール未登録とは表示しない", () => {
+        renderAccountUser()
+
+        expect(screen.getByText("アカウント情報を確認できていません")).toBeInTheDocument()
+        expect(screen.getByRole("button", { name: "取得" })).toBeEnabled()
+        expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+        expect(screen.queryByText(/サインイン中:/)).not.toBeInTheDocument()
+        expect(screen.queryByText("アカウント情報を取得しています…")).not.toBeInTheDocument()
+      })
+
+      it("取得済み: セッション内のメールではなく、取得したメールアドレスを表示する", () => {
+        renderAccountUser({ user: account })
+
+        expect(screen.getByText("サインイン中: user@example.com")).toBeInTheDocument()
+        expect(screen.queryByText(/session@example\.com/)).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+        expect(screen.queryByText("アカウント情報を取得しています…")).not.toBeInTheDocument()
+      })
+
+      it("メール未登録: 未登録と表示し、メール変更の導線を出さない", () => {
+        renderAccountUser({ user: { ...account, email: undefined } })
+
+        expect(screen.getByText("サインイン中: メールアドレス登録なし")).toBeInTheDocument()
+        expect(screen.queryByText(/session@example\.com/)).not.toBeInTheDocument()
+        expect(
+          screen.queryByRole("button", { name: "メールアドレスを変更" }),
+        ).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+      })
     })
 
-    expect(screen.getByText(/user@example\.com/)).toBeInTheDocument()
-  })
+    describe("取得中", () => {
+      it("取得済み情報なし: 取得中の案内を表示し、未取得の案内と操作ボタンは表示しない", () => {
+        renderAccountUser({ isLoading: true })
 
-  it("アカウント情報の取得中のメッセージを表示し、取得・再試行ボタンは表示しない", () => {
-    render(CloudSyncPanel, {
-      props: {
-        ...createDefaultProps(createActions()),
-        session: createSession("user1", "user@example.com"),
-        accountUser: createAccountUser({ isLoading: true }),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
-        },
-      },
+        expect(screen.getByText("アカウント情報を取得しています…")).toBeInTheDocument()
+        expect(screen.queryByText(/サインイン中:/)).not.toBeInTheDocument()
+        expect(screen.queryByText("アカウント情報を確認できていません")).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+      })
+
+      it("取得済み情報あり: メールアドレスと取得中の案内を併記する", () => {
+        renderAccountUser({ user: account, isLoading: true })
+
+        expect(screen.getByText("サインイン中: user@example.com")).toBeInTheDocument()
+        expect(screen.getByText("アカウント情報を取得しています…")).toBeInTheDocument()
+        expect(screen.queryByText("アカウント情報を確認できていません")).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+        expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
+      })
     })
 
-    expect(screen.getByText("アカウント情報を取得しています…")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
-    expect(screen.queryByText("アカウント情報を確認できていません")).not.toBeInTheDocument()
-  })
+    describe("取得失敗", () => {
+      it("取得済み情報なし: 失敗の案内と再試行ボタンを表示する", () => {
+        renderAccountUser({ error: new Error("network unavailable") })
 
-  it("アカウント情報の取得失敗のメッセージと再試行ボタンを表示する", () => {
-    render(CloudSyncPanel, {
-      props: {
-        ...createDefaultProps(createActions()),
-        session: createSession("user1", "user@example.com"),
-        accountUser: createAccountUser({ error: new Error("network unavailable") }),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
-        },
-      },
+        expect(screen.getByText("アカウント情報を取得できませんでした")).toBeInTheDocument()
+        expect(screen.getByRole("button", { name: "再試行" })).toBeEnabled()
+        expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+        expect(screen.queryByText(/サインイン中:/)).not.toBeInTheDocument()
+        expect(screen.queryByText("アカウント情報を確認できていません")).not.toBeInTheDocument()
+        expect(screen.queryByText("アカウント情報を取得しています…")).not.toBeInTheDocument()
+        expect(
+          screen.queryByText("クラウド同期を使うにはサインインしてください"),
+        ).not.toBeInTheDocument()
+      })
+
+      it("取得済み情報あり: メールアドレスと更新失敗の案内を併記し、再試行できる", () => {
+        renderAccountUser({ user: account, error: new Error("network unavailable") })
+
+        expect(screen.getByText("サインイン中: user@example.com")).toBeInTheDocument()
+        expect(screen.getByText("最新のアカウント情報を取得できませんでした")).toBeInTheDocument()
+        expect(screen.getByRole("button", { name: "再試行" })).toBeEnabled()
+        expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
+        expect(screen.queryByText("アカウント情報を取得しています…")).not.toBeInTheDocument()
+      })
     })
 
-    expect(screen.getByText("アカウント情報を取得できませんでした")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "再試行" })).toBeEnabled()
-    expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
-    expect(
-      screen.queryByText("クラウド同期を使うにはサインインしてください"),
-    ).not.toBeInTheDocument()
-  })
+    describe("ボタン操作", () => {
+      it.each([
+        { buttonLabel: "取得", error: null },
+        { buttonLabel: "再試行", error: new Error("network unavailable") },
+      ])("$buttonLabel ボタンを押すと refresh を呼ぶ", async ({ buttonLabel, error }) => {
+        const user = userEvent.setup()
+        const refresh = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+        renderAccountUser({ error, refresh })
 
-  it("未取得の案内と取得ボタンを表示し、メール未登録とは表示しない", () => {
-    render(CloudSyncPanel, {
-      props: {
-        ...createDefaultProps(createActions()),
-        session: createSession("user1", "user@example.com"),
-        accountUser: createAccountUser(),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
-        },
-      },
+        expect(refresh).not.toHaveBeenCalled()
+
+        await user.click(screen.getByRole("button", { name: buttonLabel }))
+
+        expect(refresh).toHaveBeenCalledExactlyOnceWith()
+      })
     })
-
-    expect(screen.getByText("アカウント情報を確認できていません")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "取得" })).toBeEnabled()
-    expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
-    expect(screen.queryByText("サインイン中 (メールアドレス登録なし)")).not.toBeInTheDocument()
-  })
-
-  it("取得したユーザーにメールがなければ未登録と表示し、メール変更の導線を出さない", () => {
-    const accountUser = createAccountUser({
-      user: { ...createSession("user1", "user@example.com").user, email: undefined },
-    })
-    render(CloudSyncPanel, {
-      props: {
-        ...createDefaultProps(createActions()),
-        session: createSession("user1", "user@example.com"),
-        accountUser,
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
-        },
-      },
-    })
-
-    expect(screen.getByText("サインイン中 (メールアドレス登録なし)")).toBeInTheDocument()
-    expect(screen.queryByText("サインイン中: user@example.com")).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "メールアドレスを変更" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "取得" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "再試行" })).not.toBeInTheDocument()
-  })
-
-  it.each([
-    { buttonLabel: "取得", error: null },
-    { buttonLabel: "再試行", error: new Error("network unavailable") },
-  ])("$buttonLabel ボタンを押すと refresh を呼ぶ", async ({ buttonLabel, error }) => {
-    const user = userEvent.setup()
-    const refresh = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
-    render(CloudSyncPanel, {
-      props: {
-        ...createDefaultProps(createActions()),
-        session: createSession("user1", "user@example.com"),
-        accountUser: createAccountUser({ error, refresh }),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
-        },
-      },
-    })
-
-    expect(refresh).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole("button", { name: buttonLabel }))
-
-    expect(refresh).toHaveBeenCalledExactlyOnceWith()
   })
 
   it("サインアウト時にエラーが発生するとその旨が表示される", async () => {

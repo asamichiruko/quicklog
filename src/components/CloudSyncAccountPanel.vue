@@ -129,21 +129,25 @@ const currentEmail = computed(() => {
   return props.accountUser.user.value?.email ?? ""
 })
 
-const accountUserDisplay = computed<{
-  message: string
+const accountUserRefreshDisplay = computed<{
+  message: string | null
   actionLabel: string | null
-}>(() => {
+} | null>(() => {
   if (props.accountUser.isLoading.value) {
     return { message: "アカウント情報を取得しています…", actionLabel: null }
-  } else if (props.accountUser.error.value !== null) {
-    return { message: "アカウント情報を取得できませんでした", actionLabel: "再試行" }
-  } else if (props.accountUser.user.value === null) {
-    return { message: "アカウント情報を確認できていません", actionLabel: "取得" }
-  } else if (currentEmail.value === "") {
-    return { message: "サインイン中 (メールアドレス登録なし)", actionLabel: null }
-  } else {
-    return { message: "サインイン中: " + currentEmail.value, actionLabel: null }
   }
+  if (props.accountUser.error.value !== null) {
+    return {
+      message: props.accountUser.user.value
+        ? "最新のアカウント情報を取得できませんでした"
+        : "アカウント情報を取得できませんでした",
+      actionLabel: "再試行",
+    }
+  }
+  if (props.accountUser.user.value === null) {
+    return { message: "アカウント情報を確認できていません", actionLabel: "取得" }
+  }
+  return null
 })
 
 function showSignInView() {
@@ -556,19 +560,26 @@ defineExpose({
       <p class="sync-state" :class="{ 'session-lost': isSessionLost(props.runtimeSessionState) }">
         {{ sessionStateMessage }}
       </p>
-      <div v-if="canUseCloudSession">
-        <p class="sync-state">
-          {{ accountUserDisplay.message }}
+
+      <div v-if="canUseCloudSession" class="account-state">
+        <p v-if="accountUser.user.value !== null" class="sync-state">
+          サインイン中: {{ currentEmail === "" ? "メールアドレス登録なし" : currentEmail }}
         </p>
-        <button
-          v-if="accountUserDisplay.actionLabel"
-          type="button"
-          class="button-secondary refresh-user-button"
-          :disabled="isLoading || props.accountUser.isLoading.value"
-          @click="props.accountUser.refresh()"
-        >
-          {{ accountUserDisplay.actionLabel }}
-        </button>
+
+        <div v-if="accountUserRefreshDisplay" class="account-refresh">
+          <p v-if="accountUserRefreshDisplay.message" class="sync-state">
+            {{ accountUserRefreshDisplay.message }}
+          </p>
+          <button
+            v-if="accountUserRefreshDisplay.actionLabel"
+            type="button"
+            class="button-secondary refresh-user-button"
+            :disabled="isLoading || props.accountUser.isLoading.value"
+            @click="props.accountUser.refresh()"
+          >
+            {{ accountUserRefreshDisplay.actionLabel }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -693,6 +704,12 @@ defineExpose({
   background: var(--color-output);
   color: var(--color-text-muted);
   font-size: var(--font-size-small);
+}
+
+.account-state,
+.account-refresh {
+  display: grid;
+  gap: var(--space-2);
 }
 
 .sync-state {
