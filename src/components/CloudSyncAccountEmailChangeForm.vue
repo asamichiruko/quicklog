@@ -65,9 +65,12 @@ defineExpose({ reset })
         {{ newEmailErrorMessage }}
       </p>
     </div>
+    <p class="description">
+      メールアドレス変更のため、現在のメールアドレスと新しいメールアドレスの両方に確認メールを送信します。送信後、各メールに記載されたリンクを開いてください。
+    </p>
     <div class="actions">
       <button type="submit" class="button-primary change-email-button" :disabled="!canChangeEmail">
-        メールアドレスを変更
+        確認メールを送信
       </button>
     </div>
   </form>
@@ -118,6 +121,10 @@ defineExpose({ reset })
   margin: 0;
   padding: 0;
   color: var(--color-text-error);
+}
+
+.description {
+  margin: 0;
 }
 
 button {
