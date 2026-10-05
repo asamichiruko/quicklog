@@ -6,6 +6,8 @@ import {
   deleteCurrentAccount,
   getCurrentSession,
   getCurrentUser,
+  requestEmailChange,
+  resendEmailChangeConfirmation,
   resendSignUpCode,
   sendPasswordResetCode,
   signInWithEmail,
@@ -317,5 +319,67 @@ describe("auth", () => {
     supabaseMocks.resend.mockResolvedValue({ data: { session: null }, error })
 
     await expect(resendSignUpCode("user@example.com")).rejects.toThrow(error)
+  })
+
+  it("メールアドレスの変更をリクエストする", async () => {
+    const user = { id: "user-id", email: "old@example.com" } as unknown as User
+    supabaseMocks.getUser.mockResolvedValue({ data: { user }, error: null })
+    supabaseMocks.updateUser.mockResolvedValue({ error: null })
+
+    await expect(requestEmailChange("new@example.com")).resolves.toBeUndefined()
+
+    expect(supabaseMocks.getUser).toHaveBeenCalledOnce()
+    expect(supabaseMocks.updateUser).toHaveBeenCalledExactlyOnceWith(
+      { email: "new@example.com" },
+      { emailRedirectTo: expect.stringContaining("view=email-change") },
+    )
+  })
+
+  it("メールアドレス変更リクエスト時にユーザーのメールアドレスが取得できない場合は throw する", async () => {
+    const user = { id: "user-id" } as unknown as User
+    supabaseMocks.getUser.mockResolvedValue({ data: { user }, error: null })
+
+    await expect(requestEmailChange("new@example.com")).rejects.toThrow(
+      "ユーザーのメールアドレスを取得できません",
+    )
+
+    expect(supabaseMocks.getUser).toHaveBeenCalledOnce()
+    expect(supabaseMocks.updateUser).not.toHaveBeenCalled()
+  })
+
+  it("メールアドレス変更リクエスト時に error があれば throw する", async () => {
+    const error = new Error("request failed")
+    const user = { id: "user-id", email: "old@example.com" } as unknown as User
+    supabaseMocks.getUser.mockResolvedValue({ data: { user }, error: null })
+    supabaseMocks.updateUser.mockResolvedValue({ error })
+
+    await expect(requestEmailChange("new@example.com")).rejects.toThrow(error)
+
+    expect(supabaseMocks.getUser).toHaveBeenCalledOnce()
+    expect(supabaseMocks.updateUser).toHaveBeenCalledExactlyOnceWith(
+      { email: "new@example.com" },
+      { emailRedirectTo: expect.stringContaining("view=email-change") },
+    )
+  })
+
+  it("メールアドレス変更用のリンクを再送する", async () => {
+    supabaseMocks.resend.mockResolvedValue({ error: null })
+
+    await expect(resendEmailChangeConfirmation("new@example.com")).resolves.toBeUndefined()
+
+    expect(supabaseMocks.resend).toHaveBeenCalledExactlyOnceWith({
+      type: "email_change",
+      email: "new@example.com",
+      options: {
+        emailRedirectTo: expect.stringContaining("view=email-change"),
+      },
+    })
+  })
+
+  it("メールアドレス変更用のリンク再送時に error があれば throw する", async () => {
+    const error = new Error("resend failed")
+    supabaseMocks.resend.mockResolvedValue({ error })
+
+    await expect(resendEmailChangeConfirmation("new@example.com")).rejects.toThrow(error)
   })
 })

@@ -36,6 +36,7 @@ export type CloudSyncAccountActions = {
   resendSignUpCode: (email: string) => Promise<void>
   cancelPasswordRecovery: () => Promise<void>
   requestEmailChange: (newEmail: string) => Promise<void>
+  resendEmailChangeConfirmation: (newEmail: string) => Promise<void>
 }
 
 const props = defineProps<{
@@ -479,6 +480,39 @@ async function handleChangeEmail(newEmail: string) {
   }
 }
 
+async function handleResendEmailChangeConfirmation() {
+  if (isLoading.value || emailChangeFlowStep.value !== "pending") return
+  if (!canUseCloudSession.value || !props.session) return
+
+  const requestedUserId = props.session.user.id
+  if (emailChangeUserId !== requestedUserId) return
+
+  const requestedNewEmail = newEmailAtChangingEmail.value.trim()
+  if (validateEmail(requestedNewEmail) !== "") return
+
+  isLoading.value = true
+  feedbackMessage.value = ""
+
+  emailChangeRequestId += 1
+  const requestId = emailChangeRequestId
+  const canApplyResult = () =>
+    requestId === emailChangeRequestId && props.session?.user.id === requestedUserId
+
+  try {
+    await props.actions.resendEmailChangeConfirmation(requestedNewEmail)
+    if (!canApplyResult()) return
+
+    feedbackMessage.value = "メールアドレス変更用のメールを再送しました"
+    feedbackKind.value = "success"
+  } catch (error) {
+    if (!canApplyResult()) return
+    feedbackMessage.value = getAuthFeedbackMessage(error)
+    feedbackKind.value = "error"
+  } finally {
+    if (canApplyResult()) isLoading.value = false
+  }
+}
+
 async function handlePasswordResetRequest(email: string) {
   if (validateEmail(email) !== "") return
   if (isLoading.value) return
@@ -711,6 +745,7 @@ defineExpose({
         :new-email="newEmailAtChangingEmail"
         @revise="reviseNewEmail"
         @back="leaveEmailChangePendingView"
+        @resend="handleResendEmailChangeConfirmation"
       />
     </template>
 

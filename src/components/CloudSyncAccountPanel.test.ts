@@ -32,6 +32,7 @@ function createActions() {
     resendSignUpCode: vi.fn(),
     cancelPasswordRecovery: vi.fn(),
     requestEmailChange: vi.fn(),
+    resendEmailChangeConfirmation: vi.fn(),
   } satisfies CloudSyncAccountActions
 
   return actions
@@ -237,6 +238,36 @@ describe("CloudSyncAccountPanel", () => {
         expect(screen.queryByRole("status")).not.toBeInTheDocument()
       },
     )
+
+    it("再送では保持した変更先を使用し、確認待ち画面を維持する", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel()
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "確認メールを再送" }))
+
+      expect(actions.resendEmailChangeConfirmation).toHaveBeenCalledExactlyOnceWith(
+        "new@example.com",
+      )
+      expect(actions.requestEmailChange).toHaveBeenCalledTimes(1)
+      expect(screen.getByText("メールアドレス変更用のメールを再送しました")).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+    })
+
+    it("再送失敗時も確認待ち画面に留まり、再試行できる", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel()
+      await submitEmailChange(user)
+      actions.resendEmailChangeConfirmation.mockRejectedValueOnce(null)
+      await user.click(screen.getByRole("button", { name: "確認メールを再送" }))
+
+      expect(
+        screen.getByText("認証処理に失敗しました。時間をおいて再度お試しください"),
+      ).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "確認メールを再送" }))
+      expect(actions.resendEmailChangeConfirmation).toHaveBeenCalledTimes(2)
+      expect(screen.getByText("メールアドレス変更用のメールを再送しました")).toBeInTheDocument()
+    })
 
     it("現在のメールアドレスが不正な場合は送信せず、入力画面で案内する", async () => {
       const user = userEvent.setup()

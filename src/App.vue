@@ -18,6 +18,7 @@ import {
   verifySignUpCode,
   requestEmailChange,
   getCurrentUser,
+  resendEmailChangeConfirmation,
 } from "@/lib/auth"
 import { downloadTextFile, readQuicklogImportFile } from "@/lib/browserFile"
 import { deleteCloudSyncData } from "@/lib/cloudSyncAccountDeletion"
@@ -177,6 +178,7 @@ const cloudSyncAccountActions = {
   resendSignUpCode,
   cancelPasswordRecovery: passwordRecoveryFlow.cancelPasswordRecovery,
   requestEmailChange,
+  resendEmailChangeConfirmation,
 } satisfies CloudSyncAccountActions
 
 const settingsDialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
