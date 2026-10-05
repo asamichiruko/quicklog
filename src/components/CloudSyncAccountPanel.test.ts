@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/vue"
+import { render, screen, waitFor } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import type { Session, User } from "@supabase/supabase-js"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync.ts"
@@ -93,7 +93,7 @@ describe("CloudSyncAccountPanel", () => {
   describe("メールアドレス変更の画面遷移", () => {
     function renderEmailChangePanel(currentEmail = "old@example.com") {
       const actions = createActions()
-      render(CloudSyncPanel, {
+      const view = render(CloudSyncPanel, {
         props: {
           ...createDefaultProps(actions),
           session: createSession("user1", currentEmail),
@@ -104,7 +104,7 @@ describe("CloudSyncAccountPanel", () => {
           },
         },
       })
-      return actions
+      return Object.assign(actions, { rerender: view.rerender })
     }
 
     async function submitEmailChange(user: ReturnType<typeof userEvent.setup>) {
@@ -159,6 +159,84 @@ describe("CloudSyncAccountPanel", () => {
         screen.getByText("認証処理に失敗しました。時間をおいて再度お試しください"),
       ).toBeInTheDocument()
     })
+
+    function changedUserProps(userId: string) {
+      return {
+        session: createSession(userId, `${userId}@example.com`),
+        accountUser: createAccountUser({
+          user: { id: userId, email: `${userId}@example.com` } as User,
+        }),
+        runtimeSessionState: {
+          scope: { type: "user", userId },
+          syncStatus: "authenticated",
+        } satisfies RuntimeSessionState,
+      }
+    }
+
+    it("確認待ち中のユーザー変更で申請情報を消し、元のユーザーに戻っても復元しない", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel()
+      await submitEmailChange(user)
+      await actions.rerender(changedUserProps("user2"))
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+      await actions.rerender(changedUserProps("user1"))
+      await user.click(screen.getByRole("button", { name: "メールアドレスを変更" }))
+      expect(screen.getByLabelText("新しいメールアドレス")).toHaveValue("")
+    })
+
+    it("確認待ち中のサインアウトで申請情報を消す", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel()
+      await submitEmailChange(user)
+      await actions.rerender({
+        session: null,
+        runtimeSessionState: { scope: { type: "anonymous" }, syncStatus: "disabled" },
+      })
+      expect(screen.getByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+      await actions.rerender(changedUserProps("user1"))
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+    })
+
+    it("同じユーザーのセッション更新では確認待ちを保持する", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel()
+      await submitEmailChange(user)
+      await actions.rerender(changedUserProps("user1"))
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+      expect(screen.getByText("old@example.com", { exact: true })).toBeInTheDocument()
+    })
+
+    it.each(["success", "error"] as const)(
+      "ユーザー変更後の古い送信応答（%s）を反映しない",
+      async (result) => {
+        const user = userEvent.setup()
+        const actions = renderEmailChangePanel()
+        let resolveRequest!: () => void
+        let rejectRequest!: (error: unknown) => void
+        actions.requestEmailChange.mockImplementationOnce(
+          () =>
+            new Promise<void>((resolve, reject) => {
+              resolveRequest = resolve
+              rejectRequest = reject
+            }),
+        )
+        await submitEmailChange(user)
+        await actions.rerender(changedUserProps("user2"))
+        if (result === "success") resolveRequest()
+        else rejectRequest(null)
+        await waitFor(() =>
+          expect(screen.getByRole("button", { name: "サインアウト" })).toBeEnabled(),
+        )
+        expect(
+          screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+        ).not.toBeInTheDocument()
+        expect(screen.queryByRole("status")).not.toBeInTheDocument()
+      },
+    )
 
     it("現在のメールアドレスが不正な場合は送信せず、入力画面で案内する", async () => {
       const user = userEvent.setup()

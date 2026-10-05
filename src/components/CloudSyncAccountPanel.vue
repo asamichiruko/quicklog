@@ -20,7 +20,7 @@ import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { isAuthenticated, isAuthPending, isSessionLost } from "@/lib/runtimeSessionState"
 import type { RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 
 export type CloudSyncAccountActions = {
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
@@ -81,6 +81,8 @@ const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
 type EmailChangeFlowStep = "idle" | "pending"
 const emailChangeFlowStep = ref<EmailChangeFlowStep>("idle")
+let emailChangeUserId: string | null = null
+let emailChangeRequestId = 0
 const currentEmailAtChangingEmail = ref("")
 const newEmailAtChangingEmail = ref("")
 const hasActiveEmailChangeFlow = computed(() => emailChangeFlowStep.value !== "idle")
@@ -262,6 +264,22 @@ function clearEmailChangeFlow() {
   emailChangeFlowStep.value = "idle"
 }
 
+// セッション更新では保持し、申請したユーザーから離れたときだけ破棄する
+watch(
+  () => props.session?.user.id ?? null,
+  (userId) => {
+    if (emailChangeUserId === null || userId === emailChangeUserId) return
+
+    emailChangeRequestId += 1
+    emailChangeUserId = null
+    clearEmailChangeFlow()
+    showSignedInMainView()
+    clearFeedback()
+    isLoading.value = false
+  },
+  { flush: "sync" },
+)
+
 function leaveEmailChangePendingView() {
   clearEmailChangeFlow()
   showSignedInMainView()
@@ -423,6 +441,8 @@ async function handleChangePassword(newPassword: string, currentPassword: string
 async function handleChangeEmail(newEmail: string) {
   if (validateEmail(newEmail) !== "" || isLoading.value) return
 
+  if (!canUseCloudSession.value || !props.session) return
+  const requestedUserId = props.session.user.id
   const requestedCurrentEmail = currentEmail.value.trim()
   const requestedNewEmail = newEmail.trim()
   if (validateEmail(requestedCurrentEmail) !== "") {
@@ -435,8 +455,15 @@ async function handleChangeEmail(newEmail: string) {
   isLoading.value = true
   feedbackMessage.value = ""
 
+  emailChangeUserId = requestedUserId
+  emailChangeRequestId += 1
+  const requestId = emailChangeRequestId
+  const canApplyResult = () =>
+    requestId === emailChangeRequestId && props.session?.user.id === requestedUserId
+
   try {
     await props.actions.requestEmailChange(requestedNewEmail)
+    if (!canApplyResult()) return
 
     currentEmailAtChangingEmail.value = requestedCurrentEmail
     startChangeEmailPending(requestedNewEmail)
@@ -444,10 +471,11 @@ async function handleChangeEmail(newEmail: string) {
     feedbackMessage.value = "メールアドレス変更用のメールを送信しました"
     feedbackKind.value = "success"
   } catch (error) {
+    if (!canApplyResult()) return
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
   } finally {
-    isLoading.value = false
+    if (canApplyResult()) isLoading.value = false
   }
 }
 
@@ -599,11 +627,11 @@ function handleBack() {
 function prepareForDialogOpen() {
   if (!shouldShowActiveFlow.value) {
     showSignInView()
+    showSignedInMainView()
     resetAuthForms()
   }
 
   clearFeedback()
-  isLoading.value = false
 }
 
 defineExpose({
