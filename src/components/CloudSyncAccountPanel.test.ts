@@ -90,6 +90,94 @@ describe("CloudSyncAccountPanel", () => {
     vi.unstubAllGlobals()
   })
 
+  describe("メールアドレス変更の画面遷移", () => {
+    function renderEmailChangePanel(currentEmail = "old@example.com") {
+      const actions = createActions()
+      render(CloudSyncPanel, {
+        props: {
+          ...createDefaultProps(actions),
+          session: createSession("user1", currentEmail),
+          accountUser: createAccountUser({ user: { id: "user1", email: currentEmail } as User }),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
+        },
+      })
+      return actions
+    }
+
+    async function submitEmailChange(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole("button", { name: "メールアドレスを変更" }))
+      await user.type(screen.getByLabelText("新しいメールアドレス"), "new@example.com")
+      await user.click(screen.getByRole("button", { name: "確認メールを送信" }))
+    }
+
+    it("送信成功後に送信先を表示し、修正時に入力を復元する", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel()
+      await submitEmailChange(user)
+
+      expect(actions.requestEmailChange).toHaveBeenCalledExactlyOnceWith("new@example.com")
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+      expect(screen.getByText("old@example.com", { exact: true })).toBeInTheDocument()
+      expect(screen.getByText("new@example.com", { exact: true })).toBeInTheDocument()
+      expect(screen.queryByLabelText("新しいメールアドレス")).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "新しいメールアドレスを修正" }))
+      expect(screen.getByLabelText("新しいメールアドレス")).toHaveValue("new@example.com")
+      expect(
+        screen.queryByText("メールアドレス変更用のメールを送信しました"),
+      ).not.toBeInTheDocument()
+    })
+
+    it("確認待ちからアカウント画面に戻り、再度開くと入力は空になる", async () => {
+      const user = userEvent.setup()
+      renderEmailChangePanel()
+      await submitEmailChange(user)
+
+      await user.click(screen.getByRole("button", { name: "アカウント画面に戻る" }))
+      expect(screen.getByRole("button", { name: "サインアウト" })).toBeInTheDocument()
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "メールアドレスを変更" }))
+      expect(screen.getByLabelText("新しいメールアドレス")).toHaveValue("")
+    })
+
+    it("送信失敗時は入力を保持して変更フォームに留まる", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel()
+      actions.requestEmailChange.mockRejectedValueOnce(null)
+      await submitEmailChange(user)
+
+      expect(screen.getByLabelText("新しいメールアドレス")).toHaveValue("new@example.com")
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+      expect(
+        screen.getByText("認証処理に失敗しました。時間をおいて再度お試しください"),
+      ).toBeInTheDocument()
+    })
+
+    it("現在のメールアドレスが不正な場合は送信せず、入力画面で案内する", async () => {
+      const user = userEvent.setup()
+      const actions = renderEmailChangePanel("invalid-email")
+      await submitEmailChange(user)
+
+      expect(actions.requestEmailChange).not.toHaveBeenCalled()
+      expect(screen.getByLabelText("新しいメールアドレス")).toHaveValue("new@example.com")
+      expect(
+        screen.getByText(
+          "現在のメールアドレスを確認できません。アカウント情報を再取得してください",
+        ),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+    })
+  })
+
   it("メールアドレスとパスワードを入力してサインインできる", async () => {
     const user = userEvent.setup()
     const signInWithEmail = vi.fn()

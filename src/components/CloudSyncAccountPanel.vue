@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CloudSyncAccountEmailChangeForm from "@/components/CloudSyncAccountEmailChangeForm.vue"
+import CloudSyncAccountEmailChangePendingView from "@/components/CloudSyncAccountEmailChangePendingView.vue"
 import CloudSyncAccountOtpVerificationForm from "@/components/CloudSyncAccountOtpVerificationForm.vue"
 import CloudSyncAccountPasswordChangeForm from "@/components/CloudSyncAccountPasswordChangeForm.vue"
 import CloudSyncAccountPasswordResetForm from "@/components/CloudSyncAccountPasswordResetForm.vue"
@@ -54,6 +55,7 @@ export type PanelView =
   | "passwordResetVerifyEmail"
   | "signUpVerifyEmail"
   | "resetPassword"
+  | "changeEmailPending"
 type FeedbackKind = "success" | "error"
 
 const canUseCloudSession = computed<boolean>(() => {
@@ -77,6 +79,12 @@ const signUpFlowStep = ref<SignUpFlowStep>("idle")
 const signUpRequestEmail = ref("")
 const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
+type EmailChangeFlowStep = "idle" | "pending"
+const emailChangeFlowStep = ref<EmailChangeFlowStep>("idle")
+const currentEmailAtChangingEmail = ref("")
+const newEmailAtChangingEmail = ref("")
+const hasActiveEmailChangeFlow = computed(() => emailChangeFlowStep.value !== "idle")
+
 const panelView = computed<PanelView>(() => {
   if (passwordResetFlowStep.value === "awaitingCode") return "passwordResetVerifyEmail"
   if (passwordResetFlowStep.value === "settingPassword") return "resetPassword"
@@ -84,12 +92,17 @@ const panelView = computed<PanelView>(() => {
   if (signUpFlowStep.value === "awaitingCode") return "signUpVerifyEmail"
 
   if (isAuthPending(props.runtimeSessionState)) return "authPending"
-  if (canUseCloudSession.value) return signedInPanelView.value
+
+  if (canUseCloudSession.value) {
+    if (emailChangeFlowStep.value === "pending") return "changeEmailPending"
+    return signedInPanelView.value
+  }
   return selectedPanelView.value
 })
 
 const shouldShowActiveFlow = computed<boolean>(
-  () => hasActivePasswordResetFlow.value || hasActiveSignUpFlow.value,
+  () =>
+    hasActivePasswordResetFlow.value || hasActiveSignUpFlow.value || hasActiveEmailChangeFlow.value,
 )
 
 const signInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
@@ -188,6 +201,18 @@ function startPasswordResetVerification(email: string) {
   passwordResetFlowStep.value = "awaitingCode"
 }
 
+function startChangeEmailPending(newEmail: string) {
+  newEmailAtChangingEmail.value = newEmail
+  emailChangeFlowStep.value = "pending"
+}
+
+function reviseNewEmail(newEmail: string) {
+  newEmailAtChangingEmail.value = newEmail
+  emailChangeFlowStep.value = "idle"
+  clearFeedback()
+  showEmailChangeView()
+}
+
 function clearFeedback() {
   feedbackMessage.value = ""
   feedbackKind.value = null
@@ -228,6 +253,19 @@ async function cancelPasswordResetFlow() {
   showSignInView()
   clearFeedback()
   await props.actions.cancelPasswordRecovery()
+}
+
+function clearEmailChangeFlow() {
+  emailChangeForm.value?.reset()
+  currentEmailAtChangingEmail.value = ""
+  newEmailAtChangingEmail.value = ""
+  emailChangeFlowStep.value = "idle"
+}
+
+function leaveEmailChangePendingView() {
+  clearEmailChangeFlow()
+  showSignedInMainView()
+  clearFeedback()
 }
 
 async function handleSignIn(email: string, password: string): Promise<void> {
@@ -385,11 +423,23 @@ async function handleChangePassword(newPassword: string, currentPassword: string
 async function handleChangeEmail(newEmail: string) {
   if (validateEmail(newEmail) !== "" || isLoading.value) return
 
+  const requestedCurrentEmail = currentEmail.value.trim()
+  const requestedNewEmail = newEmail.trim()
+  if (validateEmail(requestedCurrentEmail) !== "") {
+    feedbackMessage.value =
+      "現在のメールアドレスを確認できません。アカウント情報を再取得してください"
+    feedbackKind.value = "error"
+    return
+  }
+
   isLoading.value = true
   feedbackMessage.value = ""
 
   try {
-    await props.actions.requestEmailChange(newEmail)
+    await props.actions.requestEmailChange(requestedNewEmail)
+
+    currentEmailAtChangingEmail.value = requestedCurrentEmail
+    startChangeEmailPending(requestedNewEmail)
 
     feedbackMessage.value = "メールアドレス変更用のメールを送信しました"
     feedbackKind.value = "success"
@@ -510,7 +560,12 @@ async function handleConfirmDeleteCloudSync() {
 }
 
 function reset() {
+  clearSignUpFlow()
+  clearPasswordResetFlow()
+  clearEmailChangeFlow()
+
   showSignInView()
+  showSignedInMainView()
 
   resetAuthForms()
   clearFeedback()
@@ -530,6 +585,11 @@ function handleBack() {
 
   if (panelView.value === "passwordResetRequest") {
     showSignInView()
+    return true
+  }
+
+  if (panelView.value === "changeEmailPending") {
+    leaveEmailChangePendingView()
     return true
   }
 
@@ -610,8 +670,19 @@ defineExpose({
         ref="emailChangeForm"
         :is-loading="isLoading"
         :current-email="currentEmail"
+        :default-new-email="newEmailAtChangingEmail"
         @submit="handleChangeEmail"
         @edit="clearFeedback"
+      />
+    </template>
+
+    <template v-else-if="panelView === 'changeEmailPending'">
+      <CloudSyncAccountEmailChangePendingView
+        :is-loading="isLoading"
+        :current-email="currentEmailAtChangingEmail"
+        :new-email="newEmailAtChangingEmail"
+        @revise="reviseNewEmail"
+        @back="leaveEmailChangePendingView"
       />
     </template>
 

@@ -5,6 +5,7 @@ import { computed, ref } from "vue"
 const props = defineProps<{
   isLoading: boolean
   currentEmail: string
+  defaultNewEmail?: string
 }>()
 
 const emit = defineEmits<{
@@ -12,7 +13,7 @@ const emit = defineEmits<{
   edit: []
 }>()
 
-const newEmail = ref("")
+const newEmail = ref(props.defaultNewEmail ?? "")
 const newEmailErrorMessage = ref("")
 
 const canChangeEmail = computed(() => {
