@@ -17,11 +17,18 @@ const newEmail = ref(props.defaultNewEmail ?? "")
 const newEmailErrorMessage = ref("")
 
 const canChangeEmail = computed(() => {
-  return !props.isLoading && !validateEmail(newEmail.value)
+  return (
+    !props.isLoading &&
+    !validateEmail(newEmail.value) &&
+    props.currentEmail.trim() !== newEmail.value.trim()
+  )
 })
 
 function validateNewEmail() {
   newEmailErrorMessage.value = validateEmail(newEmail.value)
+  if (newEmail.value.trim() === props.currentEmail.trim()) {
+    newEmailErrorMessage.value = "現在のものと異なるメールアドレスを入力してください"
+  }
 }
 
 function handleSubmit() {

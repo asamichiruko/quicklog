@@ -92,13 +92,16 @@ describe("CloudSyncAccountPanel", () => {
   })
 
   describe("メールアドレス変更の画面遷移", () => {
-    function renderEmailChangePanel(currentEmail = "old@example.com") {
+    function renderEmailChangePanel(
+      currentEmail = "old@example.com",
+      accountUser = createAccountUser({ user: { id: "user1", email: currentEmail } as User }),
+    ) {
       const actions = createActions()
       const view = render(CloudSyncPanel, {
         props: {
           ...createDefaultProps(actions),
           session: createSession("user1", currentEmail),
-          accountUser: createAccountUser({ user: { id: "user1", email: currentEmail } as User }),
+          accountUser,
           runtimeSessionState: {
             scope: { type: "user", userId: "user1" },
             syncStatus: "authenticated",
@@ -283,6 +286,258 @@ describe("CloudSyncAccountPanel", () => {
       ).toBeInTheDocument()
       expect(
         screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+    })
+
+    it("変更状況の確認で未反映状態を確認できる", async () => {
+      const user = userEvent.setup()
+      renderEmailChangePanel()
+      await submitEmailChange(user)
+
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          "メールアドレスの変更はまだ反映されていません。各メールアドレス宛の確認メールのリンクを開いてください",
+        ),
+      ).toBeInTheDocument()
+    })
+
+    it("変更状況の確認で反映されていた場合はアカウント画面に戻る", async () => {
+      const accountUserRef = ref<User | null>({
+        id: "user1",
+        email: "old@example.com",
+      } as User)
+
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+        accountUserRef.value = {
+          id: "user1",
+          email: "new@example.com",
+        } as User
+      })
+
+      const accountUser = {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      } satisfies AccountUserView
+
+      const user = userEvent.setup()
+      renderEmailChangePanel("old@example.com", accountUser)
+
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(await screen.findByText("メールアドレスの変更が完了しました")).toBeInTheDocument()
+
+      expect(screen.getByRole("button", { name: "サインアウト" })).toBeInTheDocument()
+    })
+
+    it("変更状況の確認でアカウント情報の取得に失敗した場合はエラーが表示され、その後再試行できる", async () => {
+      const errorRef = ref<unknown>(null)
+      const refresh = vi
+        .fn<() => Promise<void>>()
+        .mockImplementationOnce(async () => {
+          errorRef.value = new Error("refresh failed")
+        })
+        .mockImplementationOnce(async () => {
+          errorRef.value = null
+        })
+
+      const accountUser = {
+        ...createAccountUser({
+          user: {
+            id: "user1",
+            email: "old@example.com",
+          } as User,
+        }),
+        error: readonly(errorRef),
+        refresh,
+      } satisfies AccountUserView
+
+      const user = userEvent.setup()
+      renderEmailChangePanel("old@example.com", accountUser)
+
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(
+        await screen.findByText("認証処理に失敗しました。時間をおいて再度お試しください"),
+      ).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+
+      expect(refresh).toHaveBeenCalledTimes(2)
+      expect(
+        screen.getByText(
+          "メールアドレスの変更はまだ反映されていません。各メールアドレス宛の確認メールのリンクを開いてください",
+        ),
+      ).toBeInTheDocument()
+    })
+
+    it.each(["old@example.com", " old@example.com "])(
+      "現在と同じアドレス（%s）は送信できない",
+      async (email) => {
+        const user = userEvent.setup()
+        const actions = renderEmailChangePanel()
+        await user.click(screen.getByRole("button", { name: "メールアドレスを変更" }))
+        await user.type(screen.getByLabelText("新しいメールアドレス"), email)
+        await user.tab()
+        expect(screen.getByRole("button", { name: "確認メールを送信" })).toBeDisabled()
+        expect(
+          screen.getByText("現在のものと異なるメールアドレスを入力してください"),
+        ).toBeInTheDocument()
+        expect(actions.requestEmailChange).not.toHaveBeenCalled()
+      },
+    )
+
+    it("変更状況の取得中は操作を無効にし、取得後に再度操作できる", async () => {
+      const user = userEvent.setup()
+      const loading = ref(false)
+      let finish!: () => void
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(() => {
+        loading.value = true
+        return new Promise<void>((resolve) => {
+          finish = () => {
+            loading.value = false
+            resolve()
+          }
+        })
+      })
+      const accountUser = {
+        ...createAccountUser({ user: { id: "user1", email: "old@example.com" } as User }),
+        isLoading: readonly(loading),
+        refresh,
+      }
+      renderEmailChangePanel("old@example.com", accountUser)
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+      for (const name of [
+        "変更状況を確認",
+        "確認メールを再送",
+        "新しいメールアドレスを修正",
+        "アカウント画面に戻る",
+      ]) {
+        expect(screen.getByRole("button", { name })).toBeDisabled()
+      }
+      finish()
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "変更状況を確認" })).toBeEnabled(),
+      )
+    })
+
+    it("変更状況の取得中に認証ユーザーが変わると古い応答を無視する", async () => {
+      const user = userEvent.setup()
+      const accountUserRef = ref<User | null>({ id: "user1", email: "old@example.com" } as User)
+      let finish!: () => void
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = () => {
+              accountUserRef.value = { id: "user1", email: "new@example.com" } as User
+              resolve()
+            }
+          }),
+      )
+      const actions = renderEmailChangePanel("old@example.com", {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      })
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+      await actions.rerender(changedUserProps("user2"))
+      finish()
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "サインアウト" })).toBeEnabled(),
+      )
+      expect(screen.queryByRole("status")).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+    })
+
+    it("変更状況の確認中に別の自動取得が始まった場合、確認前の情報で結果を表示しない", async () => {
+      const user = userEvent.setup()
+      const loading = ref(false)
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+        loading.value = true
+      })
+      renderEmailChangePanel("old@example.com", {
+        ...createAccountUser({ user: { id: "user1", email: "old@example.com" } as User }),
+        isLoading: readonly(loading),
+        refresh,
+      })
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+      expect(screen.queryByText(/メールアドレスの変更はまだ反映/)).not.toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+    })
+
+    it("取得ユーザーがない場合は確認できない旨を表示して確認待ちを維持する", async () => {
+      const user = userEvent.setup()
+      const accountUserRef = ref<User | null>({ id: "user1", email: "old@example.com" } as User)
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+        accountUserRef.value = null
+      })
+      renderEmailChangePanel("old@example.com", {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      })
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+      expect(screen.queryByText("メールアドレスの変更が完了しました")).not.toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+      expect(
+        screen.getByText("現在のメールアドレスを確認できません。アカウント情報を確認してください"),
+      ).toBeInTheDocument()
+    })
+
+    it("取得ユーザーのメールアドレスがない場合は確認できない旨を表示して確認待ちを維持する", async () => {
+      const user = userEvent.setup()
+      const accountUserRef = ref<User | null>({ id: "user1", email: "old@example.com" } as User)
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+        accountUserRef.value = { id: "user1" } as User
+      })
+      renderEmailChangePanel("old@example.com", {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      })
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+      expect(screen.queryByText("メールアドレスの変更が完了しました")).not.toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+      expect(
+        screen.getByText("現在のメールアドレスを確認できません。アカウント情報を確認してください"),
+      ).toBeInTheDocument()
+    })
+
+    it("別ユーザーの取得情報では完了と判定せず確認待ちを維持する", async () => {
+      const user = userEvent.setup()
+      const accountUserRef = ref<User | null>({ id: "user1", email: "old@example.com" } as User)
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+        accountUserRef.value = { id: "user2", email: "new@example.com" } as User
+      })
+      renderEmailChangePanel("old@example.com", {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      })
+      await submitEmailChange(user)
+      await user.click(screen.getByRole("button", { name: "変更状況を確認" }))
+      expect(screen.queryByText("メールアドレスの変更が完了しました")).not.toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+      expect(
+        screen.queryByText(
+          "現在のメールアドレスを確認できません。アカウント情報を確認してください",
+        ),
       ).not.toBeInTheDocument()
     })
   })

@@ -265,6 +265,14 @@ function clearEmailChangeFlow() {
   emailChangeFlowStep.value = "idle"
 }
 
+function completeEmailChangeFlow() {
+  emailChangeRequestId += 1
+  emailChangeUserId = null
+  clearEmailChangeFlow()
+  showSignedInMainView()
+  isLoading.value = false
+}
+
 // セッション更新では保持し、申請したユーザーから離れたときだけ破棄する
 watch(
   () => props.session?.user.id ?? null,
@@ -440,7 +448,12 @@ async function handleChangePassword(newPassword: string, currentPassword: string
 }
 
 async function handleChangeEmail(newEmail: string) {
-  if (validateEmail(newEmail) !== "" || isLoading.value) return
+  if (
+    isLoading.value ||
+    validateEmail(newEmail) !== "" ||
+    newEmail.trim() === currentEmail.value.trim()
+  )
+    return
 
   if (!canUseCloudSession.value || !props.session) return
   const requestedUserId = props.session.user.id
@@ -511,6 +524,71 @@ async function handleResendEmailChangeConfirmation() {
   } finally {
     if (canApplyResult()) isLoading.value = false
   }
+}
+
+async function handleRefreshEmailChangeState() {
+  if (
+    !canUseCloudSession.value ||
+    emailChangeFlowStep.value !== "pending" ||
+    isLoading.value ||
+    props.accountUser.isLoading.value ||
+    emailChangeUserId === null ||
+    currentEmailAtChangingEmail.value === "" ||
+    newEmailAtChangingEmail.value === ""
+  )
+    return
+
+  const userId = emailChangeUserId
+  const requestId = emailChangeRequestId
+
+  await props.accountUser.refresh()
+
+  if (
+    !canUseCloudSession.value ||
+    emailChangeFlowStep.value !== "pending" ||
+    isLoading.value ||
+    props.accountUser.isLoading.value ||
+    emailChangeUserId === null ||
+    currentEmailAtChangingEmail.value === "" ||
+    newEmailAtChangingEmail.value === "" ||
+    userId !== props.session?.user.id ||
+    userId !== emailChangeUserId ||
+    requestId !== emailChangeRequestId
+  )
+    return
+
+  if (props.accountUser.error.value !== null) {
+    feedbackKind.value = "error"
+    feedbackMessage.value = getAuthFeedbackMessage(props.accountUser.error.value)
+    return
+  }
+
+  if (!props.accountUser.user.value || !props.accountUser.user.value.email) {
+    feedbackKind.value = "error"
+    feedbackMessage.value = "現在のメールアドレスを確認できません。アカウント情報を確認してください"
+    return
+  }
+
+  if (props.accountUser.user.value.id !== userId) return
+
+  if (props.accountUser.user.value.email === currentEmailAtChangingEmail.value) {
+    feedbackKind.value = "success"
+    feedbackMessage.value =
+      "メールアドレスの変更はまだ反映されていません。各メールアドレス宛の確認メールのリンクを開いてください"
+    return
+  }
+
+  if (props.accountUser.user.value.email === newEmailAtChangingEmail.value) {
+    feedbackKind.value = "success"
+    feedbackMessage.value = "メールアドレスの変更が完了しました"
+
+    completeEmailChangeFlow()
+    return
+  }
+
+  feedbackKind.value = "error"
+  feedbackMessage.value =
+    "申請された変更先と異なるメールアドレスが登録されています。アカウント画面で現在のメールアドレスを確認してください"
 }
 
 async function handlePasswordResetRequest(email: string) {
@@ -740,12 +818,13 @@ defineExpose({
 
     <template v-else-if="panelView === 'changeEmailPending'">
       <CloudSyncAccountEmailChangePendingView
-        :is-loading="isLoading"
+        :is-loading="isLoading || accountUser.isLoading.value"
         :current-email="currentEmailAtChangingEmail"
         :new-email="newEmailAtChangingEmail"
         @revise="reviseNewEmail"
         @back="leaveEmailChangePendingView"
         @resend="handleResendEmailChangeConfirmation"
+        @refresh="handleRefreshEmailChangeState"
       />
     </template>
 

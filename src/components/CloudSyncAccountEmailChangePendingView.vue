@@ -9,6 +9,7 @@ const emit = defineEmits<{
   revise: [newEmail: string]
   back: []
   resend: []
+  refresh: []
 }>()
 
 function handleReviseNewEmail() {
@@ -35,6 +36,14 @@ function handleReviseNewEmail() {
       <p>確認が完了するまでは現在のメールアドレスが有効のままになります。</p>
     </div>
     <form class="actions">
+      <button
+        type="button"
+        class="button-primary"
+        :disabled="props.isLoading"
+        @click="emit('refresh')"
+      >
+        変更状況を確認
+      </button>
       <button
         type="button"
         class="button-primary"
