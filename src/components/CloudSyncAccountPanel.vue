@@ -166,6 +166,90 @@ const accountUserRefreshDisplay = computed<{
   return null
 })
 
+function canRefreshEmailChangeState() {
+  return (
+    canUseCloudSession.value &&
+    emailChangeFlowStep.value === "pending" &&
+    !isLoading.value &&
+    !props.accountUser.isLoading.value &&
+    emailChangeUserId !== null &&
+    props.session?.user.id === emailChangeUserId &&
+    currentEmailAtChangingEmail.value !== "" &&
+    newEmailAtChangingEmail.value !== ""
+  )
+}
+
+function getRefreshEmailChangeStateFeedback(): {
+  kind: FeedbackKind
+  message: string
+  completed: boolean
+} {
+  const user = props.accountUser.user.value
+  const error = props.accountUser.error.value
+
+  if (error !== null) {
+    return {
+      kind: "error",
+      message: getAuthFeedbackMessage(error),
+      completed: false,
+    }
+  }
+
+  if (!user || !user.email) {
+    return {
+      kind: "error",
+      message: "現在のメールアドレスを確認できません。アカウント情報を確認してください",
+      completed: false,
+    }
+  }
+
+  if (user.email === currentEmailAtChangingEmail.value) {
+    return {
+      kind: "success",
+      message:
+        "メールアドレスの変更はまだ反映されていません。各メールアドレス宛の確認メールのリンクを開いてください",
+      completed: false,
+    }
+  }
+
+  if (user.email === newEmailAtChangingEmail.value) {
+    return {
+      kind: "success",
+      message: "メールアドレスの変更が完了しました",
+      completed: true,
+    }
+  }
+
+  return {
+    kind: "error",
+    message:
+      "申請された変更先と異なるメールアドレスが登録されています。アカウント画面で現在のメールアドレスを確認してください",
+    completed: false,
+  }
+}
+
+watch(
+  [
+    props.accountUser.user,
+    props.accountUser.isLoading,
+    props.accountUser.error,
+    emailChangeFlowStep,
+  ],
+  () => {
+    if (!canRefreshEmailChangeState()) return
+    const user = props.accountUser.user.value
+    if (!user || user.id !== emailChangeUserId) return
+
+    const feedback = getRefreshEmailChangeStateFeedback()
+
+    if (feedback.completed) {
+      completeEmailChangeFlow()
+      feedbackKind.value = feedback.kind
+      feedbackMessage.value = feedback.message
+    }
+  },
+)
+
 function showSignInView() {
   selectedPanelView.value = "signIn"
 }
@@ -527,16 +611,7 @@ async function handleResendEmailChangeConfirmation() {
 }
 
 async function handleRefreshEmailChangeState() {
-  if (
-    !canUseCloudSession.value ||
-    emailChangeFlowStep.value !== "pending" ||
-    isLoading.value ||
-    props.accountUser.isLoading.value ||
-    emailChangeUserId === null ||
-    currentEmailAtChangingEmail.value === "" ||
-    newEmailAtChangingEmail.value === ""
-  )
-    return
+  if (!canRefreshEmailChangeState()) return
 
   const userId = emailChangeUserId
   const requestId = emailChangeRequestId
@@ -544,51 +619,23 @@ async function handleRefreshEmailChangeState() {
   await props.accountUser.refresh()
 
   if (
-    !canUseCloudSession.value ||
-    emailChangeFlowStep.value !== "pending" ||
-    isLoading.value ||
-    props.accountUser.isLoading.value ||
-    emailChangeUserId === null ||
-    currentEmailAtChangingEmail.value === "" ||
-    newEmailAtChangingEmail.value === "" ||
+    !canRefreshEmailChangeState() ||
     userId !== props.session?.user.id ||
     userId !== emailChangeUserId ||
     requestId !== emailChangeRequestId
   )
     return
 
-  if (props.accountUser.error.value !== null) {
-    feedbackKind.value = "error"
-    feedbackMessage.value = getAuthFeedbackMessage(props.accountUser.error.value)
-    return
-  }
+  const user = props.accountUser.user.value
+  if (user && user.id !== userId) return
 
-  if (!props.accountUser.user.value || !props.accountUser.user.value.email) {
-    feedbackKind.value = "error"
-    feedbackMessage.value = "現在のメールアドレスを確認できません。アカウント情報を確認してください"
-    return
-  }
+  const feedback = getRefreshEmailChangeStateFeedback()
+  feedbackMessage.value = feedback.message
+  feedbackKind.value = feedback.kind
 
-  if (props.accountUser.user.value.id !== userId) return
-
-  if (props.accountUser.user.value.email === currentEmailAtChangingEmail.value) {
-    feedbackKind.value = "success"
-    feedbackMessage.value =
-      "メールアドレスの変更はまだ反映されていません。各メールアドレス宛の確認メールのリンクを開いてください"
-    return
-  }
-
-  if (props.accountUser.user.value.email === newEmailAtChangingEmail.value) {
-    feedbackKind.value = "success"
-    feedbackMessage.value = "メールアドレスの変更が完了しました"
-
+  if (feedback.completed) {
     completeEmailChangeFlow()
-    return
   }
-
-  feedbackKind.value = "error"
-  feedbackMessage.value =
-    "申請された変更先と異なるメールアドレスが登録されています。アカウント画面で現在のメールアドレスを確認してください"
 }
 
 async function handlePasswordResetRequest(email: string) {

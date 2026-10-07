@@ -7,7 +7,7 @@ import CloudSyncPanel, { type CloudSyncAccountActions } from "./CloudSyncAccount
 import type { RuntimeSessionState } from "@/types.ts"
 import { CloudSyncDeletionError } from "@/errors.ts"
 import type { AccountUserView } from "@/composables/useAccountUser.ts"
-import { readonly, ref } from "vue"
+import { nextTick, readonly, ref } from "vue"
 
 function createSession(userId: string, email: string): Session {
   return {
@@ -287,6 +287,212 @@ describe("CloudSyncAccountPanel", () => {
       expect(
         screen.queryByRole("heading", { name: "確認メールを送信しました" }),
       ).not.toBeInTheDocument()
+    })
+
+    it("確認待ち状態でメールアドレスが変更先のものになったら自動的に完了する", async () => {
+      const accountUserRef = ref<User | null>({
+        id: "user1",
+        email: "old@example.com",
+      } as User)
+
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+        accountUserRef.value = {
+          id: "user1",
+          email: "new@example.com",
+        } as User
+      })
+
+      const accountUser = {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      } satisfies AccountUserView
+
+      const user = userEvent.setup()
+      renderEmailChangePanel("old@example.com", accountUser)
+
+      await submitEmailChange(user)
+      await refresh()
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(await screen.findByText("メールアドレスの変更が完了しました")).toBeInTheDocument()
+
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "サインアウト" })).toBeInTheDocument()
+    })
+
+    it("確認待ち状態でメールアドレス取得中の場合は自動的に完了しない", async () => {
+      const user = userEvent.setup()
+      const loading = ref(false)
+      const accountUserRef = ref<User | null>({
+        id: "user1",
+        email: "old@example.com",
+      } as User)
+
+      let finish!: () => void
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(() => {
+        loading.value = true
+        accountUserRef.value = {
+          id: "user1",
+          email: "new@example.com",
+        } as User
+
+        return new Promise<void>((resolve) => {
+          finish = () => {
+            loading.value = false
+            resolve()
+          }
+        })
+      })
+      const accountUser = {
+        ...createAccountUser({ user: { id: "user1", email: "old@example.com" } as User }),
+        isLoading: readonly(loading),
+        user: readonly(accountUserRef),
+        refresh,
+      }
+      renderEmailChangePanel("old@example.com", accountUser)
+
+      await submitEmailChange(user)
+      refresh()
+      await nextTick()
+
+      for (const name of [
+        "変更状況を確認",
+        "確認メールを再送",
+        "新しいメールアドレスを修正",
+        "アカウント画面に戻る",
+      ]) {
+        expect(screen.getByRole("button", { name })).toBeDisabled()
+      }
+      finish()
+
+      expect(await screen.findByText("メールアドレスの変更が完了しました")).toBeInTheDocument()
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "サインアウト" })).toBeInTheDocument()
+    })
+
+    it("確認待ち状態でメールアドレスの取得に失敗している場合は自動的に完了しない", async () => {
+      const errorRef = ref<unknown>(null)
+      const accountUserRef = ref<User | null>({
+        id: "user1",
+        email: "old@example.com",
+      } as User)
+
+      const refresh = vi
+        .fn<() => Promise<void>>()
+        .mockImplementationOnce(async () => {
+          errorRef.value = new Error("refresh failed")
+          accountUserRef.value = {
+            id: "user1",
+            email: "new@example.com",
+          } as User
+        })
+        .mockImplementationOnce(async () => {
+          errorRef.value = null
+        })
+
+      const accountUser = {
+        ...createAccountUser({
+          user: {
+            id: "user1",
+            email: "old@example.com",
+          } as User,
+        }),
+        error: readonly(errorRef),
+        user: readonly(accountUserRef),
+        refresh,
+      } satisfies AccountUserView
+
+      const user = userEvent.setup()
+      renderEmailChangePanel("old@example.com", accountUser)
+
+      await submitEmailChange(user)
+      await refresh()
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(
+        screen.queryByText("認証処理に失敗しました。時間をおいて再度お試しください"),
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+
+      await refresh()
+
+      expect(refresh).toHaveBeenCalledTimes(2)
+      expect(screen.getByText("メールアドレスの変更が完了しました")).toBeInTheDocument()
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "サインアウト" })).toBeInTheDocument()
+    })
+
+    it("確認待ち状態のユーザーと現在のユーザーが異なる場合は自動的に完了しない", async () => {
+      const user = userEvent.setup()
+      const accountUserRef = ref<User | null>({ id: "user1", email: "old@example.com" } as User)
+      let finish!: () => void
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = () => {
+              accountUserRef.value = { id: "user1", email: "new@example.com" } as User
+              resolve()
+            }
+          }),
+      )
+      const actions = renderEmailChangePanel("old@example.com", {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      })
+
+      await submitEmailChange(user)
+      refresh()
+      await actions.rerender({
+        session: createSession("user2", "user2@example.com"),
+        runtimeSessionState: {
+          scope: { type: "user", userId: "user2" },
+          syncStatus: "authenticated",
+        } satisfies RuntimeSessionState,
+      })
+      finish()
+
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "サインアウト" })).toBeEnabled(),
+      )
+      expect(screen.queryByRole("status")).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole("heading", { name: "確認メールを送信しました" }),
+      ).not.toBeInTheDocument()
+    })
+
+    it("認証ユーザーが同じでも別ユーザーの取得メールが変更先と一致した場合は自動完了しない", async () => {
+      const user = userEvent.setup()
+      const accountUserRef = ref<User | null>({
+        id: "user1",
+        email: "old@example.com",
+      } as User)
+      const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
+        accountUserRef.value = {
+          id: "user2",
+          email: "new@example.com",
+        } as User
+      })
+      renderEmailChangePanel("old@example.com", {
+        ...createAccountUser(),
+        user: readonly(accountUserRef),
+        refresh,
+      })
+
+      await submitEmailChange(user)
+      await refresh()
+      await nextTick()
+
+      expect(screen.queryByText("メールアドレスの変更が完了しました")).not.toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "確認メールを送信しました" })).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "変更状況を確認" })).toBeEnabled()
     })
 
     it("変更状況の確認で未反映状態を確認できる", async () => {
