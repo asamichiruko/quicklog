@@ -156,8 +156,8 @@ const passwordResetFlow = usePasswordResetFlow({
   isLoading,
   onCancelled: handlePasswordResetCancelled,
   onCompleted: handlePasswordResetCompleted,
-  resetFormInputs: resetPasswordResetFormInputs,
-  resetVerificationInput: resetPasswordResetVerificationInput,
+  onResent: resetPasswordResetVerificationInput,
+  onVerificationFinished: resetPasswordResetVerificationInput,
   sendPasswordResetCode: props.actions.sendPasswordResetCode,
   setFeedback,
   updatePasswordAfterRecovery: props.actions.updatePasswordAfterRecovery,
@@ -167,12 +167,14 @@ const passwordResetFlow = usePasswordResetFlow({
 function handlePasswordResetCancelled() {
   if (passwordResetFlow.step.value === "idle") {
     showSignInView()
+    resetPasswordResetFormInputs()
   }
 }
 
 function handlePasswordResetCompleted() {
   if (passwordResetFlow.step.value === "idle") {
     showSignInView()
+    resetPasswordResetFormInputs()
   }
 }
 

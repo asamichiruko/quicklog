@@ -16,10 +16,10 @@ export function usePasswordResetFlow(options: {
   sendPasswordResetCode: (email: string) => Promise<void>
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
   updatePasswordAfterRecovery: (password: string) => Promise<void>
-  resetVerificationInput: () => void
-  resetFormInputs: () => void
   onCancelled: () => void
   onCompleted: () => void
+  onResent: () => void
+  onVerificationFinished: () => void
 }) {
   const step = ref<PasswordResetFlowStep>("idle")
   const requestEmail = ref("")
@@ -28,7 +28,6 @@ export function usePasswordResetFlow(options: {
   async function cancel() {
     await options.cancelPasswordRecovery()
     requestEmail.value = ""
-    options.resetFormInputs()
     options.setFeedback("", null)
     step.value = "idle"
     options.onCancelled()
@@ -49,7 +48,6 @@ export function usePasswordResetFlow(options: {
       await options.sendPasswordResetCode(trimmedEmail)
 
       options.setFeedback("パスワードリセット用のメールを送信しました", "success")
-      options.resetVerificationInput()
       requestEmail.value = trimmedEmail
       step.value = "awaitingCode"
     } catch (error) {
@@ -71,7 +69,7 @@ export function usePasswordResetFlow(options: {
       await options.sendPasswordResetCode(requestEmail.value)
 
       options.setFeedback("パスワードリセット用のメールを再送しました", "success")
-      options.resetVerificationInput()
+      options.onResent()
     } catch (error) {
       options.setFeedback(getAuthFeedbackMessage(error), "error")
     } finally {
@@ -96,7 +94,7 @@ export function usePasswordResetFlow(options: {
     } catch (error) {
       options.setFeedback(getAuthFeedbackMessage(error), "error")
     } finally {
-      options.resetVerificationInput()
+      options.onVerificationFinished()
       options.isLoading.value = false
     }
   }
@@ -113,7 +111,6 @@ export function usePasswordResetFlow(options: {
       await options.updatePasswordAfterRecovery(password)
 
       requestEmail.value = ""
-      options.resetFormInputs()
       options.setFeedback("パスワードを再設定しました", "success")
       step.value = "idle"
       options.onCompleted()
