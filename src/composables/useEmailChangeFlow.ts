@@ -14,21 +14,22 @@ export function useEmailChangeFlow(options: {
   getAccountUser: () => AccountUserView
   requestEmailChange: (newEmail: string) => Promise<void>
   resendEmailChangeConfirmation: (newEmail: string) => Promise<void>
-  showSignedInMainView: () => void
+  onCompleted: () => void
+  onUserChanged: () => void
   isLoading: Ref<boolean>
   setFeedback: (message: string, kind: FeedbackKind | null) => void
 }) {
-  const emailChangeFlowStep = ref<EmailChangeFlowStep>("idle")
+  const step = ref<EmailChangeFlowStep>("idle")
   const currentEmailAtChangingEmail = ref("")
   let emailChangeUserId: string | null = null
   let emailChangeRequestId = 0
   const newEmailAtChangingEmail = ref("")
-  const hasActiveEmailChangeFlow = computed(() => emailChangeFlowStep.value !== "idle")
+  const hasActiveFlow = computed(() => step.value !== "idle")
 
   function canRefreshEmailChangeState() {
     return (
       options.canUseCloudSession() &&
-      emailChangeFlowStep.value === "pending" &&
+      step.value === "pending" &&
       !options.isLoading.value &&
       !options.getAccountUser().isLoading.value &&
       emailChangeUserId !== null &&
@@ -126,7 +127,7 @@ export function useEmailChangeFlow(options: {
 
       currentEmailAtChangingEmail.value = requestedCurrentEmail
       newEmailAtChangingEmail.value = requestedNewEmail
-      emailChangeFlowStep.value = "pending"
+      step.value = "pending"
 
       options.setFeedback("メールアドレス変更用のメールを送信しました", "success")
     } catch (error) {
@@ -138,7 +139,7 @@ export function useEmailChangeFlow(options: {
   }
 
   async function resend() {
-    if (options.isLoading.value || emailChangeFlowStep.value !== "pending") return
+    if (options.isLoading.value || step.value !== "pending") return
 
     const session = options.getSession()
 
@@ -202,12 +203,12 @@ export function useEmailChangeFlow(options: {
   function clear() {
     currentEmailAtChangingEmail.value = ""
     newEmailAtChangingEmail.value = ""
-    emailChangeFlowStep.value = "idle"
+    step.value = "idle"
     options.setFeedback("", null)
   }
 
   function revise() {
-    emailChangeFlowStep.value = "idle"
+    step.value = "idle"
     options.setFeedback("", null)
   }
 
@@ -215,8 +216,8 @@ export function useEmailChangeFlow(options: {
     emailChangeRequestId += 1
     emailChangeUserId = null
     clear()
-    options.showSignedInMainView()
     options.isLoading.value = false
+    options.onCompleted()
   }
 
   watch(
@@ -224,7 +225,7 @@ export function useEmailChangeFlow(options: {
       () => options.getAccountUser().user.value,
       () => options.getAccountUser().isLoading.value,
       () => options.getAccountUser().error.value,
-      emailChangeFlowStep,
+      step,
     ],
     () => {
       if (!canRefreshEmailChangeState()) return
@@ -248,17 +249,17 @@ export function useEmailChangeFlow(options: {
       emailChangeRequestId += 1
       emailChangeUserId = null
       clear()
-      options.showSignedInMainView()
       options.isLoading.value = false
+      options.onUserChanged()
     },
     { flush: "sync" },
   )
 
   return {
-    emailChangeFlowStep: readonly(emailChangeFlowStep),
+    step: readonly(step),
     currentEmailAtChangingEmail: readonly(currentEmailAtChangingEmail),
     newEmailAtChangingEmail: readonly(newEmailAtChangingEmail),
-    hasActiveEmailChangeFlow,
+    hasActiveFlow,
     request,
     resend,
     refresh,

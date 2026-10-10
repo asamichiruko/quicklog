@@ -148,7 +148,8 @@ const emailChangeFlow = useEmailChangeFlow({
   requestEmailChange: props.actions.requestEmailChange,
   resendEmailChangeConfirmation: props.actions.resendEmailChangeConfirmation,
   setFeedback,
-  showSignedInMainView,
+  onCompleted: showSignedInMainView,
+  onUserChanged: showSignedInMainView,
 })
 
 const passwordResetFlow = usePasswordResetFlow({
@@ -192,7 +193,7 @@ const shouldShowActiveFlow = computed<boolean>(
   () =>
     passwordResetFlow.hasActiveFlow.value ||
     hasActiveSignUpFlow.value ||
-    emailChangeFlow.hasActiveEmailChangeFlow.value,
+    emailChangeFlow.hasActiveFlow.value,
 )
 
 const panelView = computed<PanelView>(() => {
@@ -204,7 +205,7 @@ const panelView = computed<PanelView>(() => {
   if (isAuthPending(props.runtimeSessionState)) return "authPending"
 
   if (canUseCloudSession.value) {
-    if (emailChangeFlow.emailChangeFlowStep.value === "pending") return "changeEmailPending"
+    if (emailChangeFlow.step.value === "pending") return "changeEmailPending"
     return signedInPanelView.value
   }
   return selectedPanelView.value
@@ -266,13 +267,9 @@ function cancelSignUpFlow() {
   showSignUpView()
 }
 
-function clearEmailChangeFlow() {
+function leaveEmailChangePendingView() {
   emailChangeForm.value?.reset()
   emailChangeFlow.clear()
-}
-
-function leaveEmailChangePendingView() {
-  clearEmailChangeFlow()
   showSignedInMainView()
   clearFeedback()
 }
