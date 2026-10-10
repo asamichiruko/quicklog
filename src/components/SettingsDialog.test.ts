@@ -139,306 +139,334 @@ describe("SettingsDialog", () => {
     vi.useRealTimers()
   })
 
-  it("open で dialog が表示される", async () => {
-    const user = userEvent.setup()
-    const { container } = render(TestHost)
+  describe("ダイアログと表示設定", () => {
+    it("open で dialog が表示される", async () => {
+      const user = userEvent.setup()
+      const { container } = render(TestHost)
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    expect(container.querySelector("dialog")).toHaveAttribute("open")
+      expect(container.querySelector("dialog")).toHaveAttribute("open")
+    })
+
+    it("設定を保存 ボタンを押すと設定が保存される", async () => {
+      const user = userEvent.setup()
+      const { container } = render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "表示" }))
+
+      const saveButton = screen.getByRole("button", { name: "設定を保存" })
+
+      expect(saveButton).toBeDisabled()
+
+      await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
+
+      expect(saveButton).toBeEnabled()
+
+      await user.click(saveButton)
+
+      expect(saveButton).toBeDisabled()
+
+      expect(screen.getByTestId("saved-settings")).toHaveTextContent(
+        JSON.stringify({ showDailySummary: true }),
+      )
+      expect(container.querySelector("dialog")).toHaveAttribute("open")
+    })
+
+    it("リセット ボタンを押すと設定が初期化される", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "表示" }))
+
+      const showDailySummary = screen.getByRole("checkbox", { name: "日別サマリーを表示" })
+
+      expect(showDailySummary).not.toBeChecked()
+
+      await user.click(showDailySummary)
+      await user.click(screen.getByRole("button", { name: "リセット" }))
+
+      expect(showDailySummary).not.toBeChecked()
+      expect(screen.getByRole("button", { name: "設定を保存" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "リセット" })).toBeDisabled()
+    })
+
+    it("閉じるボタンを押すと設定が保存されずに dialog が閉じる", async () => {
+      const user = userEvent.setup()
+      const { container } = render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "表示" }))
+      await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+
+      expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
+      expect(container.querySelector("dialog")).not.toHaveAttribute("open")
+    })
+
+    it("戻るボタンを押すと設定が保存されずに index に戻る", async () => {
+      const user = userEvent.setup()
+      const { container } = render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "表示" }))
+      await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
+      await user.click(screen.getByRole("button", { name: "戻る" }))
+
+      expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
+      expect(container.querySelector("dialog")).toHaveAttribute("open")
+      expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
+    })
+
+    it("props で与えた初期値が UI に反映される", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "settings を変更" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "表示" }))
+
+      expect(screen.getByRole("checkbox", { name: "日別サマリーを表示" })).toBeChecked()
+    })
   })
 
-  it("設定を保存 ボタンを押すと設定が保存される", async () => {
-    const user = userEvent.setup()
-    const { container } = render(TestHost)
+  describe("認証フォームの送信", () => {
+    it("クラウド同期のパスワード欄で Enter を押すと設定 dialog を閉じずにサインインする", async () => {
+      const user = userEvent.setup()
+      const { container } = render(TestHost)
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "表示" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    const saveButton = screen.getByRole("button", { name: "設定を保存" })
-    expect(saveButton).toBeDisabled()
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+      await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+      await user.keyboard("{Enter}")
 
-    await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
-
-    expect(saveButton).toBeEnabled()
-    await user.click(saveButton)
-    expect(saveButton).toBeDisabled()
-
-    expect(screen.getByTestId("saved-settings")).toHaveTextContent(
-      JSON.stringify({ showDailySummary: true }),
-    )
-    expect(container.querySelector("dialog")).toHaveAttribute("open")
+      expect(screen.getByTestId("signed-in-email")).toHaveTextContent("user@example.com")
+      expect(screen.getByTestId("signed-in-password")).toHaveTextContent("Passw0rd!")
+      expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
+      expect(container.querySelector("dialog")).toHaveAttribute("open")
+    })
   })
 
-  it("リセット ボタンを押すと設定が初期化される", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
+  describe("パスワードリセット中の開閉", () => {
+    it("パスワードリセットメールの送信中に開き直しても重複送信できない", async () => {
+      const user = userEvent.setup()
+      let finish!: () => void
+      const sendPasswordResetCode = vi.fn<() => Promise<void>>().mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finish = resolve
+          }),
+      )
+      render(TestHost, { props: { sendPasswordResetCode } })
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "表示" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+      await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+      await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+      await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
 
-    const showDailySummary = screen.getByRole("checkbox", { name: "日別サマリーを表示" })
-    expect(showDailySummary).not.toBeChecked()
+      expect(screen.getByRole("button", { name: "サインイン" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "パスワードを忘れた場合" })).toBeDisabled()
+      expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
 
-    await user.click(showDailySummary)
-    await user.click(screen.getByRole("button", { name: "リセット" }))
+      finish()
 
-    expect(showDailySummary).not.toBeChecked()
-    expect(screen.getByRole("button", { name: "設定を保存" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "リセット" })).toBeDisabled()
+      expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
+      expect(screen.getByRole("button", { name: "認証する" })).toBeDisabled()
+      expect(screen.getByRole("button", { name: "確認メールを再送する" })).toBeEnabled()
+    })
+
+    it("パスワードリセットの確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+      await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+      await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+      await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+
+      expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+      expect(
+        screen.getByRole("heading", { name: "アカウントと同期", level: 2 }),
+      ).toBeInTheDocument()
+      expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
+    })
+
+    it("パスワードリセットの認証後なら開き直しても新しいパスワード設定画面を表示する", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+      await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+      await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+      await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+      await user.type(await screen.findByLabelText("確認コード"), "123456")
+      await user.click(screen.getByRole("button", { name: "認証する" }))
+
+      expect(await screen.findByLabelText("新しいパスワード")).toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+      expect(
+        screen.getByRole("heading", { name: "アカウントと同期", level: 2 }),
+      ).toBeInTheDocument()
+      expect(screen.getByLabelText("新しいパスワード")).toBeInTheDocument()
+    })
+
+    it("パスワードリセットの認証後にキャンセルすると、開き直したときに新しいパスワード設定画面に復帰しない", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
+
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+      await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+      await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+      await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+      await user.type(await screen.findByLabelText("確認コード"), "123456")
+      await user.click(screen.getByRole("button", { name: "認証する" }))
+
+      expect(await screen.findByLabelText("新しいパスワード")).toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "サインインに戻る" }))
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+      expect(screen.getByRole("heading", { name: "設定", level: 2 })).toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+
+      expect(screen.getByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+      expect(screen.queryByLabelText("新しいパスワード")).not.toBeInTheDocument()
+    })
   })
 
-  it("閉じるボタンを押すと設定が保存されずに dialog が閉じる", async () => {
-    const user = userEvent.setup()
-    const { container } = render(TestHost)
+  describe("アカウント作成中の開閉", () => {
+    it("アカウント作成の確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "表示" }))
-    await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
-    expect(container.querySelector("dialog")).not.toHaveAttribute("open")
+      await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+      await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+      await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+      await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
+
+      expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+      expect(
+        screen.getByRole("heading", { name: "アカウントと同期", level: 2 }),
+      ).toBeInTheDocument()
+      expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
+    })
   })
 
-  it("戻るボタンを押すと設定が保存されずに index に戻る", async () => {
-    const user = userEvent.setup()
-    const { container } = render(TestHost)
+  describe("データ管理パネルの再表示", () => {
+    it("開き直すと 記録のインポート パネルが閉じて入力状態がリセットされる", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "表示" }))
-    await user.click(screen.getByRole("checkbox", { name: "日別サマリーを表示" }))
-    await user.click(screen.getByRole("button", { name: "戻る" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "記録のインポート" }))
 
-    expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
-    expect(container.querySelector("dialog")).toHaveAttribute("open")
-    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
-  })
+      expect(screen.getByRole("heading", { name: "記録のインポート" })).toBeInTheDocument()
 
-  it("props で与えた初期値が UI に反映される", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
+      const file = new File(
+        [JSON.stringify([{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }])],
+        "quicklog.json",
+        { type: "application/json" },
+      )
 
-    await user.click(screen.getByRole("button", { name: "settings を変更" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "表示" }))
+      await user.upload(screen.getByLabelText("インポートする JSON ファイル"), file)
 
-    expect(screen.getByRole("checkbox", { name: "日別サマリーを表示" })).toBeChecked()
-  })
+      expect(screen.getByText("quicklog.json")).toBeInTheDocument()
 
-  it("クラウド同期のパスワード欄で Enter を押すと設定 dialog を閉じずにサインインする", async () => {
-    const user = userEvent.setup()
-    const { container } = render(TestHost)
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-    await user.keyboard("{Enter}")
+      await user.click(screen.getByRole("button", { name: "記録のインポート" }))
 
-    expect(screen.getByTestId("signed-in-email")).toHaveTextContent("user@example.com")
-    expect(screen.getByTestId("signed-in-password")).toHaveTextContent("Passw0rd!")
-    expect(screen.getByTestId("saved-settings")).toHaveTextContent("null")
-    expect(container.querySelector("dialog")).toHaveAttribute("open")
-  })
+      expect(screen.getByText("選択されていません")).toBeInTheDocument()
+    })
 
-  it("パスワードリセットメールの送信中に開き直しても重複送信できない", async () => {
-    const user = userEvent.setup()
-    let finish!: () => void
-    const sendPasswordResetCode = vi.fn<() => Promise<void>>().mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          finish = resolve
-        }),
-    )
-    render(TestHost, { props: { sendPasswordResetCode } })
+    it("開き直すと 記録のエクスポート パネルが閉じて入力状態がリセットされる", async () => {
+      const user = userEvent.setup()
+      render(TestHost)
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    expect(screen.getByRole("button", { name: "サインイン" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "パスワードを忘れた場合" })).toBeDisabled()
-    expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
+      await user.click(screen.getByRole("button", { name: "記録のエクスポート" }))
 
-    finish()
+      expect(screen.getByRole("heading", { name: "記録のエクスポート" })).toBeInTheDocument()
 
-    expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "認証する" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "確認メールを再送する" })).toBeEnabled()
-  })
+      await user.click(screen.getByRole("radio", { name: "Markdown" }))
 
-  it("パスワードリセットの確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
+      expect(screen.getByRole("radio", { name: "Markdown" })).toBeChecked()
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+      expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
 
-    expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
+      await user.click(screen.getByRole("button", { name: "記録のエクスポート" }))
 
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      expect(screen.getByRole("radio", { name: "JSON" })).toBeChecked()
+    })
 
-    expect(screen.getByRole("heading", { name: "アカウントと同期", level: 2 })).toBeInTheDocument()
-    expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
-  })
+    it("開き直すと 記録のコピー パネルが閉じて入力状態がリセットされる", async () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date(2026, 4, 24))
 
-  it("パスワードリセットの認証後なら開き直しても新しいパスワード設定画面を表示する", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      render(TestHost)
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
-    await user.type(await screen.findByLabelText("確認コード"), "123456")
-    await user.click(screen.getByRole("button", { name: "認証する" }))
+      await user.click(screen.getByRole("button", { name: "記録のコピー" }))
 
-    expect(await screen.findByLabelText("新しいパスワード")).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "記録のコピー" })).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
+      await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-22")
+      await user.click(screen.getByText("コピー内容を確認"))
 
-    expect(screen.getByRole("heading", { name: "アカウントと同期", level: 2 })).toBeInTheDocument()
-    expect(screen.getByLabelText("新しいパスワード")).toBeInTheDocument()
-  })
+      expect(screen.getByText("コピー内容を確認").closest("details")).toHaveAttribute("open")
+      expect(screen.getByLabelText("開始日")).toHaveValue("2026-05-22")
+      expect(screen.getByLabelText("終了日")).toHaveValue("2026-05-22")
 
-  it("パスワードリセットの認証後にキャンセルすると、開き直したときに新しいパスワード設定画面に復帰しない", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
+      await user.click(screen.getByRole("button", { name: "閉じる" }))
+      await user.click(screen.getByRole("button", { name: "設定を開く" }))
 
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+      expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
 
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
-    await user.type(await screen.findByLabelText("確認コード"), "123456")
-    await user.click(screen.getByRole("button", { name: "認証する" }))
+      await user.click(screen.getByText("記録のコピー"))
 
-    expect(await screen.findByLabelText("新しいパスワード")).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: "サインインに戻る" }))
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-
-    expect(screen.getByRole("heading", { name: "設定", level: 2 })).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
-
-    expect(screen.getByRole("heading", { name: "サインイン" })).toBeInTheDocument()
-    expect(screen.queryByLabelText("新しいパスワード")).not.toBeInTheDocument()
-  })
-
-  it("アカウント作成の確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
-
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-
-    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-    await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
-
-    expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-
-    expect(screen.getByRole("heading", { name: "アカウントと同期", level: 2 })).toBeInTheDocument()
-    expect(screen.getByLabelText("確認コード")).toBeInTheDocument()
-  })
-
-  it("開き直すと 記録のインポート パネルが閉じて入力状態がリセットされる", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
-
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    await user.click(screen.getByRole("button", { name: "記録のインポート" }))
-    expect(screen.getByRole("heading", { name: "記録のインポート" })).toBeInTheDocument()
-
-    const file = new File(
-      [JSON.stringify([{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }])],
-      "quicklog.json",
-      { type: "application/json" },
-    )
-    await user.upload(screen.getByLabelText("インポートする JSON ファイル"), file)
-
-    expect(screen.getByText("quicklog.json")).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: "記録のインポート" }))
-
-    expect(screen.getByText("選択されていません")).toBeInTheDocument()
-  })
-
-  it("開き直すと 記録のエクスポート パネルが閉じて入力状態がリセットされる", async () => {
-    const user = userEvent.setup()
-    render(TestHost)
-
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-
-    await user.click(screen.getByRole("button", { name: "記録のエクスポート" }))
-    expect(screen.getByRole("heading", { name: "記録のエクスポート" })).toBeInTheDocument()
-
-    await user.click(screen.getByRole("radio", { name: "Markdown" }))
-    expect(screen.getByRole("radio", { name: "Markdown" })).toBeChecked()
-
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: "記録のエクスポート" }))
-
-    expect(screen.getByRole("radio", { name: "JSON" })).toBeChecked()
-  })
-
-  it("開き直すと 記録のコピー パネルが閉じて入力状態がリセットされる", async () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2026, 4, 24))
-
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    render(TestHost)
-
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-
-    await user.click(screen.getByRole("button", { name: "記録のコピー" }))
-    expect(screen.getByRole("heading", { name: "記録のコピー" })).toBeInTheDocument()
-
-    await fireEvent.update(screen.getByLabelText("開始日"), "2026-05-22")
-    await fireEvent.update(screen.getByLabelText("終了日"), "2026-05-22")
-    await user.click(screen.getByText("コピー内容を確認"))
-
-    expect(screen.getByText("コピー内容を確認").closest("details")).toHaveAttribute("open")
-    expect(screen.getByLabelText("開始日")).toHaveValue("2026-05-22")
-    expect(screen.getByLabelText("終了日")).toHaveValue("2026-05-22")
-
-    await user.click(screen.getByRole("button", { name: "閉じる" }))
-    await user.click(screen.getByRole("button", { name: "設定を開く" }))
-    expect(screen.getByRole("heading", { name: "設定" })).toBeInTheDocument()
-
-    await user.click(screen.getByText("記録のコピー"))
-
-    expect(screen.getByLabelText("開始日")).toHaveValue("2026-05-24")
-    expect(screen.getByLabelText("終了日")).toHaveValue("2026-05-24")
-    expect(screen.queryByText("コピー内容を確認")).not.toBeInTheDocument()
+      expect(screen.getByLabelText("開始日")).toHaveValue("2026-05-24")
+      expect(screen.getByLabelText("終了日")).toHaveValue("2026-05-24")
+      expect(screen.queryByText("コピー内容を確認")).not.toBeInTheDocument()
+    })
   })
 })

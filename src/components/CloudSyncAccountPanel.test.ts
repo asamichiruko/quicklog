@@ -872,79 +872,6 @@ describe("CloudSyncAccountPanel", () => {
     })
   })
 
-  it("メールアドレスとパスワードを入力してサインインできる", async () => {
-    const user = userEvent.setup()
-    const signInWithEmail = vi.fn()
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      signInWithEmail,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-
-    const signInButton = screen.getByRole("button", { name: "サインイン" })
-
-    expect(signInButton).toBeEnabled()
-
-    await user.click(signInButton)
-
-    expect(signInWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
-    expect(await screen.findByText("クラウド同期を開始しました")).toBeInTheDocument()
-  })
-
-  it("サインイン時にエラーが発生するとその旨が表示される", async () => {
-    const user = userEvent.setup()
-    const signInWithEmail = vi.fn().mockRejectedValue({ code: "invalid_credentials" })
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      signInWithEmail,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-
-    const signInButton = screen.getByRole("button", { name: "サインイン" })
-
-    expect(signInButton).toBeEnabled()
-
-    await user.click(signInButton)
-
-    expect(signInWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
-    expect(
-      await screen.findByText("メールアドレスまたはパスワードが正しくありません"),
-    ).toBeInTheDocument()
-  })
-
-  it("サインイン中にサインアウトできる", async () => {
-    const user = userEvent.setup()
-    const signOut = vi.fn()
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      signOut,
-    })
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
-        },
-      },
-    })
-
-    await user.click(screen.getByRole("button", { name: "サインアウト" }))
-
-    expect(signOut).toHaveBeenCalledOnce()
-    expect(await screen.findByText("クラウド同期を停止しました")).toBeInTheDocument()
-  })
-
   describe("アカウント情報の表示と再取得", () => {
     // 認証状態は固定し、各テストでは表示用の情報と取得状況を指定する。
     function renderAccountUser(options: Parameters<typeof createAccountUser>[0] = {}) {
@@ -1072,799 +999,966 @@ describe("CloudSyncAccountPanel", () => {
     })
   })
 
-  it("サインアウト時にエラーが発生するとその旨が表示される", async () => {
-    const user = userEvent.setup()
-    const signOut = vi.fn().mockRejectedValue({ code: "request_timeout" })
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      signOut,
+  describe("サインイン", () => {
+    it("メールアドレスとパスワードを入力してサインインできる", async () => {
+      const user = userEvent.setup()
+      const signInWithEmail = vi.fn()
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        signInWithEmail,
+      })
+
+      render(CloudSyncPanel, { props: defaultProps })
+
+      await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+
+      const signInButton = screen.getByRole("button", { name: "サインイン" })
+
+      expect(signInButton).toBeEnabled()
+
+      await user.click(signInButton)
+
+      expect(signInWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("クラウド同期を開始しました"),
+      )
     })
 
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+    it("サインイン時にエラーが発生するとその旨が表示される", async () => {
+      const user = userEvent.setup()
+      const signInWithEmail = vi.fn().mockRejectedValue({ code: "invalid_credentials" })
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        signInWithEmail,
+      })
+
+      render(CloudSyncPanel, { props: defaultProps })
+
+      await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+
+      const signInButton = screen.getByRole("button", { name: "サインイン" })
+
+      expect(signInButton).toBeEnabled()
+
+      await user.click(signInButton)
+
+      expect(signInWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "メールアドレスまたはパスワードが正しくありません",
+        ),
+      )
+    })
+  })
+
+  describe("サインアウト", () => {
+    it("サインイン中にサインアウトできる", async () => {
+      const user = userEvent.setup()
+      const signOut = vi.fn()
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        signOut,
+      })
+
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
+      })
+
+      await user.click(screen.getByRole("button", { name: "サインアウト" }))
+
+      expect(signOut).toHaveBeenCalledOnce()
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("クラウド同期を停止しました"),
+      )
     })
 
-    await user.click(screen.getByRole("button", { name: "サインアウト" }))
+    it("サインアウト時にエラーが発生するとその旨が表示される", async () => {
+      const user = userEvent.setup()
+      const signOut = vi.fn().mockRejectedValue({ code: "request_timeout" })
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        signOut,
+      })
 
-    expect(
-      await screen.findByText("タイムアウトしました。通信状況を確認して再度お試しください"),
-    ).toBeInTheDocument()
-  })
-
-  it("セッションが失われているとき同期停止メッセージを目立たせる", () => {
-    const defaultProps = createDefaultProps(createActions())
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: null,
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "sessionLost",
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
-    })
+      })
 
-    expect(screen.getByText(/クラウド同期が停止しています/).closest(".sync-state")).toHaveClass(
-      "session-lost",
-    )
+      await user.click(screen.getByRole("button", { name: "サインアウト" }))
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "タイムアウトしました。通信状況を確認して再度お試しください",
+        ),
+      )
+    })
   })
 
-  it("認証確認中のときは同期停止メッセージとして目立たせない", () => {
-    const defaultProps = createDefaultProps(createActions())
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: null,
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authPending",
+  describe("クラウド同期と認証状態", () => {
+    it("セッションが失われているとき同期停止メッセージを目立たせる", () => {
+      const defaultProps = createDefaultProps(createActions())
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: null,
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "sessionLost",
+          },
         },
-      },
+      })
+
+      expect(screen.getByText(/クラウド同期が停止しています/).closest(".sync-state")).toHaveClass(
+        "session-lost",
+      )
     })
 
-    expect(
-      screen.getByText("クラウド同期の認証状態を確認しています").closest(".description"),
-    ).not.toHaveClass("session-lost")
-    expect(screen.queryByText(/クラウド同期が停止しています/)).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "サインイン" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "アカウントを作成する" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "同期" })).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole("button", { name: "クラウド同期アカウントとデータを削除" }),
-    ).not.toBeInTheDocument()
-  })
+    it("認証確認中のときは同期停止メッセージとして目立たせない", () => {
+      const defaultProps = createDefaultProps(createActions())
 
-  it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
-    const user = userEvent.setup()
-    const result = {
-      data: {
-        version: 3,
-        logEntries: [],
-        logEntryDeletions: [],
-      },
-      addedCount: 2,
-      deletedCount: 3,
-      uploadedCount: 1,
-    } satisfies CloudQuicklogDataSyncResult
-
-    const syncLogEntries = vi
-      .fn<() => Promise<CloudQuicklogDataSyncResult>>()
-      .mockResolvedValue(result)
-
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      syncLogEntries,
-    })
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: null,
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authPending",
+          },
         },
-      },
+      })
+
+      expect(
+        screen.getByText("クラウド同期の認証状態を確認しています").closest(".description"),
+      ).not.toHaveClass("session-lost")
+      expect(screen.queryByText(/クラウド同期が停止しています/)).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "サインイン" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "アカウントを作成する" })).not.toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "同期" })).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole("button", { name: "クラウド同期アカウントとデータを削除" }),
+      ).not.toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole("button", { name: "いますぐ同期" }))
-
-    expect(syncLogEntries).toHaveBeenCalledOnce()
-    expect(
-      await screen.findByText("同期しました（追加 2 件、削除 3 件、アップロード 1 件）"),
-    ).toBeInTheDocument()
-  })
-
-  it("同期時にエラーが発生するとその旨が表示される", async () => {
-    const user = userEvent.setup()
-    const syncLogEntries = vi
-      .fn<() => Promise<CloudQuicklogDataSyncResult>>()
-      .mockRejectedValue(new Error("network error"))
-
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      syncLogEntries,
-    })
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+    it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
+      const user = userEvent.setup()
+      const result = {
+        data: {
+          version: 3,
+          logEntries: [],
+          logEntryDeletions: [],
         },
-      },
-    })
+        addedCount: 2,
+        deletedCount: 3,
+        uploadedCount: 1,
+      } satisfies CloudQuicklogDataSyncResult
 
-    await user.click(screen.getByRole("button", { name: "いますぐ同期" }))
+      const syncLogEntries = vi
+        .fn<() => Promise<CloudQuicklogDataSyncResult>>()
+        .mockResolvedValue(result)
 
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "認証処理に失敗しました。時間をおいて再度お試しください",
-      ),
-    )
-  })
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        syncLogEntries,
+      })
 
-  it("サインイン中に パスワードを変更 ボタンを押すと ChangePasswordForm に遷移する", async () => {
-    const user = userEvent.setup()
-    const defaultProps = createDefaultProps(createActions())
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
+      })
+
+      await user.click(screen.getByRole("button", { name: "いますぐ同期" }))
+
+      expect(syncLogEntries).toHaveBeenCalledOnce()
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "同期しました（追加 2 件、削除 3 件、アップロード 1 件）",
+        ),
+      )
     })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+    it("同期時にエラーが発生するとその旨が表示される", async () => {
+      const user = userEvent.setup()
+      const syncLogEntries = vi
+        .fn<() => Promise<CloudQuicklogDataSyncResult>>()
+        .mockRejectedValue(new Error("network error"))
 
-    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
-  })
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        syncLogEntries,
+      })
 
-  it("パスワードの変更に成功すると changePassword が呼ばれてクラウド同期画面に遷移する", async () => {
-    const user = userEvent.setup()
-    const defaultProps = createDefaultProps(createActions())
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
+      })
+
+      await user.click(screen.getByRole("button", { name: "いますぐ同期" }))
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "認証処理に失敗しました。時間をおいて再度お試しください",
+        ),
+      )
     })
-
-    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
-
-    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
-
-    await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
-    await user.type(screen.getByLabelText("現在のパスワード"), "Current42@")
-    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
-
-    expect(screen.getByRole("heading", { name: "クラウド同期" })).toBeInTheDocument()
   })
 
-  it("パスワードの変更に失敗すると画面を遷移しない", async () => {
-    const user = userEvent.setup()
-    const error = new Error("パスワード変更エラー")
-    const changePassword = vi.fn().mockRejectedValue(error)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      changePassword,
-    })
+  describe("パスワード変更", () => {
+    it("サインイン中に パスワードを変更 ボタンを押すと ChangePasswordForm に遷移する", async () => {
+      const user = userEvent.setup()
+      const defaultProps = createDefaultProps(createActions())
 
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
+      })
+
+      await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+      expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+    it("パスワードの変更に成功すると changePassword が呼ばれてクラウド同期画面に遷移する", async () => {
+      const user = userEvent.setup()
+      const defaultProps = createDefaultProps(createActions())
 
-    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
-
-    await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
-    await user.type(screen.getByLabelText("現在のパスワード"), "Current42@")
-
-    await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
-
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "認証処理に失敗しました。時間をおいて再度お試しください",
-      ),
-    )
-    expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
-  })
-
-  it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {
-    const user = userEvent.setup()
-    const signUpWithEmail = vi.fn().mockRejectedValue({ code: "email_exists" })
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      signUpWithEmail,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-
-    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
-
-    expect(signUpButton).toBeEnabled()
-
-    await user.click(signUpButton)
-
-    expect(signUpWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
-    expect(
-      await screen.findByText("登録できませんでした。入力内容を確認してください"),
-    ).toBeInTheDocument()
-  })
-
-  it("メールアドレスとパスワードを入力してアカウントを作成できる", async () => {
-    const user = userEvent.setup()
-    const signUpWithEmail = vi.fn()
-    const verifySignUpCode = vi.fn()
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      signUpWithEmail,
-      verifySignUpCode,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-
-    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
-
-    expect(signUpButton).toBeEnabled()
-
-    await user.click(signUpButton)
-
-    expect(signUpWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
-    expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
-
-    await user.type(screen.getByLabelText("確認コード"), "123456")
-
-    const verifyButton = screen.getByRole("button", { name: "認証する" })
-
-    expect(verifyButton).toBeEnabled()
-
-    await user.click(verifyButton)
-
-    expect(verifySignUpCode).toHaveBeenCalledWith("user@example.com", "123456")
-    expect(screen.getByText("認証に成功しました")).toBeInTheDocument()
-  })
-
-  it("アカウント作成時のメールアドレス認証に失敗してもリトライできる", async () => {
-    const user = userEvent.setup()
-    const error = new Error("認証エラー")
-    const verifySignUpCode = vi.fn().mockRejectedValueOnce(error)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      verifySignUpCode,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-
-    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
-
-    expect(signUpButton).toBeEnabled()
-
-    await user.click(signUpButton)
-
-    expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
-
-    const codeInput = screen.getByLabelText("確認コード")
-
-    await user.type(codeInput, "123456")
-
-    const verifyButton = screen.getByRole("button", { name: "認証する" })
-
-    expect(verifyButton).toBeEnabled()
-
-    await user.click(verifyButton)
-
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "認証処理に失敗しました。時間をおいて再度お試しください",
-      ),
-    )
-    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
-    expect(codeInput).toHaveValue("")
-
-    await user.type(codeInput, "654321")
-    await user.click(verifyButton)
-
-    expect(screen.getByText("認証に成功しました")).toBeInTheDocument()
-    expect(verifySignUpCode).toHaveBeenLastCalledWith("user@example.com", "654321")
-  })
-
-  it("アカウント作成で認証コードを再送できる", async () => {
-    const user = userEvent.setup()
-    const resendSignUpCode = vi.fn()
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      resendSignUpCode,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
-
-    const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
-
-    expect(signUpButton).toBeEnabled()
-
-    await user.click(signUpButton)
-
-    expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
-
-    const resendButton = screen.getByRole("button", { name: "確認メールを再送する" })
-
-    await user.click(resendButton)
-
-    expect(resendSignUpCode).toHaveBeenCalledWith("user@example.com")
-    expect(screen.getByText("アカウント作成用のメールを再送しました")).toBeInTheDocument()
-  })
-
-  it("アカウント作成をキャンセルすると state が破棄される", async () => {
-    const user = userEvent.setup()
-    const signUpWithEmail = vi.fn()
-    const verifySignUpCode = vi.fn()
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      signUpWithEmail,
-      verifySignUpCode,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " first@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "First123!")
-    await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
-
-    expect(signUpWithEmail).toHaveBeenCalledWith("first@example.com", "First123!")
-    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
-
-    await user.click(screen.getByRole("button", { name: "認証をキャンセル" }))
-
-    expect(screen.getByRole("heading", { name: "アカウント作成" })).toBeInTheDocument()
-    expect(screen.queryByRole("heading", { name: "メールアドレスの確認" })).not.toBeInTheDocument()
-
-    await user.type(screen.getByLabelText("メールアドレス"), " second@example.com ")
-    await user.type(screen.getByLabelText("パスワード"), "Second123!")
-    await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
-
-    expect(signUpWithEmail).toHaveBeenLastCalledWith("second@example.com", "Second123!")
-
-    await user.type(screen.getByLabelText("確認コード"), "123456")
-    await user.click(screen.getByRole("button", { name: "認証する" }))
-
-    expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith("second@example.com", "123456")
-  })
-
-  it("アカウントを削除できる", async () => {
-    const user = userEvent.setup()
-    const deleteCloudSync = vi.fn().mockResolvedValue(null)
-    const confirm = vi.fn(() => true)
-    vi.stubGlobal("confirm", confirm)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      deleteCloudSync,
-    })
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
+      })
+
+      await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+      expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
+
+      await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
+      await user.type(screen.getByLabelText("現在のパスワード"), "Current42@")
+      await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+      expect(screen.getByRole("heading", { name: "クラウド同期" })).toBeInTheDocument()
     })
 
-    await user.click(screen.getByText("クラウド同期アカウントとデータを削除"))
-    await user.click(screen.getByRole("button", { name: "削除する" }))
+    it("パスワードの変更に失敗すると画面を遷移しない", async () => {
+      const user = userEvent.setup()
+      const error = new Error("パスワード変更エラー")
+      const changePassword = vi.fn().mockRejectedValue(error)
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        changePassword,
+      })
 
-    expect(deleteCloudSync).toHaveBeenCalledOnce()
-    expect(await screen.findByText("クラウド同期アカウントを削除しました")).toBeInTheDocument()
-  })
-
-  it("アカウントの削除に失敗したらエラーを表示する", async () => {
-    const user = userEvent.setup()
-    const deleteCloudSync = vi
-      .fn()
-      .mockRejectedValue(new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした"))
-    const confirm = vi.fn(() => true)
-    vi.stubGlobal("confirm", confirm)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      deleteCloudSync,
-    })
-
-    render(CloudSyncPanel, {
-      props: {
-        ...defaultProps,
-        session: createSession("user1", "user@example.com"),
-        runtimeSessionState: {
-          scope: { type: "user", userId: "user1" },
-          syncStatus: "authenticated",
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
         },
-      },
+      })
+
+      await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+      expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
+
+      await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
+      await user.type(screen.getByLabelText("現在のパスワード"), "Current42@")
+
+      await user.click(screen.getByRole("button", { name: "パスワードを変更" }))
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "認証処理に失敗しました。時間をおいて再度お試しください",
+        ),
+      )
+      expect(screen.getByRole("heading", { name: "パスワードの変更" })).toBeInTheDocument()
     })
-
-    await user.click(screen.getByText("クラウド同期アカウントとデータを削除"))
-    await user.click(screen.getByRole("button", { name: "削除する" }))
-
-    expect(deleteCloudSync).toHaveBeenCalledOnce()
-    expect(
-      await screen.findByText("クラウド同期アカウントを削除できませんでした"),
-    ).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "削除する" })).toBeInTheDocument()
   })
 
-  it("OTP を利用してパスワードを再設定できる", async () => {
-    const user = userEvent.setup()
-    const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
-    const verifyPasswordResetCode = vi.fn().mockResolvedValue(null)
-    const updatePasswordAfterRecovery = vi.fn().mockResolvedValue(null)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      sendPasswordResetCode,
-      verifyPasswordResetCode,
-      updatePasswordAfterRecovery,
+  describe("アカウント作成", () => {
+    it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {
+      const user = userEvent.setup()
+      const signUpWithEmail = vi.fn().mockRejectedValue({ code: "email_exists" })
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        signUpWithEmail,
+      })
+
+      render(CloudSyncPanel, { props: defaultProps })
+
+      await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+      await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+
+      const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
+
+      expect(signUpButton).toBeEnabled()
+
+      await user.click(signUpButton)
+
+      expect(signUpWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "登録できませんでした。入力内容を確認してください",
+        ),
+      )
     })
 
-    render(CloudSyncPanel, { props: defaultProps })
+    it("メールアドレスとパスワードを入力してアカウントを作成できる", async () => {
+      const user = userEvent.setup()
+      const signUpWithEmail = vi.fn()
+      const verifySignUpCode = vi.fn()
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        signUpWithEmail,
+        verifySignUpCode,
+      })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      render(CloudSyncPanel, { props: defaultProps })
 
-    const requestButton = screen.getByRole("button", { name: "パスワードリセット" })
+      await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+      await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
 
-    expect(requestButton).toBeEnabled()
+      const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
 
-    await user.click(requestButton)
+      expect(signUpButton).toBeEnabled()
 
-    expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
-    expect(
-      await screen.findByText("パスワードリセット用のメールを送信しました"),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
+      await user.click(signUpButton)
 
-    await user.type(screen.getByLabelText("確認コード"), "123456")
+      expect(signUpWithEmail).toHaveBeenCalledWith("user@example.com", "Passw0rd!")
+      expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
 
-    const verifyButton = screen.getByRole("button", { name: "認証する" })
+      await user.type(screen.getByLabelText("確認コード"), "123456")
 
-    expect(verifyButton).toBeEnabled()
+      const verifyButton = screen.getByRole("button", { name: "認証する" })
 
-    await user.click(verifyButton)
+      expect(verifyButton).toBeEnabled()
 
-    expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "123456")
-    expect(await screen.findByText("認証に成功しました")).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
+      await user.click(verifyButton)
 
-    await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
+      expect(verifySignUpCode).toHaveBeenCalledWith("user@example.com", "123456")
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("認証に成功しました"),
+      )
+    })
 
-    const passwordResetButton = screen.getByRole("button", { name: "パスワードを設定" })
+    it("アカウント作成時のメールアドレス認証に失敗してもリトライできる", async () => {
+      const user = userEvent.setup()
+      const error = new Error("認証エラー")
+      const verifySignUpCode = vi.fn().mockRejectedValueOnce(error)
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        verifySignUpCode,
+      })
 
-    expect(passwordResetButton).toBeEnabled()
+      render(CloudSyncPanel, { props: defaultProps })
 
-    await user.click(passwordResetButton)
+      await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+      await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
 
-    expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Passw0rd!")
-    expect(await screen.findByText("パスワードを再設定しました")).toBeInTheDocument()
+      const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
 
-    expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+      expect(signUpButton).toBeEnabled()
+
+      await user.click(signUpButton)
+
+      expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+
+      const codeInput = screen.getByLabelText("確認コード")
+
+      await user.type(codeInput, "123456")
+
+      const verifyButton = screen.getByRole("button", { name: "認証する" })
+
+      expect(verifyButton).toBeEnabled()
+
+      await user.click(verifyButton)
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "認証処理に失敗しました。時間をおいて再度お試しください",
+        ),
+      )
+      expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+      expect(codeInput).toHaveValue("")
+
+      await user.type(codeInput, "654321")
+      await user.click(verifyButton)
+
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent("認証に成功しました"),
+      )
+      expect(verifySignUpCode).toHaveBeenLastCalledWith("user@example.com", "654321")
+    })
+
+    it("アカウント作成で認証コードを再送できる", async () => {
+      const user = userEvent.setup()
+      const resendSignUpCode = vi.fn()
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        resendSignUpCode,
+      })
+
+      render(CloudSyncPanel, { props: defaultProps })
+
+      await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+      await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Passw0rd!")
+
+      const signUpButton = screen.getByRole("button", { name: "アカウントを作成" })
+
+      expect(signUpButton).toBeEnabled()
+
+      await user.click(signUpButton)
+
+      expect(screen.getByText("確認メールを送信しました")).toBeInTheDocument()
+      expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+
+      const resendButton = screen.getByRole("button", { name: "確認メールを再送する" })
+
+      await user.click(resendButton)
+
+      expect(resendSignUpCode).toHaveBeenCalledWith("user@example.com")
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "アカウント作成用のメールを再送しました",
+        ),
+      )
+    })
+
+    it("アカウント作成をキャンセルすると state が破棄される", async () => {
+      const user = userEvent.setup()
+      const signUpWithEmail = vi.fn()
+      const verifySignUpCode = vi.fn()
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        signUpWithEmail,
+        verifySignUpCode,
+      })
+
+      render(CloudSyncPanel, { props: defaultProps })
+
+      await user.click(screen.getByRole("button", { name: "アカウントを作成する" }))
+      await user.type(screen.getByLabelText("メールアドレス"), " first@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "First123!")
+      await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
+
+      expect(signUpWithEmail).toHaveBeenCalledWith("first@example.com", "First123!")
+      expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+
+      await user.click(screen.getByRole("button", { name: "認証をキャンセル" }))
+
+      expect(screen.getByRole("heading", { name: "アカウント作成" })).toBeInTheDocument()
+      expect(
+        screen.queryByRole("heading", { name: "メールアドレスの確認" }),
+      ).not.toBeInTheDocument()
+
+      await user.type(screen.getByLabelText("メールアドレス"), " second@example.com ")
+      await user.type(screen.getByLabelText("パスワード"), "Second123!")
+      await user.click(screen.getByRole("button", { name: "アカウントを作成" }))
+
+      expect(signUpWithEmail).toHaveBeenLastCalledWith("second@example.com", "Second123!")
+
+      await user.type(screen.getByLabelText("確認コード"), "123456")
+      await user.click(screen.getByRole("button", { name: "認証する" }))
+
+      expect(verifySignUpCode).toHaveBeenCalledExactlyOnceWith("second@example.com", "123456")
+    })
   })
 
-  it("OTP の初回送信に失敗した場合はメール入力欄に留まり、再試行できる", async () => {
-    const user = userEvent.setup()
-    const error = new Error("sending code failed")
-    const sendPasswordResetCode = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce(null)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      sendPasswordResetCode,
+  describe("アカウント削除", () => {
+    it("アカウントを削除できる", async () => {
+      const user = userEvent.setup()
+      const deleteCloudSync = vi.fn().mockResolvedValue(null)
+      const confirm = vi.fn(() => true)
+      vi.stubGlobal("confirm", confirm)
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        deleteCloudSync,
+      })
+
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
+        },
+      })
+
+      await user.click(screen.getByText("クラウド同期アカウントとデータを削除"))
+      await user.click(screen.getByRole("button", { name: "削除する" }))
+
+      expect(deleteCloudSync).toHaveBeenCalledOnce()
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "クラウド同期アカウントを削除しました",
+        ),
+      )
     })
 
-    render(CloudSyncPanel, { props: defaultProps })
+    it("アカウントの削除に失敗したらエラーを表示する", async () => {
+      const user = userEvent.setup()
+      const deleteCloudSync = vi
+        .fn()
+        .mockRejectedValue(
+          new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした"),
+        )
+      const confirm = vi.fn(() => true)
+      vi.stubGlobal("confirm", confirm)
+      const defaultProps = createDefaultProps({
+        ...createActions(),
+        deleteCloudSync,
+      })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    const requestButton = screen.getByRole("button", { name: "パスワードリセット" })
+      render(CloudSyncPanel, {
+        props: {
+          ...defaultProps,
+          session: createSession("user1", "user@example.com"),
+          runtimeSessionState: {
+            scope: { type: "user", userId: "user1" },
+            syncStatus: "authenticated",
+          },
+        },
+      })
 
-    expect(requestButton).toBeEnabled()
+      await user.click(screen.getByText("クラウド同期アカウントとデータを削除"))
+      await user.click(screen.getByRole("button", { name: "削除する" }))
 
-    await user.click(requestButton)
-
-    expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "認証処理に失敗しました。時間をおいて再度お試しください",
-      ),
-    )
-    expect(screen.getByRole("heading", { name: "パスワードリセット" })).toBeInTheDocument()
-    expect(screen.getByLabelText("メールアドレス")).toHaveValue("user@example.com")
-    expect(requestButton).toBeEnabled()
-
-    await user.click(requestButton)
-
-    expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
-    expect(sendPasswordResetCode).toHaveBeenLastCalledWith("user@example.com")
-    expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+      expect(deleteCloudSync).toHaveBeenCalledOnce()
+      await waitFor(() =>
+        expect(screen.getByRole("status")).toHaveTextContent(
+          "クラウド同期アカウントを削除できませんでした",
+        ),
+      )
+      expect(screen.getByRole("button", { name: "削除する" })).toBeInTheDocument()
+    })
   })
 
-  it("OTP を再送できる", async () => {
-    const user = userEvent.setup()
-    const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      sendPasswordResetCode,
+  describe("パスワードリセット", () => {
+    describe("申請と完了", () => {
+      it("OTP を利用してパスワードを再設定できる", async () => {
+        const user = userEvent.setup()
+        const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
+        const verifyPasswordResetCode = vi.fn().mockResolvedValue(null)
+        const updatePasswordAfterRecovery = vi.fn().mockResolvedValue(null)
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          sendPasswordResetCode,
+          verifyPasswordResetCode,
+          updatePasswordAfterRecovery,
+        })
+
+        render(CloudSyncPanel, { props: defaultProps })
+
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+
+        const requestButton = screen.getByRole("button", { name: "パスワードリセット" })
+
+        expect(requestButton).toBeEnabled()
+
+        await user.click(requestButton)
+
+        expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "パスワードリセット用のメールを送信しました",
+          ),
+        )
+        expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
+
+        await user.type(screen.getByLabelText("確認コード"), "123456")
+
+        const verifyButton = screen.getByRole("button", { name: "認証する" })
+
+        expect(verifyButton).toBeEnabled()
+
+        await user.click(verifyButton)
+
+        expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "123456")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent("認証に成功しました"),
+        )
+        expect(screen.queryByRole("button", { name: "戻る" })).not.toBeInTheDocument()
+
+        await user.type(screen.getByLabelText("新しいパスワード"), "Passw0rd!")
+
+        const passwordResetButton = screen.getByRole("button", { name: "パスワードを設定" })
+
+        expect(passwordResetButton).toBeEnabled()
+
+        await user.click(passwordResetButton)
+
+        expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Passw0rd!")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent("パスワードを再設定しました"),
+        )
+
+        expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+      })
+
+      it("OTP の初回送信に失敗した場合はメール入力欄に留まり、再試行できる", async () => {
+        const user = userEvent.setup()
+        const error = new Error("sending code failed")
+        const sendPasswordResetCode = vi
+          .fn()
+          .mockRejectedValueOnce(error)
+          .mockResolvedValueOnce(null)
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          sendPasswordResetCode,
+        })
+
+        render(CloudSyncPanel, { props: defaultProps })
+
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+
+        const requestButton = screen.getByRole("button", { name: "パスワードリセット" })
+
+        expect(requestButton).toBeEnabled()
+
+        await user.click(requestButton)
+
+        expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "認証処理に失敗しました。時間をおいて再度お試しください",
+          ),
+        )
+        expect(screen.getByRole("heading", { name: "パスワードリセット" })).toBeInTheDocument()
+        expect(screen.getByLabelText("メールアドレス")).toHaveValue("user@example.com")
+        expect(requestButton).toBeEnabled()
+
+        await user.click(requestButton)
+
+        expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
+        expect(sendPasswordResetCode).toHaveBeenLastCalledWith("user@example.com")
+        expect(screen.getByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+      })
     })
 
-    render(CloudSyncPanel, { props: defaultProps })
+    describe("確認コードの再送", () => {
+      it("OTP を再送できる", async () => {
+        const user = userEvent.setup()
+        const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          sendPasswordResetCode,
+        })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+        render(CloudSyncPanel, { props: defaultProps })
 
-    expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
-    expect(
-      await screen.findByText("パスワードリセット用のメールを送信しました"),
-    ).toBeInTheDocument()
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+        await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
-    await user.click(screen.getByRole("button", { name: "確認メールを再送する" }))
+        expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "パスワードリセット用のメールを送信しました",
+          ),
+        )
 
-    expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
-    expect(
-      await screen.findByText("パスワードリセット用のメールを再送しました"),
-    ).toBeInTheDocument()
+        await user.click(screen.getByRole("button", { name: "確認メールを再送する" }))
 
-    expect(await screen.findByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
-  })
+        expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "パスワードリセット用のメールを再送しました",
+          ),
+        )
 
-  it("OTP の再送に失敗した場合はコード入力画面に留まり、再試行できる", async () => {
-    const user = userEvent.setup()
-    const error = new Error("sending OTP failed")
-    const sendPasswordResetCode = vi
-      .fn()
-      .mockResolvedValueOnce(null)
-      .mockRejectedValueOnce(error)
-      .mockResolvedValueOnce(null)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      sendPasswordResetCode,
+        expect(
+          await screen.findByRole("heading", { name: "メールアドレスの確認" }),
+        ).toBeInTheDocument()
+      })
+
+      it("OTP の再送に失敗した場合はコード入力画面に留まり、再試行できる", async () => {
+        const user = userEvent.setup()
+        const error = new Error("sending OTP failed")
+        const sendPasswordResetCode = vi
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockRejectedValueOnce(error)
+          .mockResolvedValueOnce(null)
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          sendPasswordResetCode,
+        })
+
+        render(CloudSyncPanel, { props: defaultProps })
+
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+        await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+
+        expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
+        expect(
+          await screen.findByRole("heading", { name: "メールアドレスの確認" }),
+        ).toBeInTheDocument()
+
+        const resendButton = screen.getByRole("button", { name: "確認メールを再送する" })
+
+        await user.click(resendButton)
+
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "認証処理に失敗しました。時間をおいて再度お試しください",
+          ),
+        )
+        expect(sendPasswordResetCode).toHaveBeenLastCalledWith("user@example.com")
+        expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
+
+        await user.click(resendButton)
+
+        expect(sendPasswordResetCode).toHaveBeenLastCalledWith("user@example.com")
+        expect(sendPasswordResetCode).toHaveBeenCalledTimes(3)
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "パスワードリセット用のメールを再送しました",
+          ),
+        )
+      })
     })
 
-    render(CloudSyncPanel, { props: defaultProps })
+    describe("確認コードの認証", () => {
+      it("OTP の確認失敗時にパスワード再設定画面へ進まない", async () => {
+        const user = userEvent.setup()
+        const error = new Error("認証失敗")
+        const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
+        const verifyPasswordResetCode = vi.fn().mockRejectedValueOnce(error).mockResolvedValue(null)
+        const updatePasswordAfterRecovery = vi.fn()
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          sendPasswordResetCode,
+          verifyPasswordResetCode,
+          updatePasswordAfterRecovery,
+        })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+        render(CloudSyncPanel, { props: defaultProps })
 
-    expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
-    expect(await screen.findByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
 
-    const resendButton = screen.getByRole("button", { name: "確認メールを再送する" })
-    await user.click(resendButton)
+        await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "認証処理に失敗しました。時間をおいて再度お試しください",
-      ),
-    )
-    expect(sendPasswordResetCode).toHaveBeenLastCalledWith("user@example.com")
-    expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
+        expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "パスワードリセット用のメールを送信しました",
+          ),
+        )
 
-    await user.click(resendButton)
+        await user.type(screen.getByLabelText("確認コード"), "123456")
 
-    expect(sendPasswordResetCode).toHaveBeenLastCalledWith("user@example.com")
-    expect(sendPasswordResetCode).toHaveBeenCalledTimes(3)
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "パスワードリセット用のメールを再送しました",
-      ),
-    )
-  })
+        const verifyButton = screen.getByRole("button", { name: "認証する" })
 
-  it("OTP の確認失敗時にパスワード再設定画面へ進まない", async () => {
-    const user = userEvent.setup()
-    const error = new Error("認証失敗")
-    const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
-    const verifyPasswordResetCode = vi.fn().mockRejectedValueOnce(error).mockResolvedValue(null)
-    const updatePasswordAfterRecovery = vi.fn()
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      sendPasswordResetCode,
-      verifyPasswordResetCode,
-      updatePasswordAfterRecovery,
+        expect(verifyButton).toBeEnabled()
+
+        await user.click(verifyButton)
+
+        expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "123456")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "認証処理に失敗しました。時間をおいて再度お試しください",
+          ),
+        )
+        expect(updatePasswordAfterRecovery).not.toHaveBeenCalled()
+        expect(
+          await screen.findByRole("heading", { name: "メールアドレスの確認" }),
+        ).toBeInTheDocument()
+
+        await user.type(screen.getByLabelText("確認コード"), "654321")
+        await user.click(verifyButton)
+
+        expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "654321")
+        expect(verifyPasswordResetCode).toHaveBeenCalledTimes(2)
+
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent("認証に成功しました"),
+        )
+        expect(
+          await screen.findByRole("heading", { name: "新しいパスワードの設定" }),
+        ).toBeInTheDocument()
+      })
     })
 
-    render(CloudSyncPanel, { props: defaultProps })
+    describe("キャンセル", () => {
+      it("OTP の確認待ちでキャンセルし、新しいメールで再申請できる", async () => {
+        const user = userEvent.setup()
+        const cancelPasswordRecovery = vi.fn().mockResolvedValue(undefined)
+        const verifyPasswordResetCode = vi.fn()
+        const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          sendPasswordResetCode,
+          cancelPasswordRecovery,
+          verifyPasswordResetCode,
+        })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+        render(CloudSyncPanel, { props: defaultProps })
 
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+        await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
-    expect(sendPasswordResetCode).toHaveBeenCalledWith("user@example.com")
-    expect(
-      await screen.findByText("パスワードリセット用のメールを送信しました"),
-    ).toBeInTheDocument()
+        expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "パスワードリセット用のメールを送信しました",
+          ),
+        )
 
-    await user.type(screen.getByLabelText("確認コード"), "123456")
+        await user.click(screen.getByRole("button", { name: "認証をキャンセル" }))
 
-    const verifyButton = screen.getByRole("button", { name: "認証する" })
+        expect(cancelPasswordRecovery).toHaveBeenCalledExactlyOnceWith()
+        expect(
+          screen.queryByText("パスワードリセット用のメールを送信しました"),
+        ).not.toBeInTheDocument()
+        expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
 
-    expect(verifyButton).toBeEnabled()
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), "other@example.com")
+        await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
-    await user.click(verifyButton)
+        expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
+        expect(sendPasswordResetCode).toHaveBeenLastCalledWith("other@example.com")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "パスワードリセット用のメールを送信しました",
+          ),
+        )
 
-    expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "123456")
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "認証処理に失敗しました。時間をおいて再度お試しください",
-      ),
-    )
-    expect(updatePasswordAfterRecovery).not.toHaveBeenCalled()
-    expect(await screen.findByRole("heading", { name: "メールアドレスの確認" })).toBeInTheDocument()
+        await user.type(screen.getByLabelText("確認コード"), "123456")
+        await user.click(screen.getByRole("button", { name: "認証する" }))
 
-    await user.type(screen.getByLabelText("確認コード"), "654321")
-    await user.click(verifyButton)
+        expect(verifyPasswordResetCode).toHaveBeenCalledExactlyOnceWith(
+          "other@example.com",
+          "123456",
+        )
+      })
 
-    expect(verifyPasswordResetCode).toHaveBeenCalledWith("user@example.com", "654321")
-    expect(verifyPasswordResetCode).toHaveBeenCalledTimes(2)
+      it("新しいパスワード設定中にキャンセルできる", async () => {
+        const user = userEvent.setup()
+        const cancelPasswordRecovery = vi.fn().mockResolvedValue(null)
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          cancelPasswordRecovery,
+        })
 
-    expect(await screen.findByText("認証に成功しました")).toBeInTheDocument()
-    expect(
-      await screen.findByRole("heading", { name: "新しいパスワードの設定" }),
-    ).toBeInTheDocument()
-  })
+        render(CloudSyncPanel, { props: defaultProps })
 
-  it("OTP の確認待ちでキャンセルし、新しいメールで再申請できる", async () => {
-    const user = userEvent.setup()
-    const cancelPasswordRecovery = vi.fn().mockResolvedValue(undefined)
-    const verifyPasswordResetCode = vi.fn()
-    const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      sendPasswordResetCode,
-      cancelPasswordRecovery,
-      verifyPasswordResetCode,
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+        await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+        await user.type(screen.getByLabelText("確認コード"), "123456")
+        await user.click(screen.getByRole("button", { name: "認証する" }))
+        await user.click(screen.getByRole("button", { name: "サインインに戻る" }))
+
+        expect(cancelPasswordRecovery).toHaveBeenCalledExactlyOnceWith()
+        expect(screen.queryByRole("status")).not.toBeInTheDocument()
+        expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+      })
     })
 
-    render(CloudSyncPanel, { props: defaultProps })
+    describe("新しいパスワードの設定", () => {
+      it("パスワード変更失敗時に新しいパスワード画面に残る", async () => {
+        const user = userEvent.setup()
+        const updatePasswordAfterRecovery = vi
+          .fn()
+          .mockRejectedValueOnce(null)
+          .mockResolvedValue(null)
+        const defaultProps = createDefaultProps({
+          ...createActions(),
+          updatePasswordAfterRecovery,
+        })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+        render(CloudSyncPanel, { props: defaultProps })
 
-    expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
-    expect(
-      await screen.findByText("パスワードリセット用のメールを送信しました"),
-    ).toBeInTheDocument()
+        await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+        await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
+        await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
 
-    await user.click(screen.getByRole("button", { name: "認証をキャンセル" }))
+        await user.type(screen.getByLabelText("確認コード"), "123456")
 
-    expect(cancelPasswordRecovery).toHaveBeenCalledExactlyOnceWith()
-    expect(screen.queryByText("パスワードリセット用のメールを送信しました")).not.toBeInTheDocument()
-    expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+        const verifyButton = screen.getByRole("button", { name: "認証する" })
 
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), "other@example.com")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+        expect(verifyButton).toBeEnabled()
 
-    expect(sendPasswordResetCode).toHaveBeenCalledTimes(2)
-    expect(sendPasswordResetCode).toHaveBeenLastCalledWith("other@example.com")
-    expect(
-      await screen.findByText("パスワードリセット用のメールを送信しました"),
-    ).toBeInTheDocument()
-    await user.type(screen.getByLabelText("確認コード"), "123456")
-    await user.click(screen.getByRole("button", { name: "認証する" }))
+        await user.click(verifyButton)
 
-    expect(verifyPasswordResetCode).toHaveBeenCalledExactlyOnceWith("other@example.com", "123456")
-  })
+        const passwordResetInput = screen.getByLabelText("新しいパスワード")
+        const passwordResetButton = screen.getByRole("button", { name: "パスワードを設定" })
 
-  it("パスワード変更失敗時に新しいパスワード画面に残る", async () => {
-    const user = userEvent.setup()
-    const updatePasswordAfterRecovery = vi.fn().mockRejectedValueOnce(null).mockResolvedValue(null)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      updatePasswordAfterRecovery,
+        await user.type(passwordResetInput, "Passw0rd!")
+        await user.click(passwordResetButton)
+
+        expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Passw0rd!")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent(
+            "認証処理に失敗しました。時間をおいて再度お試しください",
+          ),
+        )
+
+        await user.clear(passwordResetInput)
+        await user.type(passwordResetInput, "Reset42@")
+        await user.click(passwordResetButton)
+
+        expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Reset42@")
+        await waitFor(() =>
+          expect(screen.getByRole("status")).toHaveTextContent("パスワードを再設定しました"),
+        )
+        expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+      })
     })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
-
-    await user.type(screen.getByLabelText("確認コード"), "123456")
-
-    const verifyButton = screen.getByRole("button", { name: "認証する" })
-
-    expect(verifyButton).toBeEnabled()
-
-    await user.click(verifyButton)
-
-    const passwordResetInput = screen.getByLabelText("新しいパスワード")
-    const passwordResetButton = screen.getByRole("button", { name: "パスワードを設定" })
-
-    await user.type(passwordResetInput, "Passw0rd!")
-    await user.click(passwordResetButton)
-
-    expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Passw0rd!")
-    await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "認証処理に失敗しました。時間をおいて再度お試しください",
-      ),
-    )
-
-    await user.clear(passwordResetInput)
-    await user.type(passwordResetInput, "Reset42@")
-    await user.click(passwordResetButton)
-
-    expect(updatePasswordAfterRecovery).toHaveBeenCalledWith("Reset42@")
-    expect(await screen.findByText("パスワードを再設定しました")).toBeInTheDocument()
-    expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
-  })
-
-  it("新しいパスワード設定中にキャンセルできる", async () => {
-    const user = userEvent.setup()
-    const cancelPasswordRecovery = vi.fn().mockResolvedValue(null)
-    const defaultProps = createDefaultProps({
-      ...createActions(),
-      cancelPasswordRecovery,
-    })
-
-    render(CloudSyncPanel, { props: defaultProps })
-
-    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
-    await user.type(screen.getByLabelText("メールアドレス"), " user@example.com ")
-    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
-    await user.type(screen.getByLabelText("確認コード"), "123456")
-    await user.click(screen.getByRole("button", { name: "認証する" }))
-    await user.click(screen.getByRole("button", { name: "サインインに戻る" }))
-
-    expect(cancelPasswordRecovery).toHaveBeenCalledExactlyOnceWith()
-    expect(screen.queryByRole("status")).toBeNull()
-    expect(await screen.findByRole("heading", { name: "サインイン" })).toBeInTheDocument()
   })
 })
