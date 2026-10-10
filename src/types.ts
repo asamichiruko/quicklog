@@ -37,3 +37,5 @@ export type AnonymousDataState = {
   logEntryCount: number
   logEntryDeletionCount: number
 }
+
+export type FeedbackKind = "success" | "error"

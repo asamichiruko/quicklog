@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
-import { defineComponent, readonly, ref } from "vue"
+import { defineComponent, readonly, ref, shallowRef } from "vue"
 import type { ExportType, RuntimeSessionState } from "@/types"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import type { AccountUserView } from "@/composables/useAccountUser.ts"
@@ -42,7 +42,7 @@ const TestHost = defineComponent({
     ])
     const savedSettings = ref<unknown>(null)
 
-    const accountUser = ref<AccountUserView>({
+    const accountUser = shallowRef<AccountUserView>({
       isLoading: readonly(ref(false)),
       error: readonly(ref<unknown>(null)),
       user: readonly(ref<User | null>(null)),

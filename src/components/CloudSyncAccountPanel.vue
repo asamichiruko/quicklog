@@ -9,6 +9,7 @@ import CloudSyncAccountSignedInView from "@/components/CloudSyncAccountSignedInV
 import CloudSyncAccountSignInForm from "@/components/CloudSyncAccountSignInForm.vue"
 import CloudSyncAccountSignUpForm from "@/components/CloudSyncAccountSignUpForm.vue"
 import type { AccountUserView } from "@/composables/useAccountUser"
+import { useEmailChangeFlow } from "@/composables/useEmailChangeFlow"
 import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
 import {
   validateRequiredPassword,
@@ -18,9 +19,9 @@ import {
 } from "@/lib/authFormValidation"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { isAuthenticated, isAuthPending, isSessionLost } from "@/lib/runtimeSessionState"
-import type { RuntimeSessionState } from "@/types"
+import type { FeedbackKind, RuntimeSessionState } from "@/types"
 import type { Session } from "@supabase/supabase-js"
-import { computed, ref, watch } from "vue"
+import { computed, ref } from "vue"
 
 export type CloudSyncAccountActions = {
   syncLogEntries?: () => Promise<CloudQuicklogDataSyncResult>
@@ -57,7 +58,6 @@ export type PanelView =
   | "signUpVerifyEmail"
   | "resetPassword"
   | "changeEmailPending"
-type FeedbackKind = "success" | "error"
 
 const canUseCloudSession = computed<boolean>(() => {
   return Boolean(
@@ -80,34 +80,6 @@ const signUpFlowStep = ref<SignUpFlowStep>("idle")
 const signUpRequestEmail = ref("")
 const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
-type EmailChangeFlowStep = "idle" | "pending"
-const emailChangeFlowStep = ref<EmailChangeFlowStep>("idle")
-let emailChangeUserId: string | null = null
-let emailChangeRequestId = 0
-const currentEmailAtChangingEmail = ref("")
-const newEmailAtChangingEmail = ref("")
-const hasActiveEmailChangeFlow = computed(() => emailChangeFlowStep.value !== "idle")
-
-const panelView = computed<PanelView>(() => {
-  if (passwordResetFlowStep.value === "awaitingCode") return "passwordResetVerifyEmail"
-  if (passwordResetFlowStep.value === "settingPassword") return "resetPassword"
-
-  if (signUpFlowStep.value === "awaitingCode") return "signUpVerifyEmail"
-
-  if (isAuthPending(props.runtimeSessionState)) return "authPending"
-
-  if (canUseCloudSession.value) {
-    if (emailChangeFlowStep.value === "pending") return "changeEmailPending"
-    return signedInPanelView.value
-  }
-  return selectedPanelView.value
-})
-
-const shouldShowActiveFlow = computed<boolean>(
-  () =>
-    hasActivePasswordResetFlow.value || hasActiveSignUpFlow.value || hasActiveEmailChangeFlow.value,
-)
-
 const signInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
 const signedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(null)
 const passwordResetRequestForm = ref<InstanceType<
@@ -126,6 +98,11 @@ const emailChangeForm = ref<InstanceType<typeof CloudSyncAccountEmailChangeForm>
 const feedbackMessage = ref("")
 const feedbackKind = ref<FeedbackKind | null>(null)
 const isLoading = ref(false)
+
+function setFeedback(message: string, kind: FeedbackKind | null) {
+  feedbackMessage.value = message
+  feedbackKind.value = kind
+}
 
 const sessionStateMessage = computed(() => {
   if (isAuthenticated(props.runtimeSessionState)) {
@@ -166,89 +143,39 @@ const accountUserRefreshDisplay = computed<{
   return null
 })
 
-function canRefreshEmailChangeState() {
-  return (
-    canUseCloudSession.value &&
-    emailChangeFlowStep.value === "pending" &&
-    !isLoading.value &&
-    !props.accountUser.isLoading.value &&
-    emailChangeUserId !== null &&
-    props.session?.user.id === emailChangeUserId &&
-    currentEmailAtChangingEmail.value !== "" &&
-    newEmailAtChangingEmail.value !== ""
-  )
-}
+const emailChangeFlow = useEmailChangeFlow({
+  canUseCloudSession: () => canUseCloudSession.value,
+  getAccountUser: () => props.accountUser,
+  getCurrentEmail: () => currentEmail.value,
+  getSession: () => props.session,
+  isLoading: isLoading,
+  requestEmailChange: props.actions.requestEmailChange,
+  resendEmailChangeConfirmation: props.actions.resendEmailChangeConfirmation,
+  setFeedback,
+  showSignedInMainView,
+})
 
-function getRefreshEmailChangeStateFeedback(): {
-  kind: FeedbackKind
-  message: string
-  completed: boolean
-} {
-  const user = props.accountUser.user.value
-  const error = props.accountUser.error.value
-
-  if (error !== null) {
-    return {
-      kind: "error",
-      message: getAuthFeedbackMessage(error),
-      completed: false,
-    }
-  }
-
-  if (!user || !user.email) {
-    return {
-      kind: "error",
-      message: "現在のメールアドレスを確認できません。アカウント情報を確認してください",
-      completed: false,
-    }
-  }
-
-  if (user.email === currentEmailAtChangingEmail.value) {
-    return {
-      kind: "success",
-      message:
-        "メールアドレスの変更はまだ反映されていません。各メールアドレス宛の確認メールのリンクを開いてください",
-      completed: false,
-    }
-  }
-
-  if (user.email === newEmailAtChangingEmail.value) {
-    return {
-      kind: "success",
-      message: "メールアドレスの変更が完了しました",
-      completed: true,
-    }
-  }
-
-  return {
-    kind: "error",
-    message:
-      "申請された変更先と異なるメールアドレスが登録されています。アカウント画面で現在のメールアドレスを確認してください",
-    completed: false,
-  }
-}
-
-watch(
-  [
-    props.accountUser.user,
-    props.accountUser.isLoading,
-    props.accountUser.error,
-    emailChangeFlowStep,
-  ],
-  () => {
-    if (!canRefreshEmailChangeState()) return
-    const user = props.accountUser.user.value
-    if (!user || user.id !== emailChangeUserId) return
-
-    const feedback = getRefreshEmailChangeStateFeedback()
-
-    if (feedback.completed) {
-      completeEmailChangeFlow()
-      feedbackKind.value = feedback.kind
-      feedbackMessage.value = feedback.message
-    }
-  },
+const shouldShowActiveFlow = computed<boolean>(
+  () =>
+    hasActivePasswordResetFlow.value ||
+    hasActiveSignUpFlow.value ||
+    emailChangeFlow.hasActiveEmailChangeFlow.value,
 )
+
+const panelView = computed<PanelView>(() => {
+  if (passwordResetFlowStep.value === "awaitingCode") return "passwordResetVerifyEmail"
+  if (passwordResetFlowStep.value === "settingPassword") return "resetPassword"
+
+  if (signUpFlowStep.value === "awaitingCode") return "signUpVerifyEmail"
+
+  if (isAuthPending(props.runtimeSessionState)) return "authPending"
+
+  if (canUseCloudSession.value) {
+    if (emailChangeFlow.emailChangeFlowStep.value === "pending") return "changeEmailPending"
+    return signedInPanelView.value
+  }
+  return selectedPanelView.value
+})
 
 function showSignInView() {
   selectedPanelView.value = "signIn"
@@ -286,18 +213,6 @@ function startSignUpVerification(email: string) {
 function startPasswordResetVerification(email: string) {
   passwordResetRequestEmail.value = email
   passwordResetFlowStep.value = "awaitingCode"
-}
-
-function startChangeEmailPending(newEmail: string) {
-  newEmailAtChangingEmail.value = newEmail
-  emailChangeFlowStep.value = "pending"
-}
-
-function reviseNewEmail(newEmail: string) {
-  newEmailAtChangingEmail.value = newEmail
-  emailChangeFlowStep.value = "idle"
-  clearFeedback()
-  showEmailChangeView()
 }
 
 function clearFeedback() {
@@ -344,34 +259,8 @@ async function cancelPasswordResetFlow() {
 
 function clearEmailChangeFlow() {
   emailChangeForm.value?.reset()
-  currentEmailAtChangingEmail.value = ""
-  newEmailAtChangingEmail.value = ""
-  emailChangeFlowStep.value = "idle"
+  emailChangeFlow.clear()
 }
-
-function completeEmailChangeFlow() {
-  emailChangeRequestId += 1
-  emailChangeUserId = null
-  clearEmailChangeFlow()
-  showSignedInMainView()
-  isLoading.value = false
-}
-
-// セッション更新では保持し、申請したユーザーから離れたときだけ破棄する
-watch(
-  () => props.session?.user.id ?? null,
-  (userId) => {
-    if (emailChangeUserId === null || userId === emailChangeUserId) return
-
-    emailChangeRequestId += 1
-    emailChangeUserId = null
-    clearEmailChangeFlow()
-    showSignedInMainView()
-    clearFeedback()
-    isLoading.value = false
-  },
-  { flush: "sync" },
-)
 
 function leaveEmailChangePendingView() {
   clearEmailChangeFlow()
@@ -531,111 +420,9 @@ async function handleChangePassword(newPassword: string, currentPassword: string
   }
 }
 
-async function handleChangeEmail(newEmail: string) {
-  if (
-    isLoading.value ||
-    validateEmail(newEmail) !== "" ||
-    newEmail.trim() === currentEmail.value.trim()
-  )
-    return
-
-  if (!canUseCloudSession.value || !props.session) return
-  const requestedUserId = props.session.user.id
-  const requestedCurrentEmail = currentEmail.value.trim()
-  const requestedNewEmail = newEmail.trim()
-  if (validateEmail(requestedCurrentEmail) !== "") {
-    feedbackMessage.value =
-      "現在のメールアドレスを確認できません。アカウント情報を再取得してください"
-    feedbackKind.value = "error"
-    return
-  }
-
-  isLoading.value = true
-  feedbackMessage.value = ""
-
-  emailChangeUserId = requestedUserId
-  emailChangeRequestId += 1
-  const requestId = emailChangeRequestId
-  const canApplyResult = () =>
-    requestId === emailChangeRequestId && props.session?.user.id === requestedUserId
-
-  try {
-    await props.actions.requestEmailChange(requestedNewEmail)
-    if (!canApplyResult()) return
-
-    currentEmailAtChangingEmail.value = requestedCurrentEmail
-    startChangeEmailPending(requestedNewEmail)
-
-    feedbackMessage.value = "メールアドレス変更用のメールを送信しました"
-    feedbackKind.value = "success"
-  } catch (error) {
-    if (!canApplyResult()) return
-    feedbackMessage.value = getAuthFeedbackMessage(error)
-    feedbackKind.value = "error"
-  } finally {
-    if (canApplyResult()) isLoading.value = false
-  }
-}
-
-async function handleResendEmailChangeConfirmation() {
-  if (isLoading.value || emailChangeFlowStep.value !== "pending") return
-  if (!canUseCloudSession.value || !props.session) return
-
-  const requestedUserId = props.session.user.id
-  if (emailChangeUserId !== requestedUserId) return
-
-  const requestedNewEmail = newEmailAtChangingEmail.value.trim()
-  if (validateEmail(requestedNewEmail) !== "") return
-
-  isLoading.value = true
-  feedbackMessage.value = ""
-
-  emailChangeRequestId += 1
-  const requestId = emailChangeRequestId
-  const canApplyResult = () =>
-    requestId === emailChangeRequestId && props.session?.user.id === requestedUserId
-
-  try {
-    await props.actions.resendEmailChangeConfirmation(requestedNewEmail)
-    if (!canApplyResult()) return
-
-    feedbackMessage.value = "メールアドレス変更用のメールを再送しました"
-    feedbackKind.value = "success"
-  } catch (error) {
-    if (!canApplyResult()) return
-    feedbackMessage.value = getAuthFeedbackMessage(error)
-    feedbackKind.value = "error"
-  } finally {
-    if (canApplyResult()) isLoading.value = false
-  }
-}
-
-async function handleRefreshEmailChangeState() {
-  if (!canRefreshEmailChangeState()) return
-
-  const userId = emailChangeUserId
-  const requestId = emailChangeRequestId
-
-  await props.accountUser.refresh()
-
-  if (
-    !canRefreshEmailChangeState() ||
-    userId !== props.session?.user.id ||
-    userId !== emailChangeUserId ||
-    requestId !== emailChangeRequestId
-  )
-    return
-
-  const user = props.accountUser.user.value
-  if (user && user.id !== userId) return
-
-  const feedback = getRefreshEmailChangeStateFeedback()
-  feedbackMessage.value = feedback.message
-  feedbackKind.value = feedback.kind
-
-  if (feedback.completed) {
-    completeEmailChangeFlow()
-  }
+function handleReviseEmailChange() {
+  emailChangeFlow.revise()
+  showEmailChangeView()
 }
 
 async function handlePasswordResetRequest(email: string) {
@@ -857,8 +644,8 @@ defineExpose({
         ref="emailChangeForm"
         :is-loading="isLoading"
         :current-email="currentEmail"
-        :default-new-email="newEmailAtChangingEmail"
-        @submit="handleChangeEmail"
+        :default-new-email="emailChangeFlow.newEmailAtChangingEmail.value"
+        @submit="emailChangeFlow.request"
         @edit="clearFeedback"
       />
     </template>
@@ -866,12 +653,12 @@ defineExpose({
     <template v-else-if="panelView === 'changeEmailPending'">
       <CloudSyncAccountEmailChangePendingView
         :is-loading="isLoading || accountUser.isLoading.value"
-        :current-email="currentEmailAtChangingEmail"
-        :new-email="newEmailAtChangingEmail"
-        @revise="reviseNewEmail"
+        :current-email="emailChangeFlow.currentEmailAtChangingEmail.value"
+        :new-email="emailChangeFlow.newEmailAtChangingEmail.value"
+        @revise="handleReviseEmailChange"
         @back="leaveEmailChangePendingView"
-        @resend="handleResendEmailChangeConfirmation"
-        @refresh="handleRefreshEmailChangeState"
+        @resend="emailChangeFlow.resend"
+        @refresh="emailChangeFlow.refresh"
       />
     </template>
 
