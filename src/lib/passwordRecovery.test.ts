@@ -164,7 +164,7 @@ describe("createPasswordRecoveryFlow", () => {
 
     expect(flow.isInProgress()).toBe(false)
     expect(clearLocalAuthSession).toHaveBeenCalledOnce()
-    expect(onLocalAuthSessionClearError).toHaveBeenCalledWith(error, "canceled")
+    expect(onLocalAuthSessionClearError).toHaveBeenCalledWith(error, "cancelled")
     expect(activateAnonymousScope).toHaveBeenCalledOnce()
   })
 })

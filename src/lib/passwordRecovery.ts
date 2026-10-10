@@ -1,4 +1,4 @@
-export type LocalAuthSessionClearErrorReason = "completed" | "canceled"
+export type LocalAuthSessionClearErrorReason = "completed" | "cancelled"
 
 export type PasswordRecoveryFlowOptions = {
   verifyPasswordResetCode: (email: string, code: string) => Promise<void>
@@ -43,7 +43,7 @@ export function createPasswordRecoveryFlow(options: PasswordRecoveryFlowOptions)
     try {
       await options.clearLocalAuthSession()
     } catch (error) {
-      options.onLocalAuthSessionClearError(error, "canceled")
+      options.onLocalAuthSessionClearError(error, "cancelled")
     }
 
     passwordRecoveryInProgress = false
