@@ -479,7 +479,7 @@ async function handleVerifyPasswordResetCode(code: string) {
   try {
     await props.actions.verifyPasswordResetCode(passwordResetRequestEmail.value, code)
     feedbackMessage.value = "認証に成功しました"
-    feedbackKind.value = null
+    feedbackKind.value = "success"
 
     showPasswordResetForm()
   } catch (error) {
@@ -501,7 +501,7 @@ async function handlePasswordReset(password: string) {
   try {
     await props.actions.updatePasswordAfterRecovery(password)
     feedbackMessage.value = "パスワードを再設定しました"
-    feedbackKind.value = null
+    feedbackKind.value = "success"
 
     clearPasswordResetFlow()
     showSignInView()
