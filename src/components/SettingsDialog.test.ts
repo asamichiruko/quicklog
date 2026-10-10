@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/vue"
 import userEvent from "@testing-library/user-event"
 import SettingsDialog from "./SettingsDialog.vue"
-import { defineComponent, readonly, ref, shallowRef } from "vue"
+import { defineComponent, readonly, ref, shallowRef, type PropType } from "vue"
 import type { ExportType, RuntimeSessionState } from "@/types"
 import type { CloudSyncAccountActions } from "@/components/CloudSyncAccountPanel.vue"
 import type { AccountUserView } from "@/composables/useAccountUser.ts"
@@ -32,7 +32,13 @@ function createCloudSyncAccountActions(
 
 const TestHost = defineComponent({
   components: { SettingsDialog },
-  setup() {
+  props: {
+    sendPasswordResetCode: {
+      type: Function as PropType<(email: string) => Promise<void>>,
+      default: undefined,
+    },
+  },
+  setup(props) {
     const dialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
     const settings = ref({ showDailySummary: false })
     const logEntries = ref([
@@ -75,6 +81,9 @@ const TestHost = defineComponent({
 
     const cloudSyncAccountActions = createCloudSyncAccountActions({
       signInWithEmail,
+      ...(props.sendPasswordResetCode
+        ? { sendPasswordResetCode: props.sendPasswordResetCode }
+        : {}),
     })
 
     return {
@@ -234,6 +243,37 @@ describe("SettingsDialog", () => {
     expect(container.querySelector("dialog")).toHaveAttribute("open")
   })
 
+  it("パスワードリセットメールの送信中に開き直しても重複送信できない", async () => {
+    const user = userEvent.setup()
+    let finish!: () => void
+    const sendPasswordResetCode = vi.fn<() => Promise<void>>().mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        }),
+    )
+    render(TestHost, { props: { sendPasswordResetCode } })
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+
+    expect(screen.getByRole("button", { name: "サインイン" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "パスワードを忘れた場合" })).toBeDisabled()
+    expect(sendPasswordResetCode).toHaveBeenCalledExactlyOnceWith("user@example.com")
+
+    finish()
+
+    expect(await screen.findByLabelText("確認コード")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "認証する" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "確認メールを再送する" })).toBeEnabled()
+  })
+
   it("パスワードリセットの確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
     const user = userEvent.setup()
     render(TestHost)
@@ -274,6 +314,33 @@ describe("SettingsDialog", () => {
 
     expect(screen.getByRole("heading", { name: "アカウントと同期", level: 2 })).toBeInTheDocument()
     expect(screen.getByLabelText("新しいパスワード")).toBeInTheDocument()
+  })
+
+  it("パスワードリセットの認証後にキャンセルすると、開き直したときに新しいパスワード設定画面に復帰しない", async () => {
+    const user = userEvent.setup()
+    render(TestHost)
+
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+    await user.click(screen.getByRole("button", { name: "パスワードを忘れた場合" }))
+    await user.type(screen.getByLabelText("メールアドレス"), "user@example.com")
+    await user.click(screen.getByRole("button", { name: "パスワードリセット" }))
+    await user.type(await screen.findByLabelText("確認コード"), "123456")
+    await user.click(screen.getByRole("button", { name: "認証する" }))
+
+    expect(await screen.findByLabelText("新しいパスワード")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "サインインに戻る" }))
+    await user.click(screen.getByRole("button", { name: "閉じる" }))
+    await user.click(screen.getByRole("button", { name: "設定を開く" }))
+
+    expect(screen.getByRole("heading", { name: "設定", level: 2 })).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
+
+    expect(screen.getByRole("heading", { name: "サインイン" })).toBeInTheDocument()
+    expect(screen.queryByLabelText("新しいパスワード")).not.toBeInTheDocument()
   })
 
   it("アカウント作成の確認待ちなら開き直しても確認コード入力画面を表示する", async () => {
