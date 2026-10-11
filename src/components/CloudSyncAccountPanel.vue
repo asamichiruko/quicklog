@@ -41,15 +41,10 @@ export type CloudSyncAccountActions = {
   resendEmailChangeConfirmation: (newEmail: string) => Promise<void>
 }
 
-const props = defineProps<{
-  session: Session | null
-  accountUser: AccountUserView
-  runtimeSessionState: RuntimeSessionState
-  actions: CloudSyncAccountActions
-}>()
-
 export type SelectablePanelView = "signIn" | "signUp" | "passwordResetRequest"
+
 export type SignedInPanelView = "main" | "changePassword" | "changeEmail"
+
 export type PanelView =
   | SelectablePanelView
   | SignedInPanelView
@@ -60,6 +55,45 @@ export type PanelView =
   | "resetPassword"
   | "changeEmailPending"
 
+const props = defineProps<{
+  session: Session | null
+  accountUser: AccountUserView
+  runtimeSessionState: RuntimeSessionState
+  actions: CloudSyncAccountActions
+}>()
+
+const selectedPanelView = ref<SelectablePanelView>("signIn")
+
+const signedInPanelView = ref<SignedInPanelView>("main")
+
+const isLoading = ref(false)
+
+const feedbackMessage = ref("")
+
+const feedbackKind = ref<FeedbackKind | null>(null)
+
+const signedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(null)
+
+const signInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
+
+const signUpOtpVerificationForm = ref<InstanceType<
+  typeof CloudSyncAccountOtpVerificationForm
+> | null>(null)
+
+const passwordResetRequestForm = ref<InstanceType<
+  typeof CloudSyncAccountPasswordResetRequestForm
+> | null>(null)
+
+const passwordResetOtpVerificationForm = ref<InstanceType<
+  typeof CloudSyncAccountOtpVerificationForm
+> | null>(null)
+
+const passwordResetForm = ref<InstanceType<typeof CloudSyncAccountPasswordResetForm> | null>(null)
+
+const passwordChangeForm = ref<InstanceType<typeof CloudSyncAccountPasswordChangeForm> | null>(null)
+
+const emailChangeForm = ref<InstanceType<typeof CloudSyncAccountEmailChangeForm> | null>(null)
+
 const canUseCloudSession = computed<boolean>(() => {
   return Boolean(
     props.session &&
@@ -68,32 +102,11 @@ const canUseCloudSession = computed<boolean>(() => {
   )
 })
 
-const selectedPanelView = ref<SelectablePanelView>("signIn")
-const signedInPanelView = ref<SignedInPanelView>("main")
-
-const signInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
-const signedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(null)
-const passwordResetRequestForm = ref<InstanceType<
-  typeof CloudSyncAccountPasswordResetRequestForm
-> | null>(null)
-const passwordResetOtpVerificationForm = ref<InstanceType<
-  typeof CloudSyncAccountOtpVerificationForm
-> | null>(null)
-const signUpOtpVerificationForm = ref<InstanceType<
-  typeof CloudSyncAccountOtpVerificationForm
-> | null>(null)
-const passwordResetForm = ref<InstanceType<typeof CloudSyncAccountPasswordResetForm> | null>(null)
-const passwordChangeForm = ref<InstanceType<typeof CloudSyncAccountPasswordChangeForm> | null>(null)
-const emailChangeForm = ref<InstanceType<typeof CloudSyncAccountEmailChangeForm> | null>(null)
-
-const feedbackMessage = ref("")
-const feedbackKind = ref<FeedbackKind | null>(null)
-const isLoading = ref(false)
-
-function setFeedback(message: string, kind: FeedbackKind | null) {
-  feedbackMessage.value = message
-  feedbackKind.value = kind
-}
+const currentEmail = computed(() => {
+  if (!canUseCloudSession.value) return ""
+  if (props.accountUser.user.value?.id !== props.session?.user.id) return ""
+  return props.accountUser.user.value?.email ?? ""
+})
 
 const sessionStateMessage = computed(() => {
   if (isAuthenticated(props.runtimeSessionState)) {
@@ -105,12 +118,6 @@ const sessionStateMessage = computed(() => {
   } else {
     return "クラウド同期を使うにはサインインしてください"
   }
-})
-
-const currentEmail = computed(() => {
-  if (!canUseCloudSession.value) return ""
-  if (props.accountUser.user.value?.id !== props.session?.user.id) return ""
-  return props.accountUser.user.value?.email ?? ""
 })
 
 const accountUserRefreshDisplay = computed<{
@@ -134,17 +141,15 @@ const accountUserRefreshDisplay = computed<{
   return null
 })
 
-const emailChangeFlow = useEmailChangeFlow({
-  canUseCloudSession: () => canUseCloudSession.value,
-  getAccountUser: () => props.accountUser,
-  getCurrentEmail: () => currentEmail.value,
-  getSession: () => props.session,
+const signUpFlow = useSignUpFlow({
   isLoading,
-  requestEmailChange: props.actions.requestEmailChange,
-  resendEmailChangeConfirmation: props.actions.resendEmailChangeConfirmation,
   setFeedback,
-  onCompleted: showSignedInMainView,
-  onUserChanged: showSignedInMainView,
+  onCancelled: handleSignUpCancelled,
+  onVerificationFinished: resetSignUpVerificationInput,
+  onResent: resetSignUpVerificationInput,
+  signUpWithEmail: props.actions.signUpWithEmail,
+  verifySignUpCode: props.actions.verifySignUpCode,
+  resendSignUpCode: props.actions.resendSignUpCode,
 })
 
 const passwordResetFlow = usePasswordResetFlow({
@@ -160,40 +165,18 @@ const passwordResetFlow = usePasswordResetFlow({
   verifyPasswordResetCode: props.actions.verifyPasswordResetCode,
 })
 
-const signUpFlow = useSignUpFlow({
+const emailChangeFlow = useEmailChangeFlow({
+  canUseCloudSession: () => canUseCloudSession.value,
+  getAccountUser: () => props.accountUser,
+  getCurrentEmail: () => currentEmail.value,
+  getSession: () => props.session,
   isLoading,
+  requestEmailChange: props.actions.requestEmailChange,
+  resendEmailChangeConfirmation: props.actions.resendEmailChangeConfirmation,
   setFeedback,
-  onCancelled: handleSignUpCancel,
-  onVerificationFinished: resetSignUpVerificationInput,
-  onResent: resetSignUpVerificationInput,
-  signUpWithEmail: props.actions.signUpWithEmail,
-  verifySignUpCode: props.actions.verifySignUpCode,
-  resendSignUpCode: props.actions.resendSignUpCode,
+  onCompleted: showSignedInMainView,
+  onUserChanged: showSignedInMainView,
 })
-
-function handlePasswordResetCancelled() {
-  if (passwordResetFlow.step.value === "idle") {
-    showSignInView()
-    resetPasswordResetFormInputs()
-  }
-}
-
-function handlePasswordResetCompleted() {
-  if (passwordResetFlow.step.value === "idle") {
-    showSignInView()
-    resetPasswordResetFormInputs()
-  }
-}
-
-function resetPasswordResetFormInputs() {
-  passwordResetRequestForm.value?.reset()
-  passwordResetForm.value?.reset()
-  passwordResetOtpVerificationForm.value?.reset()
-}
-
-function resetPasswordResetVerificationInput() {
-  passwordResetOtpVerificationForm.value?.reset()
-}
 
 const shouldShowActiveFlow = computed<boolean>(
   () =>
@@ -216,6 +199,16 @@ const panelView = computed<PanelView>(() => {
   }
   return selectedPanelView.value
 })
+
+function setFeedback(message: string, kind: FeedbackKind | null) {
+  feedbackMessage.value = message
+  feedbackKind.value = kind
+}
+
+function clearFeedback() {
+  feedbackMessage.value = ""
+  feedbackKind.value = null
+}
 
 function showSignInView() {
   selectedPanelView.value = "signIn"
@@ -241,9 +234,18 @@ function showEmailChangeView() {
   signedInPanelView.value = "changeEmail"
 }
 
-function clearFeedback() {
-  feedbackMessage.value = ""
-  feedbackKind.value = null
+function resetSignUpVerificationInput() {
+  signUpOtpVerificationForm.value?.reset()
+}
+
+function resetPasswordResetVerificationInput() {
+  passwordResetOtpVerificationForm.value?.reset()
+}
+
+function resetPasswordResetForms() {
+  passwordResetRequestForm.value?.reset()
+  passwordResetForm.value?.reset()
+  passwordResetOtpVerificationForm.value?.reset()
 }
 
 function resetAuthForms() {
@@ -256,16 +258,31 @@ function resetAuthForms() {
   emailChangeForm.value?.reset()
 }
 
-function handleSignUpCancel() {
+function handleSignUpCancelled() {
   resetSignUpVerificationInput()
   showSignUpView()
 }
 
-function resetSignUpVerificationInput() {
-  signUpOtpVerificationForm.value?.reset()
+function handlePasswordResetCancelled() {
+  if (passwordResetFlow.step.value === "idle") {
+    showSignInView()
+    resetPasswordResetForms()
+  }
 }
 
-function leaveEmailChangePendingView() {
+function handlePasswordResetCompleted() {
+  if (passwordResetFlow.step.value === "idle") {
+    showSignInView()
+    resetPasswordResetForms()
+  }
+}
+
+function handleEmailChangeRevise() {
+  emailChangeFlow.revise()
+  showEmailChangeView()
+}
+
+function handleEmailChangeBack() {
   emailChangeForm.value?.reset()
   emailChangeFlow.clear()
   showSignedInMainView()
@@ -333,7 +350,7 @@ async function handleSync(): Promise<void> {
   }
 }
 
-async function handleChangePassword(newPassword: string, currentPassword: string) {
+async function handlePasswordChange(newPassword: string, currentPassword: string) {
   if (
     isLoading.value ||
     validateCreatedPassword(newPassword) !== "" ||
@@ -359,12 +376,7 @@ async function handleChangePassword(newPassword: string, currentPassword: string
   }
 }
 
-function handleReviseEmailChange() {
-  emailChangeFlow.revise()
-  showEmailChangeView()
-}
-
-async function handleConfirmDeleteCloudSync() {
+async function handleDeleteCloudSync() {
   if (isLoading.value) return
 
   feedbackMessage.value = ""
@@ -401,7 +413,7 @@ function handleBack() {
   }
 
   if (panelView.value === "changeEmailPending") {
-    leaveEmailChangePendingView()
+    handleEmailChangeBack()
     return true
   }
 
@@ -461,7 +473,7 @@ defineExpose({
         :exists-email="currentEmail !== ''"
         @sync="handleSync"
         @sign-out="handleSignOut"
-        @delete-cloud-sync="handleConfirmDeleteCloudSync"
+        @delete-cloud-sync="handleDeleteCloudSync"
         @show-password-change-view="showPasswordChangeView"
         @show-email-change-view="showEmailChangeView"
       />
@@ -471,7 +483,7 @@ defineExpose({
       <CloudSyncAccountPasswordChangeForm
         ref="passwordChangeForm"
         :is-loading="isLoading"
-        @submit="handleChangePassword"
+        @submit="handlePasswordChange"
         @edit="clearFeedback"
       />
     </template>
@@ -492,8 +504,8 @@ defineExpose({
         :is-loading="isLoading || accountUser.isLoading.value"
         :current-email="emailChangeFlow.currentEmailAtChangingEmail.value"
         :new-email="emailChangeFlow.newEmailAtChangingEmail.value"
-        @revise="handleReviseEmailChange"
-        @back="leaveEmailChangePendingView"
+        @revise="handleEmailChangeRevise"
+        @back="handleEmailChangeBack"
         @resend="emailChangeFlow.resend"
         @refresh="emailChangeFlow.refresh"
       />
