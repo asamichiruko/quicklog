@@ -39,7 +39,9 @@ quicklog は「開いてすぐにメモを取れる」ことをコンセプト�
 - メールアドレスとパスワードによるアカウント作成とサインイン
 - アカウント作成時にメールアドレスを OTP 認証
 - パスワードを忘れた場合に OTP 認証を通してパスワードを再設定
-- サインイン中にパスワードを変更
+- サインイン中にアカウントのパスワードを変更
+- サインイン中にアカウントのメールアドレスを変更
+- メールアドレス変更時に現在・変更先の両方でメールリンク認証
 
 ### ローカルでの利用
 
@@ -236,18 +238,22 @@ quicklog はアカウント認証、クラウド同期、アカウント削除�
 
 ### 本番 Supabase プロジェクトの認証設定
 
-quicklog では現状 6 桁のメール OTP を使用します。
+quicklog では、アカウント作成とパスワード再設定で 6 桁のメール OTP を、メールアドレス変更で認証リンクを使用します。
 本番 Supabase プロジェクトでは、Authentication の設定を次のように構成してください。
 
 - メールアドレスの確認 (Confirm email) を有効にする
+- 現在・変更先メールアドレスの確認を行う設定 (Secure email change) を有効にする
 - メール OTP の長さ (Email OTP length) を 6 桁に設定する
 - URL Configuration から Site URL を本番 URL に設定する
+- URL Configuration から Redirect URLs に結果ページの URL (例: `https://example.com/?view=email-change`) を追加する
 - Confirm sign up と Reset password のメールテンプレートに `{{ .Token }}` を含める
+- Change email address のメールテンプレートに `{{ .ConfirmationURL }}` を含める
 
 ローカルのメールテンプレートは次のファイルを参照してください。
 
 - [Confirm sign up](supabase/templates/confirmation.html)
 - [Reset password](supabase/templates/recovery.html)
+- [Change email address](supabase/templates/email_change.html)
 
 ローカル設定やテンプレートは本番 Supabase プロジェクトへは自動的に反映されません。
 本番環境の認証設定は Dashboard などから行ってください。
@@ -259,6 +265,7 @@ quicklog では現状 6 桁のメール OTP を使用します。
 
 - 新規アカウント作成時に 6 桁の確認コードが届き、認証できること
 - パスワード再設定時に 6 桁の確認コードが届き、新しいパスワードを設定できること
+- メールアドレス変更時に現在・変更先メールアドレスに確認メールが届き、正常にメールアドレスを変更できること
 
 ## 技術的な詳細ドキュメント
 
