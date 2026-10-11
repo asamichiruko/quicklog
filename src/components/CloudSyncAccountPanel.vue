@@ -11,12 +11,12 @@ import CloudSyncAccountSignUpForm from "@/components/CloudSyncAccountSignUpForm.
 import type { AccountUserView } from "@/composables/useAccountUser"
 import { useEmailChangeFlow } from "@/composables/useEmailChangeFlow"
 import { usePasswordResetFlow } from "@/composables/usePasswordResetFlow"
+import { useSignUpFlow } from "@/composables/useSignUpFlow"
 import { getAuthFeedbackMessage } from "@/lib/authFeedbackMessage"
 import {
   validateRequiredPassword,
   validateCreatedPassword,
   validateEmail,
-  validateVerificationCode,
 } from "@/lib/authFormValidation"
 import type { CloudQuicklogDataSyncResult } from "@/lib/quicklogDataSync"
 import { isAuthenticated, isAuthPending, isSessionLost } from "@/lib/runtimeSessionState"
@@ -70,11 +70,6 @@ const canUseCloudSession = computed<boolean>(() => {
 
 const selectedPanelView = ref<SelectablePanelView>("signIn")
 const signedInPanelView = ref<SignedInPanelView>("main")
-
-type SignUpFlowStep = "idle" | "awaitingCode"
-const signUpFlowStep = ref<SignUpFlowStep>("idle")
-const signUpRequestEmail = ref("")
-const hasActiveSignUpFlow = computed(() => signUpFlowStep.value !== "idle")
 
 const signInForm = ref<InstanceType<typeof CloudSyncAccountSignInForm> | null>(null)
 const signedInView = ref<InstanceType<typeof CloudSyncAccountSignedInView> | null>(null)
@@ -165,6 +160,17 @@ const passwordResetFlow = usePasswordResetFlow({
   verifyPasswordResetCode: props.actions.verifyPasswordResetCode,
 })
 
+const signUpFlow = useSignUpFlow({
+  isLoading,
+  setFeedback,
+  onCancelled: handleSignUpCancel,
+  onVerificationFinished: resetSignUpVerificationInput,
+  onResent: resetSignUpVerificationInput,
+  signUpWithEmail: props.actions.signUpWithEmail,
+  verifySignUpCode: props.actions.verifySignUpCode,
+  resendSignUpCode: props.actions.resendSignUpCode,
+})
+
 function handlePasswordResetCancelled() {
   if (passwordResetFlow.step.value === "idle") {
     showSignInView()
@@ -192,7 +198,7 @@ function resetPasswordResetVerificationInput() {
 const shouldShowActiveFlow = computed<boolean>(
   () =>
     passwordResetFlow.hasActiveFlow.value ||
-    hasActiveSignUpFlow.value ||
+    signUpFlow.hasActiveFlow.value ||
     emailChangeFlow.hasActiveFlow.value,
 )
 
@@ -200,7 +206,7 @@ const panelView = computed<PanelView>(() => {
   if (passwordResetFlow.step.value === "awaitingCode") return "passwordResetVerifyEmail"
   if (passwordResetFlow.step.value === "settingPassword") return "resetPassword"
 
-  if (signUpFlowStep.value === "awaitingCode") return "signUpVerifyEmail"
+  if (signUpFlow.step.value === "awaitingCode") return "signUpVerifyEmail"
 
   if (isAuthPending(props.runtimeSessionState)) return "authPending"
 
@@ -235,11 +241,6 @@ function showEmailChangeView() {
   signedInPanelView.value = "changeEmail"
 }
 
-function startSignUpVerification(email: string) {
-  signUpRequestEmail.value = email
-  signUpFlowStep.value = "awaitingCode"
-}
-
 function clearFeedback() {
   feedbackMessage.value = ""
   feedbackKind.value = null
@@ -255,16 +256,13 @@ function resetAuthForms() {
   emailChangeForm.value?.reset()
 }
 
-function clearSignUpFlow() {
-  signUpOtpVerificationForm.value?.reset()
-  signUpRequestEmail.value = ""
-  signUpFlowStep.value = "idle"
+function handleSignUpCancel() {
+  resetSignUpVerificationInput()
+  showSignUpView()
 }
 
-function cancelSignUpFlow() {
-  clearSignUpFlow()
-  clearFeedback()
-  showSignUpView()
+function resetSignUpVerificationInput() {
+  signUpOtpVerificationForm.value?.reset()
 }
 
 function leaveEmailChangePendingView() {
@@ -285,71 +283,6 @@ async function handleSignIn(email: string, password: string): Promise<void> {
     await props.actions.signInWithEmail(email.trim(), password)
     feedbackMessage.value = "クラウド同期を開始しました"
     feedbackKind.value = "success"
-  } catch (error) {
-    feedbackMessage.value = getAuthFeedbackMessage(error)
-    feedbackKind.value = "error"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function handleSignUp(email: string, password: string): Promise<void> {
-  if (isLoading.value) return
-  if (validateEmail(email) !== "" || validateCreatedPassword(password) !== "") return
-
-  feedbackMessage.value = ""
-  isLoading.value = true
-
-  try {
-    await props.actions.signUpWithEmail(email.trim(), password)
-    startSignUpVerification(email.trim())
-
-    feedbackMessage.value = "確認メールを送信しました"
-    feedbackKind.value = "success"
-  } catch (error) {
-    feedbackMessage.value = getAuthFeedbackMessage(error)
-    feedbackKind.value = "error"
-  } finally {
-    isLoading.value = false
-  }
-}
-
-async function handleVerifySignUpCode(code: string): Promise<void> {
-  if (isLoading.value) return
-  if (validateVerificationCode(code) !== "") return
-  if (!signUpRequestEmail.value) return
-
-  feedbackMessage.value = ""
-  isLoading.value = true
-
-  try {
-    await props.actions.verifySignUpCode(signUpRequestEmail.value, code)
-    feedbackMessage.value = "認証に成功しました"
-    feedbackKind.value = "success"
-
-    clearSignUpFlow()
-  } catch (error) {
-    feedbackMessage.value = getAuthFeedbackMessage(error)
-    feedbackKind.value = "error"
-  } finally {
-    signUpOtpVerificationForm.value?.reset()
-    isLoading.value = false
-  }
-}
-
-async function handleResendSignUpCode(): Promise<void> {
-  if (isLoading.value) return
-  if (!signUpRequestEmail.value) return
-
-  feedbackMessage.value = ""
-  isLoading.value = true
-
-  try {
-    await props.actions.resendSignUpCode(signUpRequestEmail.value)
-    feedbackMessage.value = "アカウント作成用のメールを再送しました"
-    feedbackKind.value = "success"
-
-    signUpOtpVerificationForm.value?.reset()
   } catch (error) {
     feedbackMessage.value = getAuthFeedbackMessage(error)
     feedbackKind.value = "error"
@@ -580,7 +513,7 @@ defineExpose({
     <template v-else-if="panelView === 'signUp'">
       <CloudSyncAccountSignUpForm
         :is-loading="isLoading"
-        @submit="handleSignUp"
+        @submit="signUpFlow.request"
         @edit="clearFeedback"
       />
     </template>
@@ -589,9 +522,9 @@ defineExpose({
       <CloudSyncAccountOtpVerificationForm
         ref="signUpOtpVerificationForm"
         :is-loading="isLoading"
-        @cancel="cancelSignUpFlow"
-        @submit="handleVerifySignUpCode"
-        @resend="handleResendSignUpCode"
+        @cancel="signUpFlow.cancel"
+        @submit="signUpFlow.verify"
+        @resend="signUpFlow.resend"
         @edit="clearFeedback"
       />
     </template>
