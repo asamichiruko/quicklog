@@ -195,6 +195,13 @@ const unsubscribeLocalChangeApplied = activeQuicklogData.subscribeLocalChangeApp
   cloudSync.scheduleAfterLocalChange()
 })
 
+function handleVisibilityChange() {
+  if (document.visibilityState !== "visible") return
+  if (accountUserState.isLoading.value) return
+
+  void accountUserState.refresh()
+}
+
 onMounted(() => {
   migrateStorageLayout()
 
@@ -202,12 +209,15 @@ onMounted(() => {
   activeQuicklogData.initialize(new Date())
   settings.value = loadSettings()
 
+  document.addEventListener("visibilitychange", handleVisibilityChange)
+
   authSessionListener.start()
   // syncStatus が disabled でも、ブラウザに残る予期しない Supabase セッションを検出・破棄する
   void authSessionListener.reconcileCurrentSession()
 })
 
 onUnmounted(() => {
+  document.removeEventListener("visibilitychange", handleVisibilityChange)
   unsubscribeStateApplied()
   unsubscribeLocalChangeApplied()
 })
