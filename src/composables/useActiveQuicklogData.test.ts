@@ -1,12 +1,7 @@
 import { useActiveQuicklogData } from "@/composables/useActiveQuicklogData"
-import { pruneQuicklogDataLogEntryDeletions } from "@/lib/quicklogDataMerge"
 import { loadQuicklogData, saveQuicklogData } from "@/lib/storage"
 import type { QuicklogData } from "@/types"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-
-vi.mock("@/lib/quicklogDataMerge", () => ({
-  pruneQuicklogDataLogEntryDeletions: vi.fn(),
-}))
 
 vi.mock("@/lib/storage", () => ({
   loadQuicklogData: vi.fn(),
@@ -19,7 +14,7 @@ const emptyData = {
   logEntryDeletions: [],
 } satisfies QuicklogData
 
-const data = {
+const recordedData = {
   version: 3,
   logEntries: [{ id: "id1", text: "text", createdAt: "2026-07-10T00:00:00.000Z" }],
   logEntryDeletions: [],
@@ -28,10 +23,9 @@ const data = {
 describe("useActiveQuicklogData", () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    vi.mocked(loadQuicklogData).mockReturnValue(emptyData)
   })
 
-  function setup(userId: string | undefined = "user1") {
+  function setup(userId: string | undefined) {
     const activeData = useActiveQuicklogData({
       getDataUserId: () => userId,
     })
@@ -39,90 +33,102 @@ describe("useActiveQuicklogData", () => {
     return { activeData }
   }
 
-  it("現在のデータスコープから QuicklogData を読み込む", () => {
-    const { activeData } = setup()
-    vi.mocked(loadQuicklogData).mockReturnValue(data)
+  it("user scope で load するとそのユーザーのデータを要求して返す", () => {
+    const { activeData } = setup("user1")
+    vi.mocked(loadQuicklogData).mockReturnValue(recordedData)
 
-    expect(activeData.load()).toBe(data)
+    const loadedData = activeData.load()
+
+    expect(loadedData).toBe(recordedData)
     expect(loadQuicklogData).toHaveBeenCalledWith("user1")
   })
 
-  it("アクティブデータを変更すると data と revision を更新する", () => {
-    const { activeData } = setup()
+  it("user scope でデータを set すると data と revision を更新する", () => {
+    const { activeData } = setup("user1")
 
-    activeData.set(data)
+    activeData.set(recordedData)
 
-    expect(activeData.data.value).toEqual(data)
+    expect(activeData.data.value).toEqual(recordedData)
     expect(activeData.revision.value).toBe(1)
   })
 
-  it("ローカル変更を保存すると表示へ反映する", () => {
-    const { activeData } = setup()
+  it("user scope でローカル変更するとユーザー別の保存を要求して表示へ反映する", () => {
+    const { activeData } = setup("user1")
 
-    activeData.applyLocalChange(data)
+    activeData.applyLocalChange(recordedData)
 
-    expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")
-    expect(activeData.data.value).toEqual(data)
+    expect(saveQuicklogData).toHaveBeenCalledWith(recordedData, "user1")
+    expect(activeData.data.value).toEqual(recordedData)
     expect(activeData.revision.value).toBe(1)
   })
 
-  it("ローカル変更の保存に失敗した場合は表示と revision を変更しない", () => {
-    const { activeData } = setup()
+  it("user scope でローカル変更の保存に失敗すると表示と revision を変更しない", () => {
+    const { activeData } = setup("user1")
     vi.mocked(saveQuicklogData).mockImplementation(() => {
       throw new Error("save failed")
     })
 
-    expect(() => activeData.applyLocalChange(data)).toThrow("save failed")
+    expect(() => activeData.applyLocalChange(recordedData)).toThrow("save failed")
     expect(activeData.data.value).toEqual(emptyData)
     expect(activeData.revision.value).toBe(0)
   })
 
-  it("削除履歴を整理したデータを保存してからアクティブデータへ反映する", () => {
-    const { activeData } = setup()
+  it("期限切れの削除履歴がある状態で初期化すると整理したデータを保存してから反映する", () => {
     const now = new Date("2026-07-10T00:00:00.000Z")
-    vi.mocked(pruneQuicklogDataLogEntryDeletions).mockReturnValue(data)
+    const storedData = {
+      ...recordedData,
+      logEntryDeletions: [{ logEntryId: "expired", createdAt: "2026-01-01T00:00:00.000Z" }],
+    } satisfies QuicklogData
+    vi.mocked(loadQuicklogData).mockReturnValue(storedData)
+    const { activeData } = setup("user1")
+    let displayedDataAtSave: QuicklogData | undefined
+    vi.mocked(saveQuicklogData).mockImplementation(() => {
+      displayedDataAtSave = activeData.data.value
+    })
 
     activeData.initialize(now)
 
-    expect(pruneQuicklogDataLogEntryDeletions).toHaveBeenCalledWith(emptyData, now)
-    expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")
-    expect(activeData.data.value).toEqual(data)
+    expect(loadQuicklogData).toHaveBeenCalledExactlyOnceWith("user1")
+    expect(saveQuicklogData).toHaveBeenCalledExactlyOnceWith(recordedData, "user1")
+    expect(displayedDataAtSave).toEqual(emptyData)
+    expect(activeData.data.value).toEqual(recordedData)
     expect(activeData.revision.value).toBe(1)
   })
 
-  it("ローカル変更を保存・反映した後に購読者へ通知する", () => {
+  it("購読中にローカル変更すると保存・反映した後に通知する", () => {
     const { activeData } = setup("user1")
+
     const listener = vi.fn(() => {
-      expect(activeData.data.value).toEqual(data)
-      expect(saveQuicklogData).toHaveBeenCalledWith(data, "user1")
+      expect(activeData.data.value).toEqual(recordedData)
+      expect(saveQuicklogData).toHaveBeenCalledWith(recordedData, "user1")
     })
 
     activeData.subscribeLocalChangeApplied(listener)
-    activeData.applyLocalChange(data)
+
+    activeData.applyLocalChange(recordedData)
 
     expect(listener).toHaveBeenCalledOnce()
   })
 
-  it("保存に失敗した場合はローカル変更を通知しない", () => {
+  it("購読中にローカル変更の保存が失敗すると通知しない", () => {
     vi.mocked(saveQuicklogData).mockImplementation(() => {
       throw new Error("save failed")
     })
     const { activeData } = setup("user1")
     const listener = vi.fn()
-
     activeData.subscribeLocalChangeApplied(listener)
 
-    expect(() => activeData.applyLocalChange(data)).toThrow("save failed")
+    expect(() => activeData.applyLocalChange(recordedData)).toThrow("save failed")
     expect(listener).not.toHaveBeenCalled()
   })
 
-  it("購読解除後はローカル変更を通知しない", () => {
-    const { activeData } = setup()
+  it("購読を解除してローカル変更すると通知しない", () => {
+    const { activeData } = setup("user1")
     const listener = vi.fn()
     const unsubscribe = activeData.subscribeLocalChangeApplied(listener)
 
     unsubscribe()
-    activeData.applyLocalChange(data)
+    activeData.applyLocalChange(recordedData)
 
     expect(listener).not.toHaveBeenCalled()
   })

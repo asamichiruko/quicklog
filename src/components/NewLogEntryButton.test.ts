@@ -9,7 +9,7 @@ describe("NewLogEntryButton", () => {
   })
 
   it("初期表示時に scrollY <= 320 なら表示されない", async () => {
-    // window.scrollY, window.addEventListener を mock する
+    // 初期表示の境界となるスクロール位置を設定する
     vi.spyOn(window, "scrollY", "get").mockReturnValue(320)
 
     render(NewLogEntryButton)
@@ -42,7 +42,7 @@ describe("NewLogEntryButton", () => {
     expect(screen.queryByRole("button", { name: /メモを書く/ })).toBeInTheDocument()
   })
 
-  it("表示された状態から scrollY < 120 である間は表示を維持し、scrollY < 120 になると表示されなくなる", async () => {
+  it("表示された状態から scrollY > 120 では表示を維持し、scrollY <= 120 で非表示になる", async () => {
     let scrollY = 321
     vi.spyOn(window, "scrollY", "get").mockImplementation(() => scrollY)
 

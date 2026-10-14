@@ -271,6 +271,7 @@ quicklog では、アカウント作成とパスワード再設定で 6 桁の�
 
 - [データ構造と同期](docs/data-and-sync.md)
 - [アカウント認証](docs/authentication.md)
+- [テストの指針と現状評価](docs/testing.md)
 
 ## 現在の制約と注意点
 

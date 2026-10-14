@@ -4,7 +4,7 @@ import { defineComponent, ref } from "vue"
 import { mount, type VueWrapper } from "@vue/test-utils"
 import { useAccountUser } from "./useAccountUser"
 
-function createUser(id = "user1", email = "old@example.com") {
+function createUser(id: string, email: string) {
   return { id, email } as User
 }
 
@@ -32,9 +32,8 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
-function setup() {
-  const user = createUser()
-  const session = ref<Session | null>({ user } as Session)
+function setup(user: User | null) {
+  const session = ref<Session | null>(user ? ({ user } as Session) : null)
   const activeUser = ref<User | null>(user)
   const getCurrentUser = vi.fn<() => Promise<User | null>>().mockResolvedValue(user)
   let account!: ReturnType<typeof useAccountUser>
@@ -58,39 +57,33 @@ function setup() {
 }
 
 describe("useAccountUser", () => {
-  it("composable インスタンス生成時に最新ユーザー情報の取得を予約し、自動取得する", async () => {
-    // setup で取得可能な認証状態を用意する
-    const { account, getCurrentUser } = setup()
+  it("認証済みで composable を生成するとイベント処理の外で最新ユーザー情報を取得する", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
     const pending = deferred<User | null>()
     getCurrentUser.mockReturnValueOnce(pending.promise)
 
-    // すでに context が存在するので予約が開始される
     expect(account.isLoading.value).toBe(true)
     expect(account.user.value).toBeNull()
     expect(getCurrentUser).not.toHaveBeenCalled()
 
     await vi.advanceTimersByTimeAsync(0)
 
-    // タイマーで非同期的に getCurrentUser が呼ばれる
     expect(getCurrentUser).toHaveBeenCalledOnce()
     expect(account.isLoading.value).toBe(true)
 
     const updated = createUser("user1", "new@example.com")
+
     pending.resolve(updated)
     await pending.promise
 
-    // 認証状態が変わらず、取得結果のユーザー ID も一致するため結果が反映される
     expect(account.user.value).toEqual(updated)
     expect(account.isLoading.value).toBe(false)
     expect(account.error.value).toBeNull()
   })
 
   it("未サインイン状態からサインインすると最新ユーザー情報を自動取得する", async () => {
-    const { account, session, activeUser, getCurrentUser } = setup()
-
-    // session に null を代入した時点で setup 時の初回予約は取り消される
-    session.value = null
-    activeUser.value = null
+    const { account, session, activeUser, getCurrentUser } = setup(null)
 
     await vi.advanceTimersByTimeAsync(0)
 
@@ -98,7 +91,9 @@ describe("useAccountUser", () => {
     expect(getCurrentUser).not.toHaveBeenCalled()
     expect(account.isLoading.value).toBe(false)
 
-    const signedInUser = createUser()
+    const signedInUser = createUser("user1", "old@example.com")
+    getCurrentUser.mockResolvedValue(signedInUser)
+
     session.value = { user: signedInUser } as Session
     activeUser.value = signedInUser
 
@@ -108,58 +103,56 @@ describe("useAccountUser", () => {
 
     await vi.advanceTimersByTimeAsync(0)
 
-    // 認証状態が変わらず、取得結果のユーザー ID も一致するため結果が反映される
     expect(getCurrentUser).toHaveBeenCalledOnce()
     expect(account.user.value).toEqual(signedInUser)
     expect(account.isLoading.value).toBe(false)
   })
 
-  it("同一ユーザーのセッション更新では既存のユーザー情報を保持しながら再取得する", async () => {
-    // 初回取得を予約し、タイマーを進めて完了させる
-    const { account, session, getCurrentUser } = setup()
+  it("同一ユーザーのセッションを更新すると既存情報を保持しながら再取得する", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, session, getCurrentUser } = setup(initialUser)
 
     await vi.advanceTimersByTimeAsync(0)
 
     const previous = account.user.value
-    expect(previous).toEqual(createUser())
+    expect(previous).toEqual(initialUser)
 
     const pending = deferred<User | null>()
     getCurrentUser.mockReturnValueOnce(pending.promise)
 
     // 同じユーザーでもセッションオブジェクトが新しくなると再取得が予約される
-    session.value = { user: createUser() } as Session
+    session.value = { user: initialUser } as Session
 
-    // 再取得を予約しても取得済みの情報は消えない
     expect(account.user.value).toEqual(previous)
     expect(account.isLoading.value).toBe(true)
 
     await vi.advanceTimersByTimeAsync(0)
 
-    // この時点で 2 回目の取得はまだ完了していないため、取得済みの情報を保持している
     expect(getCurrentUser).toHaveBeenCalledTimes(2)
     expect(account.user.value).toEqual(previous)
 
     const updated = createUser("user1", "new@example.com")
+
     pending.resolve(updated)
     await pending.promise
 
-    // 取得が完了すると新しい値に書き換わる
     expect(account.user.value).toEqual(updated)
     expect(account.isLoading.value).toBe(false)
   })
 
-  it("再取得に失敗しても同一ユーザーの情報を保持する", async () => {
-    const { account, getCurrentUser } = setup()
+  it("同一ユーザーの再取得が失敗すると情報を保持し、再試行で更新する", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
 
     await vi.advanceTimersByTimeAsync(0)
 
     const previous = account.user.value
+
     const failure = new Error("network unavailable")
     getCurrentUser.mockRejectedValueOnce(failure)
 
     await account.refresh()
 
-    // account.user はクリアされない
     expect(account.user.value).toEqual(previous)
     expect(account.error.value).toBe(failure)
     expect(account.isLoading.value).toBe(false)
@@ -169,12 +162,12 @@ describe("useAccountUser", () => {
 
     const refreshPromise = account.refresh()
 
-    // 再試行開始時は情報を保持してエラーだけ消す
     expect(account.user.value).toEqual(previous)
     expect(account.error.value).toBeNull()
     expect(account.isLoading.value).toBe(true)
 
     const updated = createUser("user1", "new@example.com")
+
     pending.resolve(updated)
     await refreshPromise
 
@@ -182,8 +175,9 @@ describe("useAccountUser", () => {
     expect(account.isLoading.value).toBe(false)
   })
 
-  it("明示的な refresh で最新のユーザー情報を取得する", async () => {
-    const { account, getCurrentUser } = setup()
+  it("認証済みで明示的に refresh すると初回予約を置き換えて最新情報を取得する", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
     const pending = deferred<User | null>()
     getCurrentUser.mockReturnValue(pending.promise)
 
@@ -197,8 +191,8 @@ describe("useAccountUser", () => {
     expect(account.isLoading.value).toBe(true)
 
     const updated = createUser("user1", "new@example.com")
-    pending.resolve(updated)
 
+    pending.resolve(updated)
     await refreshPromise
     await vi.advanceTimersByTimeAsync(0)
 
@@ -207,8 +201,10 @@ describe("useAccountUser", () => {
     expect(account.isLoading.value).toBe(false)
   })
 
-  it("認証状態が利用できなければ取得せずクリアする", async () => {
-    const { account, session, getCurrentUser } = setup()
+  it("取得済みの状態でセッションを失うと情報を消し、refresh しても取得しない", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, session, getCurrentUser } = setup(initialUser)
+
     await account.refresh()
 
     expect(getCurrentUser).toHaveBeenCalledOnce()
@@ -224,8 +220,10 @@ describe("useAccountUser", () => {
     expect(getCurrentUser).toHaveBeenCalledOnce()
   })
 
-  it("同期可能なユーザーがなくなれば取得済み情報をクリアする", async () => {
-    const { account, activeUser, getCurrentUser } = setup()
+  it("取得済みの状態で同期可能なユーザーがなくなると情報を消し、refresh しても取得しない", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, activeUser, getCurrentUser } = setup(initialUser)
+
     await account.refresh()
 
     expect(getCurrentUser).toHaveBeenCalledOnce()
@@ -241,85 +239,154 @@ describe("useAccountUser", () => {
     expect(getCurrentUser).toHaveBeenCalledOnce()
   })
 
-  it.each([null, createUser("other")])(
-    "不在または別ユーザーの取得結果を反映しない: %s",
-    async (result) => {
-      const { account, getCurrentUser } = setup()
+  it("同一ユーザーを取得済みの状態で null が返ると取得情報を消す", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
 
-      await account.refresh()
+    await account.refresh()
 
-      getCurrentUser.mockResolvedValueOnce(result)
+    getCurrentUser.mockResolvedValueOnce(null)
 
-      await account.refresh()
+    await account.refresh()
 
-      expect(account.user.value).toBeNull()
-    },
-  )
+    expect(account.user.value).toBeNull()
+    expect(account.isLoading.value).toBe(false)
+    expect(account.error.value).toBeNull()
+  })
 
-  it.each(["resolve", "reject"] as const)(
-    "取得待機中の状態を、古い応答 %s が変更しない",
-    async (settle) => {
-      const { account, getCurrentUser } = setup()
-      const older = deferred<User | null>()
-      const newer = deferred<User | null>()
-      getCurrentUser.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+  it("同一ユーザーを取得済みの状態で別ユーザーが返ると取得情報を消す", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
 
-      const first = account.refresh()
-      const second = account.refresh()
+    await account.refresh()
 
-      if (settle === "resolve") {
-        older.resolve(createUser())
-      } else {
-        older.reject(new Error("old failure"))
-      }
+    getCurrentUser.mockResolvedValueOnce(createUser("other", "other@example.com"))
 
-      await first
+    await account.refresh()
 
-      expect(account.isLoading.value).toBe(true)
-      expect(account.user.value).toBeNull()
-      expect(account.error.value).toBeNull()
+    expect(account.user.value).toBeNull()
+    expect(account.isLoading.value).toBe(false)
+    expect(account.error.value).toBeNull()
+  })
 
-      const updated = createUser("user1", "new@example.com")
+  it("再取得中に古い応答が成功しても待機状態を変更しない", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const updatedUser = createUser("user1", "new@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
+    const older = deferred<User | null>()
+    const newer = deferred<User | null>()
+    getCurrentUser.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
 
-      newer.resolve(updated)
-      await second
+    const first = account.refresh()
+    const second = account.refresh()
+    older.resolve(initialUser)
+    await first
 
-      expect(account.user.value).toEqual(updated)
-      expect(account.isLoading.value).toBe(false)
-    },
-  )
+    expect(account.isLoading.value).toBe(true)
+    expect(account.user.value).toBeNull()
+    expect(account.error.value).toBeNull()
 
-  it.each(["clear", "user", "unmount"] as const)("%s 後に届く応答を無視する", async (action) => {
-    const { account, activeUser, getCurrentUser, wrapper } = setup()
+    newer.resolve(updatedUser)
+    await second
+
+    expect(account.user.value).toEqual(updatedUser)
+    expect(account.isLoading.value).toBe(false)
+    expect(account.error.value).toBeNull()
+  })
+
+  it("再取得中に古い応答が失敗しても待機状態を変更しない", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const updatedUser = createUser("user1", "new@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
+    const older = deferred<User | null>()
+    const newer = deferred<User | null>()
+    getCurrentUser.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+
+    const first = account.refresh()
+    const second = account.refresh()
+    older.reject(new Error("old failure"))
+    await first
+
+    expect(account.isLoading.value).toBe(true)
+    expect(account.user.value).toBeNull()
+    expect(account.error.value).toBeNull()
+
+    newer.resolve(updatedUser)
+    await second
+
+    expect(account.user.value).toEqual(updatedUser)
+    expect(account.isLoading.value).toBe(false)
+    expect(account.error.value).toBeNull()
+  })
+
+  it("取得中に clear すると後から届く応答を反映しない", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser } = setup(initialUser)
     const pending = deferred<User | null>()
     getCurrentUser.mockReturnValue(pending.promise)
 
     const refreshPromise = account.refresh()
-
-    if (action === "clear") account.clear()
-    if (action === "user") activeUser.value = createUser("other")
-    if (action === "unmount") wrapper.unmount()
+    account.clear()
 
     expect(account.isLoading.value).toBe(false)
 
-    pending.resolve(createUser())
+    pending.resolve(initialUser)
     await refreshPromise
 
     expect(account.user.value).toBeNull()
     expect(account.error.value).toBeNull()
   })
 
-  it("別ユーザーへの切り替えで、取得済みの情報が即座に消える", async () => {
-    const { account, session, activeUser, getCurrentUser } = setup()
+  it("取得中に別ユーザーへ切り替えると後から届く応答を反映しない", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser, activeUser } = setup(initialUser)
+    const pending = deferred<User | null>()
+    getCurrentUser.mockReturnValue(pending.promise)
+
+    const refreshPromise = account.refresh()
+    activeUser.value = createUser("other", "other@example.com")
+
+    expect(account.isLoading.value).toBe(false)
+
+    pending.resolve(initialUser)
+    await refreshPromise
+
+    expect(account.user.value).toBeNull()
+    expect(account.error.value).toBeNull()
+  })
+
+  it("取得中に unmount すると後から届く応答を反映しない", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, getCurrentUser, wrapper } = setup(initialUser)
+    const pending = deferred<User | null>()
+    getCurrentUser.mockReturnValue(pending.promise)
+
+    const refreshPromise = account.refresh()
+    wrapper.unmount()
+
+    expect(account.isLoading.value).toBe(false)
+
+    pending.resolve(initialUser)
+    await refreshPromise
+
+    expect(account.user.value).toBeNull()
+    expect(account.error.value).toBeNull()
+  })
+
+  it("取得済みの状態で別ユーザーへ切り替えると情報を即座に消し、新しいユーザーを取得する", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, session, activeUser, getCurrentUser } = setup(initialUser)
 
     await vi.advanceTimersByTimeAsync(0)
 
     const previous = account.user.value
+
     const next = createUser("user2", "new@example.com")
 
-    expect(previous).toEqual(createUser())
+    expect(previous).toEqual(initialUser)
 
     getCurrentUser.mockResolvedValue(next)
+
     session.value = { user: next } as Session
     activeUser.value = next
 
@@ -333,14 +400,15 @@ describe("useAccountUser", () => {
     expect(getCurrentUser).toHaveBeenCalledTimes(2)
   })
 
-  it("セッション更新前に開始した取得の結果を無視する", async () => {
-    const { account, session, getCurrentUser } = setup()
+  it("取得中に同一ユーザーのセッションを更新すると古い応答を無視して再取得する", async () => {
+    const initialUser = createUser("user1", "old@example.com")
+    const { account, session, getCurrentUser } = setup(initialUser)
     const pending = deferred<User | null>()
-    const pendingResult = createUser()
+    const pendingResult = initialUser
     getCurrentUser.mockReturnValue(pending.promise)
 
     const refreshPromise = account.refresh()
-    session.value = { user: createUser() } as Session
+    session.value = { user: initialUser } as Session
 
     // session 更新時は再取得が予約されるため isLoading は true となる
     expect(account.isLoading.value).toBe(true)

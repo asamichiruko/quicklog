@@ -73,7 +73,9 @@ describe("validateCreatedPassword", () => {
       "パスワードには英小文字・英大文字・数字・記号を各 1 文字以上含めてください",
     )
   })
+})
 
+describe("validateVerificationCode", () => {
   it("空の認証コードに対してエラーメッセージを返す", () => {
     expect(validateVerificationCode("")).toBe("確認コードを入力してください")
   })
@@ -86,7 +88,7 @@ describe("validateCreatedPassword", () => {
     expect(validateVerificationCode("12345")).toBe("確認コードは 6 文字で入力してください")
   })
 
-  it("6 文字を超えるの認証コードに対してエラーメッセージを返す", () => {
+  it("6 文字を超える認証コードに対してエラーメッセージを返す", () => {
     expect(validateVerificationCode("1234567")).toBe("確認コードは 6 文字で入力してください")
   })
 })

@@ -22,7 +22,6 @@ function createSession(userId: string) {
 describe("useRuntimeSession", () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    vi.mocked(loadStoredDataScope).mockReturnValue(anonymousScope)
   })
 
   function setup() {
@@ -123,6 +122,7 @@ describe("useRuntimeSession", () => {
     } satisfies RuntimeSessionState
 
     runtimeSession.commitAuthenticatedSession(createSession("user1"))
+
     expect(saveStoredDataScope).toHaveBeenCalledExactlyOnceWith(expectedState.scope)
   })
 
@@ -133,13 +133,16 @@ describe("useRuntimeSession", () => {
     expect(runtimeSession.getActiveCloudUser()).toBeNull()
 
     runtimeSession.commitAuthenticatedSession(nextSession)
+
     expect(runtimeSession.getActiveCloudUser()).toEqual(nextSession.user)
 
     runtimeSession.activateAnonymousScope()
+
     expect(runtimeSession.getActiveCloudUser()).toBeNull()
   })
 
   it("削除したアカウントの session が後から届いても受理しない", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "anonymous" })
     const { runtimeSession } = setup()
 
     runtimeSession.commitAuthenticatedSession(createSession("user1"))
@@ -153,6 +156,7 @@ describe("useRuntimeSession", () => {
   })
 
   it("anonymous scope のとき null session が観測されたら受理する", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "anonymous" })
     const { runtimeSession } = setup()
 
     const shouldClearSession = runtimeSession.applyObservedSession(null)
@@ -163,6 +167,7 @@ describe("useRuntimeSession", () => {
   })
 
   it("anonymous scope のとき user session が観測されても受理しない", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "anonymous" })
     const { runtimeSession } = setup()
     const nextSession = createSession("user1")
 
@@ -277,8 +282,8 @@ describe("useRuntimeSession", () => {
   it("状態適用後に購読者へ適用済み状態を通知する", () => {
     const { runtimeSession } = setup()
     const listener = vi.fn()
-
     runtimeSession.subscribeStateApplied(listener)
+
     runtimeSession.commitAuthenticatedSession(createSession("user1"))
 
     expect(listener).toHaveBeenCalledExactlyOnceWith({
@@ -298,14 +303,15 @@ describe("useRuntimeSession", () => {
       })
       expect(saveStoredDataScope).toHaveBeenCalled()
     })
-
     runtimeSession.subscribeStateApplied(listener)
+
     runtimeSession.commitAuthenticatedSession(session)
 
     expect(listener).toHaveBeenCalledOnce()
   })
 
   it("購読解除後は状態適用を通知しない", () => {
+    vi.mocked(loadStoredDataScope).mockReturnValue({ type: "anonymous" })
     const { runtimeSession } = setup()
     const listener = vi.fn()
     const unsubscribe = runtimeSession.subscribeStateApplied(listener)

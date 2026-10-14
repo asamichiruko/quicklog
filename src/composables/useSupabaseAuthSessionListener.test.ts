@@ -47,9 +47,9 @@ describe("useSupabaseAuthSessionListener", () => {
 
   type ListenerOptions = Parameters<typeof useSupabaseAuthSessionListener>[0]
 
-  function setup(overrides: Partial<ListenerOptions> = {}) {
+  function setup(ignoreAuthEvent: boolean, overrides: Partial<ListenerOptions> = {}) {
     const options: ListenerOptions = {
-      shouldIgnoreAuthEvent: vi.fn(() => false),
+      shouldIgnoreAuthEvent: vi.fn(() => ignoreAuthEvent),
       onResolvedSession: vi.fn(),
       onCurrentSessionLoadFailed: vi.fn(),
       ...overrides,
@@ -75,7 +75,7 @@ describe("useSupabaseAuthSessionListener", () => {
   }
 
   it("start() を複数回呼んでも 1 度だけしか購読されない", () => {
-    const { listener } = setup()
+    const { listener } = setup(false)
 
     listener.start()
     listener.start()
@@ -83,8 +83,8 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(mocks.onAuthStateChange).toHaveBeenCalledOnce()
   })
 
-  it("イベントのセッションを onResolvedSession に渡す", () => {
-    const { listener, options } = setup()
+  it("認証イベントを無視しない状態でイベントが届くとセッションを通知する", () => {
+    const { listener, options } = setup(false)
     const session = createSession("user1")
 
     listener.start()
@@ -94,10 +94,9 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(options.onResolvedSession).toHaveBeenCalledExactlyOnceWith(session)
   })
 
-  it("shouldIgnoreAuthEvent() が true ならイベントのセッションを onResolvedSession に渡さない", () => {
+  it("認証イベントを無視する状態でイベントが届くとセッションを通知しない", () => {
     const onResolvedSession = vi.fn()
-    const { listener } = setup({
-      shouldIgnoreAuthEvent: vi.fn(() => true),
+    const { listener } = setup(true, {
       onResolvedSession,
     })
 
@@ -107,8 +106,8 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(onResolvedSession).not.toHaveBeenCalled()
   })
 
-  it("登録したイベントコールバックが同期的に終了する", () => {
-    const { listener } = setup({
+  it("通知先が非同期でも認証イベントのコールバックは同期的に終了する", () => {
+    const { listener } = setup(false, {
       onResolvedSession: vi.fn(async () => undefined),
     })
 
@@ -118,8 +117,8 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(result).toBeUndefined()
   })
 
-  it("stop() 後に再度 start() できる", () => {
-    const { listener } = setup()
+  it("購読を停止して再開すると古い購読を解除して新しく購読する", () => {
+    const { listener } = setup(false)
 
     listener.start()
     listener.stop()
@@ -130,7 +129,7 @@ describe("useSupabaseAuthSessionListener", () => {
   })
 
   it("start() する前に stop() しても unsubscribe されない", () => {
-    const { listener } = setup()
+    const { listener } = setup(false)
 
     listener.stop()
 
@@ -138,7 +137,7 @@ describe("useSupabaseAuthSessionListener", () => {
   })
 
   it("unmount 時に購読を解除する", () => {
-    const { listener, wrapper } = setup()
+    const { listener, wrapper } = setup(false)
 
     listener.start()
     wrapper.unmount()
@@ -146,10 +145,10 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(mocks.unsubscribe).toHaveBeenCalledOnce()
   })
 
-  it("現在のセッションの調停に成功すると onResolvedSession に渡す", async () => {
+  it("現在のセッションを取得すると取得したセッションを通知する", async () => {
     const session = createSession("user1")
     mocks.getCurrentSession.mockResolvedValue(session)
-    const { listener, options } = setup()
+    const { listener, options } = setup(false)
 
     await listener.reconcileCurrentSession()
 
@@ -158,10 +157,10 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(options.onCurrentSessionLoadFailed).not.toHaveBeenCalled()
   })
 
-  it("現在のセッションの取得に失敗すると onCurrentSessionLoadFailed を呼ぶ", async () => {
+  it("現在のセッションの取得に失敗すると失敗だけを通知する", async () => {
     const error = new Error("reload failed")
     mocks.getCurrentSession.mockRejectedValue(error)
-    const { listener, options } = setup()
+    const { listener, options } = setup(false)
 
     await listener.reconcileCurrentSession()
 
@@ -169,9 +168,9 @@ describe("useSupabaseAuthSessionListener", () => {
     expect(options.onCurrentSessionLoadFailed).toHaveBeenCalledExactlyOnceWith(error)
   })
 
-  it("現在のセッションが null の場合も onResolvedSession にそれを渡す", async () => {
+  it("現在のセッションが null の場合は null を通知する", async () => {
     mocks.getCurrentSession.mockResolvedValue(null)
-    const { listener, options } = setup()
+    const { listener, options } = setup(false)
 
     await listener.reconcileCurrentSession()
 
