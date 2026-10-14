@@ -76,10 +76,10 @@ quicklog は「開いてすぐにメモを取れる」ことをコンセプト�
 
 以下のバージョンで動作することを確認しています。
 
-- Git 2.43
-- npm 11.12
-- Node.js 22.17
-- Docker Desktop 4.78
+- Git 2.55
+- npm 12.2
+- Node.js 24.21
+- Docker Desktop 4.95
 - Deno 2.8.3
 
 ### Windows + WSL2 に関する補足

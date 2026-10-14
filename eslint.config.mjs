@@ -1,18 +1,41 @@
 import pluginVue from "eslint-plugin-vue"
 import vitest from "@vitest/eslint-plugin"
 import eslintConfigPrettier from "eslint-config-prettier"
-import { defineConfigWithVueTs, vueTsConfigs } from "@vue/eslint-config-typescript"
+import { defineConfig } from "eslint/config"
+import tseslint from "typescript-eslint"
+import vueParser from "vue-eslint-parser"
 import stylistic from "@stylistic/eslint-plugin"
 
 const paddedStatements = ["function", "multiline-const", "multiline-let"]
 
-export default defineConfigWithVueTs(
+// TypeScript 用の推奨ルールを Vue の script にも適用する。
+const typescriptConfigs = tseslint.configs.recommended.map((config) =>
+  config.files ? { ...config, files: [...config.files, "**/*.vue"] } : config,
+)
+
+export default defineConfig(
   {
     ignores: ["dist/**", "coverage/**", "node_modules/**"],
   },
 
   pluginVue.configs["flat/recommended"],
-  vueTsConfigs.recommended,
+  typescriptConfigs,
+
+  {
+    files: ["**/*.vue"],
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: [".vue"],
+        ecmaVersion: 2024,
+        ecmaFeatures: { jsx: false },
+      },
+    },
+    rules: {
+      "vue/block-lang": ["error", { script: { lang: ["ts"], allowNoLang: false } }],
+    },
+  },
 
   {
     files: ["**/*.ts", "**/*.vue"],
