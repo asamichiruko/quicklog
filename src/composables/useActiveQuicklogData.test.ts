@@ -75,10 +75,12 @@ describe("useActiveQuicklogData", () => {
 
   it("期限切れの削除履歴がある状態で初期化すると整理したデータを保存してから反映する", () => {
     const now = new Date("2026-07-10T00:00:00.000Z")
+
     const storedData = {
       ...recordedData,
       logEntryDeletions: [{ logEntryId: "expired", createdAt: "2026-01-01T00:00:00.000Z" }],
     } satisfies QuicklogData
+
     vi.mocked(loadQuicklogData).mockReturnValue(storedData)
     const { activeData } = setup("user1")
     let displayedDataAtSave: QuicklogData | undefined

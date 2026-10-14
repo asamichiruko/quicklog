@@ -20,6 +20,7 @@ describe("parseAsQuicklogData", () => {
         { id: "id1", type: "delete", createdAt: "2026-05-22T00:00:00.000Z", entryId: "id1" },
       ],
     }
+
     expect(parseAsQuicklogData(dataV2)).toEqual({
       version: 3,
       logEntries: dataV2.logEntries,
@@ -33,6 +34,7 @@ describe("parseAsQuicklogData", () => {
       logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
       logEntryDeletions: [{ createdAt: "2026-05-22T00:00:00.000Z", logEntryId: "id1" }],
     }
+
     expect(parseAsQuicklogData(dataV3)).toEqual(dataV3)
   })
 

@@ -2,6 +2,9 @@ import pluginVue from "eslint-plugin-vue"
 import vitest from "@vitest/eslint-plugin"
 import eslintConfigPrettier from "eslint-config-prettier"
 import { defineConfigWithVueTs, vueTsConfigs } from "@vue/eslint-config-typescript"
+import stylistic from "@stylistic/eslint-plugin"
+
+const paddedStatements = ["function", "multiline-const", "multiline-let"]
 
 export default defineConfigWithVueTs(
   {
@@ -42,6 +45,7 @@ export default defineConfigWithVueTs(
     files: ["**/*.{test,spec}.ts", "**/__tests__/**/*.ts"],
     plugins: {
       vitest,
+      "@stylistic": stylistic,
     },
     languageOptions: {
       globals: {
@@ -51,6 +55,21 @@ export default defineConfigWithVueTs(
     rules: {
       ...vitest.configs.recommended.rules,
       "vitest/no-focused-tests": "error",
+      "@stylistic/padding-line-between-statements": [
+        "error",
+        {
+          blankLine: "always",
+          prev: "*",
+          next: paddedStatements,
+        },
+        {
+          blankLine: "always",
+          prev: paddedStatements,
+          next: "*",
+        },
+      ],
+      "vitest/padding-around-before-each-blocks": "error",
+      "vitest/padding-around-after-each-blocks": "error",
     },
   },
 

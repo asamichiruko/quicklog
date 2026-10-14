@@ -7,6 +7,7 @@ import { createCloudSyncQueue, type CloudSyncContext } from "./cloudSyncQueue"
 function createDeferred<T>() {
   let resolve!: (value: T) => void
   let reject!: (reason?: unknown) => void
+
   const promise = new Promise<T>((promiseResolve, promiseReject) => {
     resolve = promiseResolve
     reject = promiseReject
@@ -51,6 +52,7 @@ describe("createCloudSyncQueue", () => {
   it("user がないときは同期しない", async () => {
     const sync = vi.fn()
     const applyResult = vi.fn()
+
     const queue = createCloudSyncQueue({
       getContext: () => createContext(createQuicklogData("local"), { user: null }),
       sync,
@@ -69,6 +71,7 @@ describe("createCloudSyncQueue", () => {
     const firstResult = createResult(firstData)
     const secondResult = createResult(secondData)
     let currentContext = createContext(firstData, { dataRevision: 1 })
+
     const sync = vi
       .fn()
       .mockImplementationOnce(() => {
@@ -76,7 +79,9 @@ describe("createCloudSyncQueue", () => {
         return firstDeferred.promise
       })
       .mockResolvedValueOnce(secondResult)
+
     const applyResult = vi.fn()
+
     const queue = createCloudSyncQueue({
       getContext: () => currentContext,
       sync,
@@ -111,6 +116,7 @@ describe("createCloudSyncQueue", () => {
     const result = createResult(createQuicklogData("merged"))
     const context = createContext(data, { dataRevision: 3, scopeRevision: 4 })
     const applyResult = vi.fn()
+
     const queue = createCloudSyncQueue({
       getContext: () => context,
       sync: vi.fn().mockResolvedValue(result),
@@ -128,6 +134,7 @@ describe("createCloudSyncQueue", () => {
     const error = new Error("network error")
     const onError = vi.fn()
     const sync = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce(result)
+
     const queue = createCloudSyncQueue({
       getContext: () => createContext(data),
       sync,
@@ -147,6 +154,7 @@ describe("createCloudSyncQueue", () => {
     const onError = vi.fn()
     const sync = vi.fn().mockRejectedValue(error)
     const applyResult = vi.fn()
+
     const queue = createCloudSyncQueue({
       getContext: () => createContext(data),
       sync,

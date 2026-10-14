@@ -39,6 +39,7 @@ describe("sortLogEntriesByCreatedAtDesc", () => {
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
+
     const originalEntries = [...logEntries]
 
     expect(sortLogEntriesByCreatedAtDesc(logEntries)).toEqual([
@@ -57,6 +58,7 @@ describe("sortLogEntriesByCreatedAtAsc", () => {
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
+
     const originalEntries = [...logEntries]
 
     expect(sortLogEntriesByCreatedAtAsc(logEntries)).toEqual([
@@ -74,6 +76,7 @@ describe("mergeLogEntries", () => {
       { id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
     ]
+
     const incoming = [{ id: "id3", text: "text3", createdAt: "2026-05-24T00:00:00.000Z" }]
 
     expect(mergeLogEntries(existing, incoming)).toEqual([existing[0], existing[1], incoming[0]])
@@ -84,6 +87,7 @@ describe("mergeLogEntries", () => {
       { id: "id1", text: "text1", createdAt: "2026-05-22T12:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" },
     ]
+
     const incoming = [{ id: "id3", text: "text3", createdAt: "2026-05-22T06:00:00.000Z" }]
 
     expect(mergeLogEntries(existing, incoming)).toEqual([existing[1], incoming[0], existing[0]])
@@ -91,6 +95,7 @@ describe("mergeLogEntries", () => {
 
   it("id に重複がある場合は既存の LogEntry を優先する", () => {
     const existing = [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }]
+
     const incoming = [
       { id: "id1", text: "text2", createdAt: "2026-05-23T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-24T00:00:00.000Z" },

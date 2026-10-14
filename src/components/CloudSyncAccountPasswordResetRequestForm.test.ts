@@ -29,6 +29,7 @@ describe("CloudSyncAccountPasswordResetRequestForm", () => {
 
   it("メールアドレスを入力して パスワードリセット ボタンを押すと submit が emit される", async () => {
     const user = userEvent.setup()
+
     const { emitted } = render(CloudSyncAccountPasswordResetRequestForm, {
       props: {
         isLoading: false,

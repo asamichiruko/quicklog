@@ -55,6 +55,7 @@ describe("createCloudSyncScheduler", () => {
     vi.setSystemTime(new Date("2026-06-08T00:00:00.000Z"))
 
     const requestSync = vi.fn().mockResolvedValue(null)
+
     const scheduler = createCloudSyncScheduler({
       canSync: () => true,
       requestSync,

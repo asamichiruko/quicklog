@@ -30,6 +30,7 @@ describe("LogEntryExportPanel", () => {
 
   it("ダウンロードに失敗するとエラーが表示される", async () => {
     const error = new Error("ダウンロードエラー")
+
     const downloadLogEntries = vi.fn(() => {
       throw error
     })

@@ -13,11 +13,13 @@ describe("quicklogDataEditing", () => {
     text: "text1",
     createdAt: "2026-06-07T01:00:00.000Z",
   }
+
   const entry2 = {
     id: "entry2",
     text: "text2",
     createdAt: "2026-06-07T02:00:00.000Z",
   }
+
   const deletion1 = {
     logEntryId: "deleted1",
     createdAt: "2026-06-07T00:00:00.000Z",
@@ -78,6 +80,7 @@ describe("quicklogDataEditing", () => {
       logEntryId: "entry1",
       createdAt: "2026-06-07T03:00:00.000Z",
     }
+
     const newerDeletion = {
       logEntryId: "entry1",
       createdAt: "2026-06-07T05:00:00.000Z",

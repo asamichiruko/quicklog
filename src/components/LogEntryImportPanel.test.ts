@@ -17,6 +17,7 @@ describe("LogEntryImportPanel", () => {
     const importQuicklogDataFromFile = vi.fn(async () => {
       return { addedCount: 1, deletedCount: 2 }
     })
+
     const user = userEvent.setup()
     render(LogEntryImportPanel, { props: { importQuicklogDataFromFile } })
 
@@ -28,6 +29,7 @@ describe("LogEntryImportPanel", () => {
       "quicklog.json",
       { type: "application/json" },
     )
+
     await user.upload(screen.getByLabelText("インポートする JSON ファイル"), file)
 
     expect(importButton).toBeEnabled()
@@ -43,6 +45,7 @@ describe("LogEntryImportPanel", () => {
     const importQuicklogDataFromFile = vi.fn(async () => {
       throw new SyntaxError()
     })
+
     const user = userEvent.setup()
     render(LogEntryImportPanel, { props: { importQuicklogDataFromFile } })
 

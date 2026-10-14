@@ -41,11 +41,13 @@ const TestHost = defineComponent({
   setup(props) {
     const dialog = ref<InstanceType<typeof SettingsDialog> | null>(null)
     const settings = ref({ showDailySummary: false })
+
     const logEntries = ref([
       { id: "id1", text: "text1", createdAt: "2026-05-21T12:00:00.000Z" },
       { id: "id2", text: "text2", createdAt: "2026-05-22T00:00:00.000Z" },
       { id: "id3", text: "text3", createdAt: "2026-05-22T12:00:00.000Z" },
     ])
+
     const savedSettings = ref<unknown>(null)
 
     const accountUser = shallowRef<AccountUserView>({
@@ -57,10 +59,12 @@ const TestHost = defineComponent({
 
     const exportType = ref<ExportType | null>(null)
     const importedFile = ref<File | null>(null)
+
     const runtimeSessionState = ref<RuntimeSessionState>({
       scope: { type: "anonymous" },
       syncStatus: "disabled",
     })
+
     const anonymousDataState = ref({ logEntryCount: 0, logEntryDeletionCount: 0 })
     const signedInEmail = ref("")
     const signedInPassword = ref("")
@@ -255,12 +259,14 @@ describe("SettingsDialog", () => {
     it("パスワードリセットメールの送信中に開き直しても重複送信できない", async () => {
       const user = userEvent.setup()
       let finish!: () => void
+
       const sendPasswordResetCode = vi.fn<() => Promise<void>>().mockImplementation(
         () =>
           new Promise<void>((resolve) => {
             finish = resolve
           }),
       )
+
       render(TestHost, { props: { sendPasswordResetCode } })
 
       await user.click(screen.getByRole("button", { name: "設定を開く" }))

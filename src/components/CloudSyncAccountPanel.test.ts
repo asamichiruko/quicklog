@@ -62,12 +62,14 @@ function createAccountUser(
 
 function createDefaultProps(actions: CloudSyncAccountActions) {
   const session = null
+
   const accountUser = createAccountUser({
     isLoading: false,
     error: null,
     user: null,
     refresh: vi.fn(),
   })
+
   const runtimeSessionState = {
     scope: { type: "anonymous" },
     syncStatus: "disabled",
@@ -84,10 +86,12 @@ function createDefaultProps(actions: CloudSyncAccountActions) {
 function createDeferredRequest() {
   let resolve!: () => void
   let reject!: (error: unknown) => void
+
   const promise = new Promise<void>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise
     reject = rejectPromise
   })
+
   return { promise, resolve, reject }
 }
 
@@ -117,6 +121,7 @@ describe("CloudSyncAccountPanel", () => {
       accountUser = createAccountUser({ user: { id: "user1", email: currentEmail } as User }),
     ) {
       const actions = createActions()
+
       const view = render(CloudSyncPanel, {
         props: {
           ...createDefaultProps(actions),
@@ -128,6 +133,7 @@ describe("CloudSyncAccountPanel", () => {
           },
         },
       })
+
       return Object.assign(actions, { rerender: view.rerender })
     }
 
@@ -414,6 +420,7 @@ describe("CloudSyncAccountPanel", () => {
         const accountUserRef = account.state.user
 
         let finish!: () => void
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(() => {
           loading.value = true
           accountUserRef.value = {
@@ -428,6 +435,7 @@ describe("CloudSyncAccountPanel", () => {
             }
           })
         })
+
         account.refresh = refresh
         const accountUser = account
         renderEmailChangePanel("old@example.com", accountUser)
@@ -521,6 +529,7 @@ describe("CloudSyncAccountPanel", () => {
         const account = createEmailChangeAccount()
         const accountUserRef = account.state.user
         let finish!: () => void
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(
           () =>
             new Promise<void>((resolve) => {
@@ -530,6 +539,7 @@ describe("CloudSyncAccountPanel", () => {
               }
             }),
         )
+
         account.refresh = refresh
         const actions = renderEmailChangePanel("old@example.com", account)
 
@@ -557,12 +567,14 @@ describe("CloudSyncAccountPanel", () => {
         const user = userEvent.setup()
         const account = createEmailChangeAccount()
         const accountUserRef = account.state.user
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
           accountUserRef.value = {
             id: "user2",
             email: "new@example.com",
           } as User
         })
+
         account.refresh = refresh
         renderEmailChangePanel("old@example.com", account)
 
@@ -631,6 +643,7 @@ describe("CloudSyncAccountPanel", () => {
 
       it("変更状況の確認でアカウント情報の取得に失敗した場合はエラーが表示され、その後再試行できる", async () => {
         const errorRef = ref<unknown>(null)
+
         const refresh = vi
           .fn<() => Promise<void>>()
           .mockImplementationOnce(async () => {
@@ -711,6 +724,7 @@ describe("CloudSyncAccountPanel", () => {
         const user = userEvent.setup()
         const loading = ref(false)
         let finish!: () => void
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(() => {
           loading.value = true
           return new Promise<void>((resolve) => {
@@ -720,11 +734,13 @@ describe("CloudSyncAccountPanel", () => {
             }
           })
         })
+
         const accountUser = {
           ...createAccountUser({ user: { id: "user1", email: "old@example.com" } as User }),
           isLoading: readonly(loading),
           refresh,
         }
+
         renderEmailChangePanel("old@example.com", accountUser)
 
         await submitEmailChange(user)
@@ -751,6 +767,7 @@ describe("CloudSyncAccountPanel", () => {
         const account = createEmailChangeAccount()
         const accountUserRef = account.state.user
         let finish!: () => void
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(
           () =>
             new Promise<void>((resolve) => {
@@ -760,6 +777,7 @@ describe("CloudSyncAccountPanel", () => {
               }
             }),
         )
+
         account.refresh = refresh
         const actions = renderEmailChangePanel("old@example.com", account)
 
@@ -780,9 +798,11 @@ describe("CloudSyncAccountPanel", () => {
       it("変更状況の確認中に別の自動取得が始まった場合、確認前の情報で結果を表示しない", async () => {
         const user = userEvent.setup()
         const loading = ref(false)
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
           loading.value = true
         })
+
         renderEmailChangePanel("old@example.com", {
           ...createAccountUser({ user: { id: "user1", email: "old@example.com" } as User }),
           isLoading: readonly(loading),
@@ -802,9 +822,11 @@ describe("CloudSyncAccountPanel", () => {
         const user = userEvent.setup()
         const account = createEmailChangeAccount()
         const accountUserRef = account.state.user
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
           accountUserRef.value = null
         })
+
         account.refresh = refresh
         renderEmailChangePanel("old@example.com", account)
 
@@ -826,9 +848,11 @@ describe("CloudSyncAccountPanel", () => {
         const user = userEvent.setup()
         const account = createEmailChangeAccount()
         const accountUserRef = account.state.user
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
           accountUserRef.value = { id: "user1" } as User
         })
+
         account.refresh = refresh
         renderEmailChangePanel("old@example.com", account)
 
@@ -850,9 +874,11 @@ describe("CloudSyncAccountPanel", () => {
         const user = userEvent.setup()
         const account = createEmailChangeAccount()
         const accountUserRef = account.state.user
+
         const refresh = vi.fn<() => Promise<void>>().mockImplementation(async () => {
           accountUserRef.value = { id: "user2", email: "new@example.com" } as User
         })
+
         account.refresh = refresh
         renderEmailChangePanel("old@example.com", account)
 
@@ -1003,6 +1029,7 @@ describe("CloudSyncAccountPanel", () => {
     it("メールアドレスとパスワードを入力してサインインできる", async () => {
       const user = userEvent.setup()
       const signInWithEmail = vi.fn()
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         signInWithEmail,
@@ -1028,6 +1055,7 @@ describe("CloudSyncAccountPanel", () => {
     it("サインイン時にエラーが発生するとその旨が表示される", async () => {
       const user = userEvent.setup()
       const signInWithEmail = vi.fn().mockRejectedValue({ code: "invalid_credentials" })
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         signInWithEmail,
@@ -1057,6 +1085,7 @@ describe("CloudSyncAccountPanel", () => {
     it("サインイン中にサインアウトできる", async () => {
       const user = userEvent.setup()
       const signOut = vi.fn()
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         signOut,
@@ -1084,6 +1113,7 @@ describe("CloudSyncAccountPanel", () => {
     it("サインアウト時にエラーが発生するとその旨が表示される", async () => {
       const user = userEvent.setup()
       const signOut = vi.fn().mockRejectedValue({ code: "request_timeout" })
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         signOut,
@@ -1157,6 +1187,7 @@ describe("CloudSyncAccountPanel", () => {
 
     it("サインイン中に同期ボタンを押すとクラウド同期を実行する", async () => {
       const user = userEvent.setup()
+
       const result = {
         data: {
           version: 3,
@@ -1200,6 +1231,7 @@ describe("CloudSyncAccountPanel", () => {
 
     it("同期時にエラーが発生するとその旨が表示される", async () => {
       const user = userEvent.setup()
+
       const syncLogEntries = vi
         .fn<() => Promise<CloudQuicklogDataSyncResult>>()
         .mockRejectedValue(new Error("network error"))
@@ -1281,6 +1313,7 @@ describe("CloudSyncAccountPanel", () => {
       const user = userEvent.setup()
       const error = new Error("パスワード変更エラー")
       const changePassword = vi.fn().mockRejectedValue(error)
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         changePassword,
@@ -1319,6 +1352,7 @@ describe("CloudSyncAccountPanel", () => {
     it("アカウント作成時にエラーが発生するとその旨が表示される", async () => {
       const user = userEvent.setup()
       const signUpWithEmail = vi.fn().mockRejectedValue({ code: "email_exists" })
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         signUpWithEmail,
@@ -1348,6 +1382,7 @@ describe("CloudSyncAccountPanel", () => {
       const user = userEvent.setup()
       const signUpWithEmail = vi.fn()
       const verifySignUpCode = vi.fn()
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         signUpWithEmail,
@@ -1389,6 +1424,7 @@ describe("CloudSyncAccountPanel", () => {
       const user = userEvent.setup()
       const error = new Error("認証エラー")
       const verifySignUpCode = vi.fn().mockRejectedValueOnce(error)
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         verifySignUpCode,
@@ -1439,6 +1475,7 @@ describe("CloudSyncAccountPanel", () => {
     it("アカウント作成で認証コードを再送できる", async () => {
       const user = userEvent.setup()
       const resendSignUpCode = vi.fn()
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         resendSignUpCode,
@@ -1475,6 +1512,7 @@ describe("CloudSyncAccountPanel", () => {
       const user = userEvent.setup()
       const signUpWithEmail = vi.fn()
       const verifySignUpCode = vi.fn()
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         signUpWithEmail,
@@ -1517,6 +1555,7 @@ describe("CloudSyncAccountPanel", () => {
       const deleteCloudSync = vi.fn().mockResolvedValue(null)
       const confirm = vi.fn(() => true)
       vi.stubGlobal("confirm", confirm)
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         deleteCloudSync,
@@ -1546,13 +1585,16 @@ describe("CloudSyncAccountPanel", () => {
 
     it("アカウントの削除に失敗したらエラーを表示する", async () => {
       const user = userEvent.setup()
+
       const deleteCloudSync = vi
         .fn()
         .mockRejectedValue(
           new CloudSyncDeletionError("クラウド同期アカウントを削除できませんでした"),
         )
+
       const confirm = vi.fn(() => true)
       vi.stubGlobal("confirm", confirm)
+
       const defaultProps = createDefaultProps({
         ...createActions(),
         deleteCloudSync,
@@ -1589,6 +1631,7 @@ describe("CloudSyncAccountPanel", () => {
         const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
         const verifyPasswordResetCode = vi.fn().mockResolvedValue(null)
         const updatePasswordAfterRecovery = vi.fn().mockResolvedValue(null)
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           sendPasswordResetCode,
@@ -1648,10 +1691,12 @@ describe("CloudSyncAccountPanel", () => {
       it("OTP の初回送信に失敗した場合はメール入力欄に留まり、再試行できる", async () => {
         const user = userEvent.setup()
         const error = new Error("sending code failed")
+
         const sendPasswordResetCode = vi
           .fn()
           .mockRejectedValueOnce(error)
           .mockResolvedValueOnce(null)
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           sendPasswordResetCode,
@@ -1690,6 +1735,7 @@ describe("CloudSyncAccountPanel", () => {
       it("OTP を再送できる", async () => {
         const user = userEvent.setup()
         const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           sendPasswordResetCode,
@@ -1725,11 +1771,13 @@ describe("CloudSyncAccountPanel", () => {
       it("OTP の再送に失敗した場合はコード入力画面に留まり、再試行できる", async () => {
         const user = userEvent.setup()
         const error = new Error("sending OTP failed")
+
         const sendPasswordResetCode = vi
           .fn()
           .mockResolvedValueOnce(null)
           .mockRejectedValueOnce(error)
           .mockResolvedValueOnce(null)
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           sendPasswordResetCode,
@@ -1777,6 +1825,7 @@ describe("CloudSyncAccountPanel", () => {
         const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
         const verifyPasswordResetCode = vi.fn().mockRejectedValueOnce(error).mockResolvedValue(null)
         const updatePasswordAfterRecovery = vi.fn()
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           sendPasswordResetCode,
@@ -1838,6 +1887,7 @@ describe("CloudSyncAccountPanel", () => {
         const cancelPasswordRecovery = vi.fn().mockResolvedValue(undefined)
         const verifyPasswordResetCode = vi.fn()
         const sendPasswordResetCode = vi.fn().mockResolvedValue(null)
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           sendPasswordResetCode,
@@ -1890,6 +1940,7 @@ describe("CloudSyncAccountPanel", () => {
       it("新しいパスワード設定中にキャンセルできる", async () => {
         const user = userEvent.setup()
         const cancelPasswordRecovery = vi.fn().mockResolvedValue(null)
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           cancelPasswordRecovery,
@@ -1913,10 +1964,12 @@ describe("CloudSyncAccountPanel", () => {
     describe("新しいパスワードの設定", () => {
       it("パスワード変更失敗時に新しいパスワード画面に残る", async () => {
         const user = userEvent.setup()
+
         const updatePasswordAfterRecovery = vi
           .fn()
           .mockRejectedValueOnce(null)
           .mockResolvedValue(null)
+
         const defaultProps = createDefaultProps({
           ...createActions(),
           updatePasswordAfterRecovery,

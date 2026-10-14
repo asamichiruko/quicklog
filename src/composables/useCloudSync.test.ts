@@ -12,24 +12,29 @@ vi.mock("@/lib/quicklogDataSync", () => ({ syncQuicklogDataWithCloud: vi.fn() })
 
 const user = { id: "user1" } as User
 const localData = { version: 3, logEntries: [], logEntryDeletions: [] } satisfies QuicklogData
+
 const remoteData = {
   version: 3,
   logEntries: [{ id: "remote1", text: "同期した記録", createdAt: "2026-10-14T03:00:00.000Z" }],
   logEntryDeletions: [],
 } satisfies QuicklogData
+
 const syncResult = {
   data: remoteData,
   addedCount: 1,
   deletedCount: 0,
   uploadedCount: 0,
 } satisfies CloudQuicklogDataSyncResult
+
 const wrappers: VueWrapper[] = []
 
 function deferred<T>() {
   let resolve!: (value: T) => void
+
   const promise = new Promise<T>((complete) => {
     resolve = complete
   })
+
   return { promise, resolve }
 }
 
@@ -37,6 +42,7 @@ function setup(context: CloudSyncContext) {
   const currentContext = { ...context }
   const applySyncedData = vi.fn()
   let cloudSync!: ReturnType<typeof useCloudSync>
+
   const wrapper = mount(
     defineComponent({
       setup() {
@@ -51,6 +57,7 @@ function setup(context: CloudSyncContext) {
       },
     }),
   )
+
   wrappers.push(wrapper)
   return { cloudSync, currentContext, applySyncedData, wrapper }
 }
@@ -60,6 +67,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] })
   vi.setSystemTime(new Date("2026-10-14T03:00:00.000Z"))
 })
+
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
   vi.restoreAllMocks()
@@ -69,6 +77,7 @@ afterEach(() => {
 describe("useCloudSync", () => {
   it("認証済みで即時同期すると現在のユーザーとデータを送信し、結果を返して適用する", async () => {
     vi.mocked(syncQuicklogDataWithCloud).mockResolvedValue(syncResult)
+
     const { cloudSync, applySyncedData } = setup({
       user,
       data: localData,
@@ -100,6 +109,7 @@ describe("useCloudSync", () => {
 
   it("同期可能なユーザーがない間は同期せず、ユーザーが復帰すると待たずに同期できる", async () => {
     vi.mocked(syncQuicklogDataWithCloud).mockResolvedValue(syncResult)
+
     const { cloudSync, currentContext, applySyncedData } = setup({
       user: null,
       data: localData,
@@ -125,6 +135,7 @@ describe("useCloudSync", () => {
   it("即時同期の通信が失敗するとエラーを返し、データを適用しない", async () => {
     const failure = new Error("offline")
     vi.mocked(syncQuicklogDataWithCloud).mockRejectedValue(failure)
+
     const { cloudSync, applySyncedData } = setup({
       user,
       data: localData,
@@ -139,6 +150,7 @@ describe("useCloudSync", () => {
   it("通知なしの即時同期が成功するとデータを適用して警告しない", async () => {
     vi.mocked(syncQuicklogDataWithCloud).mockResolvedValue(syncResult)
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
     const { cloudSync, applySyncedData } = setup({
       user,
       data: localData,
@@ -157,6 +169,7 @@ describe("useCloudSync", () => {
     const failure = new Error("offline")
     vi.mocked(syncQuicklogDataWithCloud).mockRejectedValue(failure)
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
     const { cloudSync, applySyncedData } = setup({
       user,
       data: localData,
@@ -174,6 +187,7 @@ describe("useCloudSync", () => {
   it("同期中にユーザーがなくなると返った結果を適用しない", async () => {
     const response = deferred<CloudQuicklogDataSyncResult>()
     vi.mocked(syncQuicklogDataWithCloud).mockReturnValue(response.promise)
+
     const { cloudSync, currentContext, applySyncedData } = setup({
       user,
       data: localData,
@@ -194,6 +208,7 @@ describe("useCloudSync", () => {
   it("同期中に別ユーザーへ切り替わると返った結果を適用せず再同期も予約しない", async () => {
     const response = deferred<CloudQuicklogDataSyncResult>()
     vi.mocked(syncQuicklogDataWithCloud).mockReturnValue(response.promise)
+
     const { cloudSync, currentContext, applySyncedData } = setup({
       user,
       data: localData,
@@ -213,13 +228,16 @@ describe("useCloudSync", () => {
 
   it("同期中にローカル revision が変わると古い結果を適用せず最新データで再同期する", async () => {
     const response = deferred<CloudQuicklogDataSyncResult>()
+
     const editedData = {
       ...localData,
       logEntries: [{ id: "edited1", text: "同期中の記録", createdAt: "2026-10-14T03:00:00.000Z" }],
     }
+
     vi.mocked(syncQuicklogDataWithCloud)
       .mockReturnValueOnce(response.promise)
       .mockResolvedValueOnce(syncResult)
+
     const { cloudSync, currentContext, applySyncedData } = setup({
       user,
       data: localData,
@@ -248,6 +266,7 @@ describe("useCloudSync", () => {
   it("同じユーザーでも同期中に scope revision が変わると結果を適用せず再同期も予約しない", async () => {
     const response = deferred<CloudQuicklogDataSyncResult>()
     vi.mocked(syncQuicklogDataWithCloud).mockReturnValue(response.promise)
+
     const { cloudSync, currentContext, applySyncedData } = setup({
       user,
       data: localData,
@@ -328,6 +347,7 @@ describe("useCloudSync", () => {
     const failure = new Error("offline")
     vi.mocked(syncQuicklogDataWithCloud).mockRejectedValue(failure)
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
     const { cloudSync, applySyncedData } = setup({
       user,
       data: localData,

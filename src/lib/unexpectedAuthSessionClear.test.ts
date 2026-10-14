@@ -13,6 +13,7 @@ describe("createUnexpectedAuthSessionClear", () => {
   it("要求されたその場では session を clear せず、タイマー後に clear する", async () => {
     const clearLocalAuthSession = vi.fn().mockResolvedValue(undefined)
     const onError = vi.fn()
+
     const sessionClear = createUnexpectedAuthSessionClear({
       clearLocalAuthSession,
       onError,
@@ -30,6 +31,7 @@ describe("createUnexpectedAuthSessionClear", () => {
 
   it("タイマー実行前の重複要求を 1 回にまとめる", async () => {
     const clearLocalAuthSession = vi.fn().mockResolvedValue(undefined)
+
     const sessionClear = createUnexpectedAuthSessionClear({
       clearLocalAuthSession,
       onError: vi.fn(),
@@ -46,12 +48,14 @@ describe("createUnexpectedAuthSessionClear", () => {
 
   it("session の clear 中も重複要求を開始しない", async () => {
     let resolveClear!: () => void
+
     const clearLocalAuthSession = vi.fn(
       () =>
         new Promise<void>((resolve) => {
           resolveClear = resolve
         }),
     )
+
     const sessionClear = createUnexpectedAuthSessionClear({
       clearLocalAuthSession,
       onError: vi.fn(),
@@ -72,6 +76,7 @@ describe("createUnexpectedAuthSessionClear", () => {
 
   it("session の clear 完了後は再び要求できる", async () => {
     const clearLocalAuthSession = vi.fn().mockResolvedValue(undefined)
+
     const sessionClear = createUnexpectedAuthSessionClear({
       clearLocalAuthSession,
       onError: vi.fn(),
@@ -88,11 +93,14 @@ describe("createUnexpectedAuthSessionClear", () => {
 
   it("session の clear に失敗したら通知し, その後再試行できる", async () => {
     const error = new Error("clear failed")
+
     const clearLocalAuthSession = vi
       .fn()
       .mockRejectedValueOnce(error)
       .mockResolvedValueOnce(undefined)
+
     const onError = vi.fn()
+
     const sessionClear = createUnexpectedAuthSessionClear({
       clearLocalAuthSession,
       onError,

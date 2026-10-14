@@ -10,6 +10,7 @@ vi.mock("@/lib/storage", () => ({
 }))
 
 const anonymousScope = { type: "anonymous" } satisfies DataScope
+
 const anonymousState = {
   scope: anonymousScope,
   syncStatus: "disabled",
@@ -116,6 +117,7 @@ describe("useRuntimeSession", () => {
 
   it("遷移後の scope を保存する", () => {
     const { runtimeSession } = setup()
+
     const expectedState = {
       scope: { type: "user", userId: "user1" },
       syncStatus: "authenticated",
@@ -295,6 +297,7 @@ describe("useRuntimeSession", () => {
   it("状態と scope を保存してから購読者へ通知する", () => {
     const { runtimeSession } = setup()
     const session = createSession("user1")
+
     const listener = vi.fn(() => {
       expect(runtimeSession.session.value).toEqual(session)
       expect(runtimeSession.runtimeSessionState.value).toEqual({
@@ -303,6 +306,7 @@ describe("useRuntimeSession", () => {
       })
       expect(saveStoredDataScope).toHaveBeenCalled()
     })
+
     runtimeSession.subscribeStateApplied(listener)
 
     runtimeSession.commitAuthenticatedSession(session)

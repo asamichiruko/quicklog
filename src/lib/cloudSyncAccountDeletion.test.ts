@@ -77,6 +77,7 @@ describe("deleteCloudSyncData", () => {
       logEntries: [],
       logEntryDeletions: [{ logEntryId: "log1", createdAt: "2026-06-12T00:00:00.000Z" }],
     } satisfies QuicklogData
+
     const options = createOptions(anonymousDataWithDeletion, userData)
 
     await expect(deleteCloudSyncData(options)).rejects.toThrow(CloudSyncDeletionError)
@@ -91,6 +92,7 @@ describe("deleteCloudSyncData", () => {
       logEntries: [{ id: "anonymous1", text: "匿名の記録", createdAt: "2026-06-12T00:00:00.000Z" }],
       logEntryDeletions: [],
     } satisfies QuicklogData
+
     const options = createOptions(anonymousDataWithEntry, userData)
 
     await expect(deleteCloudSyncData(options)).rejects.toThrow(CloudSyncDeletionError)
@@ -131,9 +133,11 @@ describe("deleteCloudSyncData", () => {
 
   it("サーバー削除後にローカル Auth 解除が失敗しても削除成功として扱い、解除エラーを通知する", async () => {
     const clearError = new Error("clear failed")
+
     const options = createOptions(emptyData, userData, {
       clearLocalAuthSession: vi.fn().mockRejectedValue(clearError),
     })
+
     vi.mocked(options.deleteCurrentAccount).mockResolvedValue(undefined)
 
     await expect(deleteCloudSyncData(options)).resolves.toBeUndefined()

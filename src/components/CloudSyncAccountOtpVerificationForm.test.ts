@@ -46,6 +46,7 @@ describe("CloudSyncAccountOtpVerificationForm", () => {
 
   it("6 文字の確認コードを入力して 認証する ボタンを押すと submit を emit する", async () => {
     const user = userEvent.setup()
+
     const { emitted } = render(CloudSyncAccountOtpVerificationForm, {
       props: {
         isLoading: false,
@@ -64,6 +65,7 @@ describe("CloudSyncAccountOtpVerificationForm", () => {
 
   it("確認メールを再送する ボタンを押すと resend を emit する", async () => {
     const user = userEvent.setup()
+
     const { emitted } = render(CloudSyncAccountOtpVerificationForm, {
       props: {
         isLoading: false,
@@ -78,6 +80,7 @@ describe("CloudSyncAccountOtpVerificationForm", () => {
 
   it("認証をキャンセル ボタンを押すと cancel を emit する", async () => {
     const user = userEvent.setup()
+
     const { emitted } = render(CloudSyncAccountOtpVerificationForm, {
       props: {
         isLoading: false,
@@ -92,6 +95,7 @@ describe("CloudSyncAccountOtpVerificationForm", () => {
 
   it("確認コードの入力時に input を emit する", async () => {
     const user = userEvent.setup()
+
     const { emitted } = render(CloudSyncAccountOtpVerificationForm, {
       props: {
         isLoading: false,

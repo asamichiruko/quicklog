@@ -11,10 +11,12 @@ function createUser(id: string, email: string) {
 function deferred<T>() {
   let resolve!: (value: T) => void
   let reject!: (reason: unknown) => void
+
   const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise
     reject = rejectPromise
   })
+
   return { promise, resolve, reject }
 }
 
@@ -23,6 +25,7 @@ beforeEach(() => {
 })
 
 const wrappers: VueWrapper[] = []
+
 afterEach(() => {
   for (const wrapper of wrappers.splice(0)) {
     wrapper.unmount()

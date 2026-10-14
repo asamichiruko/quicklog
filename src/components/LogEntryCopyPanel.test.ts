@@ -29,6 +29,7 @@ describe("LogEntryCopyPanel", () => {
     const preview = screen.getByRole("textbox", {
       name: "コピーする Markdown テキスト",
     }) as HTMLTextAreaElement
+
     expect(preview.value).toContain("text2")
 
     const copyButton = screen.getByRole("button", { name: "クリップボードにコピー" })

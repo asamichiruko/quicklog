@@ -190,11 +190,13 @@ describe("syncQuicklogDataWithCloud", () => {
       logEntries: [localOnlyEntry],
       logEntryDeletions: [],
     } satisfies QuicklogData
+
     const cloudData = {
       version: 3,
       logEntries: [],
       logEntryDeletions: [expiredCloudLogEntryDeletion],
     } satisfies QuicklogData
+
     const user = { id: "user-id" } as unknown as User
 
     vi.mocked(fetchCloudLogEntries).mockResolvedValue(cloudData.logEntries)

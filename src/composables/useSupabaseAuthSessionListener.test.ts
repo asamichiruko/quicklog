@@ -96,6 +96,7 @@ describe("useSupabaseAuthSessionListener", () => {
 
   it("認証イベントを無視する状態でイベントが届くとセッションを通知しない", () => {
     const onResolvedSession = vi.fn()
+
     const { listener } = setup(true, {
       onResolvedSession,
     })

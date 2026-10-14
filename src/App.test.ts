@@ -61,16 +61,21 @@ const account = { id: "user1", email: "before@example.com" } as User
 const session = { user: account } as Session
 const localEntry = { id: "local1", text: "端末のメモ", createdAt: now.toISOString() }
 const cloudEntry = { id: "cloud1", text: "クラウドのメモ", createdAt: now.toISOString() }
+
 function createData(...logEntries: LogEntry[]): QuicklogData {
   return { version: 3, logEntries, logEntryDeletions: [] }
 }
+
 function deferred<T>() {
   let resolve!: (value: T) => void
+
   const promise = new Promise<T>((res) => {
     resolve = res
   })
+
   return { promise, resolve }
 }
+
 let authEvent!: (event: AuthChangeEvent, session: Session | null) => void
 
 beforeEach(() => {
@@ -100,6 +105,7 @@ beforeEach(() => {
   vi.stubGlobal("alert", vi.fn())
   vi.stubGlobal("confirm", vi.fn())
 })
+
 afterEach(() => {
   cleanup() // lifecycle の解除処理は fake timer と spy が有効な間に実行する。
   vi.restoreAllMocks()
@@ -107,21 +113,25 @@ afterEach(() => {
   vi.useRealTimers()
   localStorage.clear()
 })
+
 function setup() {
   const view = render(App)
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   return { ...view, user }
 }
+
 async function flushAuthAndRender() {
   await flushPromises()
   await vi.advanceTimersByTimeAsync(0) // 認証イベントの外で予約された account user 取得を完了させる。
   await flushPromises()
 }
+
 async function openAccount(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "設定" }))
   await user.click(screen.getByRole("button", { name: "アカウントと同期" }))
   await flushAuthAndRender()
 }
+
 async function startDeletion(user: ReturnType<typeof userEvent.setup>) {
   await openAccount(user)
   await user.click(
@@ -129,6 +139,7 @@ async function startDeletion(user: ReturnType<typeof userEvent.setup>) {
   )
   await user.click(screen.getByRole("button", { name: "削除する" }))
 }
+
 async function submitMemo(user: ReturnType<typeof userEvent.setup>, text: string) {
   await user.type(screen.getByRole("textbox", { name: "メモ" }), text)
   await user.click(screen.getByRole("button", { name: "記録" }))

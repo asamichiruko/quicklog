@@ -98,6 +98,7 @@ describe("createPasswordRecoveryFlow", () => {
   it("セッション解除失敗時も anonymous へ戻る", async () => {
     const { flow, clearLocalAuthSession, activateAnonymousScope, onLocalAuthSessionClearError } =
       setup()
+
     const error = new Error("clear session failed")
     clearLocalAuthSession.mockRejectedValue(error)
 
@@ -118,6 +119,7 @@ describe("createPasswordRecoveryFlow", () => {
       activateAnonymousScope,
       onLocalAuthSessionClearError,
     } = setup()
+
     const error = new Error("password update failed")
     updatePasswordAfterRecovery.mockRejectedValue(error)
 
@@ -156,6 +158,7 @@ describe("createPasswordRecoveryFlow", () => {
   it("キャンセル時のセッション解除失敗も通知し anonymous へ戻る", async () => {
     const { flow, clearLocalAuthSession, activateAnonymousScope, onLocalAuthSessionClearError } =
       setup()
+
     const error = new Error("clear session failed")
     clearLocalAuthSession.mockRejectedValue(error)
 

@@ -23,6 +23,7 @@ describe("isValidLogEntryDeletion", () => {
     const itemBase = {
       createdAt: "2026-05-31T00:00:00.000Z",
     }
+
     expect(isValidLogEntryDeletion({ ...itemBase, logEntryId: "" })).toBe(false)
     expect(isValidLogEntryDeletion({ ...itemBase, logEntryId: "a" })).toBe(true)
     expect(isValidLogEntryDeletion({ ...itemBase, logEntryId: "a".repeat(128) })).toBe(true)
@@ -64,6 +65,7 @@ describe("isValidLogEntryDeletion", () => {
       logEntryId: "entryId1",
       unknownProperty: 42,
     }
+
     expect(isValidLogEntryDeletion(item)).toBe(true)
   })
 

@@ -59,6 +59,7 @@ describe("LogEntryList", () => {
 
   it("削除ボタンを押すと remove が emit される", async () => {
     const user = userEvent.setup()
+
     const { emitted } = render(LogEntryList, {
       props: {
         logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],

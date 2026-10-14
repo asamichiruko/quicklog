@@ -60,6 +60,7 @@ describe("moveAnonymousQuicklogDataToUser", () => {
 
   it("user data への保存に失敗したら anonymous data を削除しない", () => {
     const error = new Error("save failed")
+
     const storage = {
       loadQuicklogData: vi.fn((userId?: string) => (userId ? userData : anonymousData)),
       saveQuicklogData: vi.fn((_: QuicklogData, userId?: string) => {

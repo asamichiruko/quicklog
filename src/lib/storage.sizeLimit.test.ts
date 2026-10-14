@@ -32,6 +32,7 @@ describe("quicklogData size limit", () => {
       logEntries: [{ id: "id1", text: "text1", createdAt: "2026-05-22T00:00:00.000Z" }],
       logEntryDeletions: [],
     }
+
     const tooLargeData = {
       version: 3 as const,
       logEntries: [{ id: "id1", text: "a".repeat(200), createdAt: "2026-05-22T00:00:00.000Z" }],
@@ -95,6 +96,7 @@ describe("settings size limit", () => {
       ...DEFAULT_SETTINGS,
       showDailySummary: true,
     }
+
     const tooLargeData = {
       ...DEFAULT_SETTINGS,
     }
